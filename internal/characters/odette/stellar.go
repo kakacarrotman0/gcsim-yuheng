@@ -86,6 +86,6 @@ func (c *char) stellarInit() {
 			return
 		}
 
-		c.AddStatus(radianceSwirlKey, 8*60, false)
+		c.AddStatus(radianceSwirlKey, reactable.RadianceSwirlDuration(c.Core, c.StatusIsActive(radianceSwirlKey)), false)
 	}, stellarBonusKey)
 }

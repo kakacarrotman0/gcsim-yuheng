@@ -152,6 +152,7 @@ const (
 	Varesa                        // varesa
 	Varka                         // varka
 	Venti                         // venti
+	Vodyanitsa                    // vodyanitsa
 	Wanderer                      // wanderer
 	Wriothesley                   // wriothesley
 	Xiangling                     // xiangling
@@ -282,6 +283,7 @@ var _CharNames = [...]string{
 	"varesa",
 	"varka",
 	"venti",
+	"vodyanitsa",
 	"wanderer",
 	"wriothesley",
 	"xiangling",
@@ -412,6 +414,7 @@ var _CharValues = [...]Char{
 	Varesa,
 	Varka,
 	Venti,
+	Vodyanitsa,
 	Wanderer,
 	Wriothesley,
 	Xiangling,
