@@ -1,0 +1,90 @@
+use: pipeline
+kind: character
+name: vodyanitsa
+
+shortcuts:
+  - vodya
+
+talents:
+  - attack:
+      - attack(1-Hit DMG)
+      - attack(2-Hit DMG)
+      - attack(3-Hit DMG)
+      - attack(4-Hit DMG)
+  - charge: attack(Charged Attack DMG)
+  - collision: attack(Plunge DMG)
+  - lowPlunge: attack(Low/High Plunge DMG)
+  - highPlunge: attack(Low/High Plunge DMG|1)
+
+  - skill: skill(Skill DMG)
+  - skillDur: skill(Duration)
+  - hornInterval: skill(Horn of Spring's Call Attack Interval)
+  - horn: skill(Horn of Spring's Call DMG)
+  - healFlat: skill(Song of Ages Past Healing)
+  - healPct: skill(Song of Ages Past Healing|1)
+  - healInterval: skill(Song of Ages Past Healing Interval)
+  - resShred: skill(Hydro/Cryo RES Reduction)
+  - resDur: skill(RES Reduction Duration)
+  - skillCD: skill(Skill CD)
+
+  - burst: burst(Skill DMG)
+  - burstBonus: burst(Song of Ages Past DMG Bonus)
+  - burstCD: burst(CD)
+  - burstEnergy: burst(Energy Cost)
+
+docs:
+  issues:
+    - Hitmarks for NA, CA, plunge, skill cast, and burst are approximate placeholders. Horn interval, heal interval, particle ICD, RES duration, and song duration are taken from the ability graph.
+    - Wandering Vortex has no separate combat config in the avatar ability file. It is modeled as the existing Stellar Vortex plus Anemo RES shred, the A4 mode switch, and the +4s Radiance extension. Detonation damage is unchanged.
+    - Song interruption resistance and the out-of-combat swim hold are not simulated.
+    - Burst elementRank 3 is not a gcsim field. The hit is 2U Hydro (durability 50).
+    - excel-hk4e in go.mod predates this character, so the full pipeline was not run. Talent numbers in talents.go are copied from the same ProudSkill excel the pipeline reads.
+
+abilities:
+  - name: low_plunge
+    params:
+      collision: "Whether or not the plunging attack will collide with enemies on the way down. Default 0."
+  - name: high_plunge
+    params:
+      collision: "Whether or not the plunging attack will collide with enemies on the way down. Default 0."
+  - name: attack
+    hitbox:
+      - name: N1
+        shape: Circle
+        center: Player
+        radius: 0.7
+      - name: N2
+        shape: Circle
+        center: Player
+        radius: 0.7
+      - name: N3
+        shape: Circle
+        center: Player
+        radius: 0.7
+      - name: N4
+        shape: Box
+        center: Player
+        offset: [0, 1.4]
+        box: [2, 10]
+  - name: charge
+    hitbox:
+      - name: CA
+        shape: Circle
+        center: Player
+        radius: 2
+  - name: skill
+    hitbox:
+      - name: Initial
+        shape: Circle
+        center: Player
+        radius: 5.5
+      - name: Horn
+        shape: Circle
+        center: PrimaryTarget
+        radius: 3
+  - name: burst
+    hitbox:
+      - name: Burst
+        shape: Circle
+        center: Player
+        radius: 5

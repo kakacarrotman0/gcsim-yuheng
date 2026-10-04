@@ -1,0 +1,37 @@
+# Yuheng validation config
+# Vodyanitsa / Skirk / Escoffier / Furina.
+# Hydro + Cryo only, so her Hydro/Cryo shred, song healing, and A4 Lead Vocal apply.
+# There is no Anemo, so Stellar Swirl and Wandering Vortex do not occur.
+# Not an optimized damage benchmark.
+
+options iteration=100 duration=90 swap_delay=12;
+target lvl=100 resist=0.1;
+
+vodyanitsa char lvl=90/90 cons=0 talent=10,10,10;
+vodyanitsa add weapon="favoniuscodex" refine=5 lvl=90/90;
+vodyanitsa add set="tenacityofthemillelith" count=4;
+vodyanitsa add stats hp=4780 hp%=0.466 hp%=0.466 cr=0.311 cd=0.622 er=0.518;
+
+skirk char lvl=90/90 cons=0 talent=10,10,10;
+skirk add weapon="favoniussword" refine=5 lvl=90/90;
+skirk add set="blizzardstrayer" count=4;
+skirk add stats atk=311 atk%=0.466 cr=0.311 cd=0.622 cryo%=0.466;
+
+escoffier char lvl=90/90 cons=0 talent=10,10,10;
+escoffier add weapon="favoniuslance" refine=5 lvl=90/90;
+escoffier add set="noblesseoblige" count=4;
+escoffier add stats atk=311 atk%=0.466 cr=0.311 cd=0.622 er=0.518 cryo%=0.466;
+
+furina char lvl=90/90 cons=0 talent=10,10,10;
+furina add weapon="favoniussword" refine=5 lvl=90/90;
+furina add set="tenacityofthemillelith" count=4;
+furina add stats hp=4780 hp%=0.466 cr=0.311 cd=0.622 er=0.518 hydro%=0.466;
+
+active skirk;
+
+while 1 {
+  furina skill, burst;
+  escoffier skill, burst;
+  vodyanitsa skill, burst;
+  skirk skill, burst, attack:20, charge, attack:20;
+}

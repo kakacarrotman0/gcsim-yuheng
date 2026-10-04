@@ -1,0 +1,17 @@
+# Yuheng validation config
+# Proves Vodyanitsa can be initialized and can cast skill, burst, and normals.
+# Not a damage benchmark.
+
+options iteration=20 duration=30 swap_delay=12;
+target lvl=100 resist=0.1;
+
+vodyanitsa char lvl=90/90 cons=0 talent=1,1,1;
+vodyanitsa add weapon="emeraldorb" refine=1 lvl=90/90;
+vodyanitsa add set="tenacityofthemillelith" count=2;
+vodyanitsa add stats hp=4780 hp%=0.466 atk=311;
+
+active vodyanitsa;
+
+while 1 {
+  vodyanitsa skill, burst, attack:4;
+}
