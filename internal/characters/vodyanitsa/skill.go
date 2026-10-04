@@ -179,21 +179,25 @@ func (c *char) songHeal(src int) func() {
 		}
 		target := c.Core.Player.Active()
 		active := c.Core.Player.ByIndex(target)
+		// The heal reads Max HP before the C4 stack is applied. The ability heals, then applies the Max HP modifier.
 		flat := healFlat[c.TalentLvlSkill()]
 		pct := healPct[c.TalentLvlSkill()]
-		if c.Base.Cons >= 4 && active.CurrentHPRatio() < c4HPThreshold {
+		hp := c.MaxHP()
+		low := c.Base.Cons >= 4 && active.CurrentHPRatio() < c4HPThreshold
+		if low {
 			flat *= 1 + c4ExtraHeal
 			pct *= 1 + c4ExtraHeal
-		} else if c.Base.Cons >= 4 {
-			c.addC4Stack()
 		}
 		c.Core.Player.Heal(info.HealInfo{
 			Caller:  c.Index(),
 			Target:  target,
 			Message: "Song of Ages Past",
-			Src:     flat + pct*c.MaxHP(),
+			Src:     flat + pct*hp,
 			Bonus:   c.Stat(attributes.Heal),
 		})
+		if c.Base.Cons >= 4 && !low {
+			c.addC4Stack()
+		}
 		c.c1OnHeal()
 	}
 }

@@ -376,6 +376,116 @@ func TestRadianceExtendOnlyOnEnter(t *testing.T) {
 	if reactable.RadianceSwirlDuration(c, true) != 8*60 {
 		t.Fatal("refresh should stay 8s")
 	}
+	c.Flags.Custom[reactable.VodyanitsaSongUntilKey] = float64(c.F - 1)
+	if reactable.RadianceSwirlDuration(c, false) != 8*60 {
+		t.Fatal("expired song flag must not extend radiance")
+	}
+}
+
+func TestChargeAttackHasNoICD(t *testing.T) {
+	c, _ := makeCore(1)
+	addVody(t, c, 0, 1)
+	var hit info.AttackInfo
+	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
+		hit = args[1].(*info.AttackEvent).Info
+	}, "ca")
+	if err := c.Player.Exec(action.ActionCharge, keys.Vodyanitsa, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, chargeHitmark+2)
+	if hit.ICDTag != attacks.ICDTagNone || hit.Durability != 25 || hit.Element != attributes.Hydro {
+		t.Fatalf("charge %+v", hit)
+	}
+}
+
+func TestC4HealIgnoresStackItGrants(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addVody(t, c, 4, 10)
+	if err := c.Player.Exec(action.ActionSkill, keys.Vodyanitsa, nil); err != nil {
+		t.Fatal(err)
+	}
+	hp := ch.MaxHP()
+	var got float64
+	c.Events.Subscribe(event.OnHeal, func(args ...any) {
+		got = args[4].(float64)
+	}, "heal")
+	advance(c, healPreDelay+healInterval+2)
+	want := healFlat[ch.TalentLvlSkill()] + healPct[ch.TalentLvlSkill()]*hp
+	if math.Abs(got-want) > 1 {
+		t.Fatalf("triggering heal %v want %v", got, want)
+	}
+	n, _ := ch.Condition([]string{"c4"})
+	if n.(int) != 1 {
+		t.Fatalf("c4 stacks %v", n)
+	}
+	if ch.MaxHP() <= hp*1.1 {
+		t.Fatalf("max hp after stack %v before %v", ch.MaxHP(), hp)
+	}
+}
+
+func TestC4StacksExpireIndependently(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addVody(t, c, 4, 10)
+	raw := ch.Character.(*char)
+	raw.addC4Stack()
+	advance(c, 30)
+	raw.addC4Stack()
+	advance(c, 30)
+	raw.addC4Stack()
+	raw.addC4Stack()
+	if n, _ := ch.Condition([]string{"c4"}); n.(int) != 3 {
+		t.Fatalf("cap %v", n)
+	}
+	// First stack was added at frame 0 and lasts c4Dur. The later two are still inside their windows.
+	advance(c, c4Dur-c.F+1)
+	n, _ := ch.Condition([]string{"c4"})
+	if n.(int) != 2 {
+		t.Fatalf("after first expiry %v frame %d", n, c.F)
+	}
+}
+
+func TestA4HydroFlatAndStellarStage(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addVody(t, c, 0, 10)
+	raw := ch.Character.(*char)
+	ch.BaseStats[attributes.HP] = 50000
+	raw.lead = 5
+	raw.chorus = 5
+	ch.AddStatus(concertoKey, 300, false)
+
+	ae := &info.AttackEvent{Info: info.AttackInfo{
+		ActorIndex: ch.Index(),
+		AttackTag:  attacks.AttackTagElementalArt,
+		Element:    attributes.Hydro,
+		FlatDmg:    100,
+	}}
+	c.Events.Emit(event.OnEnemyHit, nil, ae)
+	want := 100 + raw.concertoFlat(false)
+	if math.Abs(ae.Info.FlatDmg-want) > 1e-6 || raw.lead != 4 {
+		t.Fatalf("hydro flat %v want %v lead %d", ae.Info.FlatDmg, want, raw.lead)
+	}
+
+	raw.wandering = true
+	stellar := &info.AttackEvent{Info: info.AttackInfo{
+		ActorIndex: ch.Index(),
+		AttackTag:  attacks.AttackTagReactionStellarSwirl,
+		Element:    attributes.Anemo,
+	}}
+	c.Events.Emit(event.OnSpecialReactionAttack, nil, stellar)
+	if math.Abs(stellar.Info.FlatDmg-raw.concertoFlat(true)) > 1e-6 || raw.lead != 3 {
+		t.Fatalf("stellar flat %v lead %d", stellar.Info.FlatDmg, raw.lead)
+	}
+	// The baked swirl attack must not consume a second stack.
+	c.Events.Emit(event.OnEnemyHit, nil, stellar)
+	if raw.lead != 3 {
+		t.Fatalf("stellar carrier consumed again, lead %d", raw.lead)
+	}
+	// Hydro talent hits do not consume during the alter window.
+	before := ae.Info.FlatDmg
+	c.Events.Emit(event.OnEnemyHit, nil, ae)
+	if raw.lead != 3 || ae.Info.FlatDmg != before {
+		t.Fatalf("hydro consumed during alter lead %d flat %v", raw.lead, ae.Info.FlatDmg)
+	}
 }
 
 func TestPlungeWhileAirborne(t *testing.T) {

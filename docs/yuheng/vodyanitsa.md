@@ -41,10 +41,11 @@ Not simulated: out-of-combat swim, the utility “sings instead of playing an in
 
 - Skill, horn, burst, heal, A4, and C1 all read current Max HP at the moment they resolve.
 - Burst song bonus: the ability default `DamageRatio` is 1.0 and `ConfigTalent` applies the talent percent as `paramDelta`. While Song of Ages Past is active the hit is `ratio * MaxHP * (1 + bonus)`. Otherwise it is `ratio * MaxHP`.
-- Horns are the only particle source (attack type Range). Each horn drops 3 Hydro particles. The initial skill hit does not.
+- Horns are the only particle source. The bullet attack type is Range, and the particle action requires that type. Each horn's `GenerateElemBall` has `baseEnergy` 3 and `ratio` 1. The drop config id 2018 is not in the gadget excel, so the Hydro element is taken from the caster. The initial skill hit does not generate particles.
+- C4's heal is calculated from Max HP before the new Max HP stack is applied. The stack is added after that heal.
 - Skill and horns share `ICDTagElementalArt` / `ICDGroupDefault` (1U). Burst is 2U with no ICD. `elementRank` 3 is not represented.
 - A4's flat bonus is zero at or below 40000 Max HP. A naked level 90 Vodyanitsa is below that line (about 19085 HP after ascension). The bonus is `(MaxHP - 40000) * perKilo / 1000`, capped at 3500 Hydro/Cryo (140 per 1000) and 6500 Stellar (260 per 1000), both capping at 65000 HP.
-- A4 consumes one Lead Vocal stack for the active character and one Chorus stack for anyone else, once per enemy hit. While a Wandering Vortex is present, or for 5s after it detonates, only Stellar Swirl reaction hits consume stacks and they use the Stellar bonus.
+- A4 consumes one Lead Vocal stack for the active character and one Chorus stack for anyone else. Hydro and Cryo talent hits receive the flat on `OnEnemyHit`, so it is included in base damage before DMG%, defense, resistance, and crit. While a Wandering Vortex is present, or for 5s after it detonates, the flat is added on `OnSpecialReactionAttack` instead, which is the stellar formula's `FlatDmg` term (before elevation and the contributor crit). The queued swirl attack does not consume a second stack. The ability file also has a normal-damage mixin on the same stellar tags; gcsim has one stellar damage channel, so the flat is applied once.
 - Wandering Vortex has no separate damage config in her ability file. Generation and detonation apply 35% Anemo RES shred for 6s. The vortex’s own damage and gauge stay the existing Stellar Vortex.
 - Entering Radiance: Stellar Swirl during the song uses 12s instead of 8s. A swirl that only refreshes an existing Radiance status stays at 8s. This is wired through Odette, Qiqi, and Cryo Traveler.
 

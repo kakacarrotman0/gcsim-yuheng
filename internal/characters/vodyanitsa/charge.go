@@ -11,7 +11,8 @@ import (
 
 var chargeFrames []int
 
-// APPROXIMATE. Stamina cost 50 matches the talent and the catalyst default.
+// APPROXIMATE hitmark. Stamina cost 50 matches the talent and the catalyst default.
+// The live ExtraAttack has an empty attenuation tag, so it does not share an ICD group.
 const chargeHitmark = 46
 
 func init() {
@@ -29,7 +30,7 @@ func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 		ActorIndex: c.Index(),
 		Abil:       "Charge Attack",
 		AttackTag:  attacks.AttackTagExtra,
-		ICDTag:     attacks.ICDTagExtraAttack,
+		ICDTag:     attacks.ICDTagNone,
 		ICDGroup:   attacks.ICDGroupDefault,
 		StrikeType: attacks.StrikeTypeDefault,
 		Element:    attributes.Hydro,

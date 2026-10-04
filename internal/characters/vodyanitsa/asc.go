@@ -65,38 +65,46 @@ func (c *char) shredAnemo() {
 }
 
 func (c *char) a4Init() {
+	// Hydro/Cryo talent hits take the flat in OnEnemyHit, before DMG%, defense, resistance, and crit.
+	// While the alter window is up, that flat belongs to the stellar reaction formula instead.
+	// CalcSpecialReactionDmg adds FlatDmg before elevation and the contributor crit, so it is written
+	// on OnSpecialReactionAttack. The queued swirl attack is that same damage and must not consume again.
 	c.Core.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
-		if c.Base.Ascension < 4 || !c.StatusIsActive(concertoKey) {
+		if c.Base.Ascension < 4 || !c.StatusIsActive(concertoKey) || c.alterActive() {
 			return
 		}
 		atk := args[1].(*info.AttackEvent)
-		active := c.Core.Player.Active() == atk.Info.ActorIndex
-		var stacks *int
-		if active {
-			stacks = &c.lead
-		} else {
-			stacks = &c.chorus
-		}
-		if *stacks <= 0 {
+		if !c.concertoTalentHit(atk) {
 			return
 		}
-		if !c.concertoHit(atk) {
-			return
-		}
-		atk.Info.FlatDmg += c.concertoFlat(c.alterActive())
-		*stacks--
+		c.addConcertoFlat(atk, false)
 	}, "vodyanitsa-a4")
+
+	c.Core.Events.Subscribe(event.OnSpecialReactionAttack, func(args ...any) {
+		if c.Base.Ascension < 4 || !c.StatusIsActive(concertoKey) || !c.alterActive() {
+			return
+		}
+		atk := args[1].(*info.AttackEvent)
+		if !atk.Info.AttackTag.IsStellarReact() {
+			return
+		}
+		c.addConcertoFlat(atk, true)
+	}, "vodyanitsa-a4-stellar")
 }
 
-func (c *char) concertoHit(atk *info.AttackEvent) bool {
-	if c.alterActive() {
-		switch atk.Info.AttackTag {
-		case attacks.AttackTagReactionStellarSwirl, attacks.AttackTagDirectStellarSwirl:
-			return true
-		default:
-			return false
-		}
+func (c *char) addConcertoFlat(atk *info.AttackEvent, stellar bool) {
+	stacks := &c.chorus
+	if c.Core.Player.Active() == atk.Info.ActorIndex {
+		stacks = &c.lead
 	}
+	if *stacks <= 0 {
+		return
+	}
+	atk.Info.FlatDmg += c.concertoFlat(stellar)
+	*stacks--
+}
+
+func (c *char) concertoTalentHit(atk *info.AttackEvent) bool {
 	if atk.Info.Element != attributes.Hydro && atk.Info.Element != attributes.Cryo {
 		return false
 	}
