@@ -69,6 +69,7 @@ const (
 	ICDGroupYaoyaoRadishSkill
 	ICDGroupYelanBreakthrough
 	ICDGroupYelanBurst
+	ICDGroupAlyoshaElementalBurst
 )
 
 var ICDGroupResetTimer = []int{
@@ -136,6 +137,7 @@ var ICDGroupResetTimer = []int{
 	ICDGroupYaoyaoRadishSkill:         150,  // 2.5s
 	ICDGroupYelanBreakthrough:         18,   // 0.3s
 	ICDGroupYelanBurst:                120,  // 2s
+	ICDGroupAlyoshaElementalBurst:     96,   // 1.6s
 }
 
 var ICDGroupEleApplicationSequence = [][]float64{
@@ -203,6 +205,7 @@ var ICDGroupEleApplicationSequence = [][]float64{
 	ICDGroupYaoyaoRadishSkill:         {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 	ICDGroupYelanBreakthrough:         {1.0, 0.0, 0.0, 0.0},
 	ICDGroupYelanBurst:                {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
+	ICDGroupAlyoshaElementalBurst:     {1.0, 0.0},
 }
 
 var ICDGroupDamageSequence = [][]float64{
@@ -270,4 +273,5 @@ var ICDGroupDamageSequence = [][]float64{
 	ICDGroupYaoyaoRadishSkill:         {1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
 	ICDGroupYelanBreakthrough:         {1.0, 0.0, 0.0, 0.0},
 	ICDGroupYelanBurst:                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+	ICDGroupAlyoshaElementalBurst:     {1.0, 1.0, 1.0, 1.0},
 }

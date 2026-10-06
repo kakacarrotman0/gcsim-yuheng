@@ -1,0 +1,10 @@
+use: pipeline
+kind: character
+name: alyosha
+
+docs:
+  notes: |
+    Yuheng-maintained. Talent ratios are released live data (Yatta avatar 10000148).
+    Mark, Precision, field, and Tugarin intervals are the ability graph.
+    Normal, charge, skill, burst, and plunge cancel windows are approximate.
+    Stellar-Conduct bonus is gated on the existing polestar-field status and is not a validated team path.
