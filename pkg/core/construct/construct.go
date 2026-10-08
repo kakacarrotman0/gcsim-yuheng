@@ -13,6 +13,7 @@ const (
 	GeoConstructAlbedoSkill
 	GeoConstructIttoSkill
 	GeoConstructLunarCrystallize
+	GeoConstructKachinaSkill
 	EndGeoConstructType
 )
 
@@ -25,6 +26,7 @@ var ConstructString = [...]string{
 	"AlbedoSkill",
 	"IttoSkill",
 	"LunarCrystallize",
+	"KachinaSkill",
 }
 
 var ConstructNameToKey = map[string]GeoConstructType{
@@ -35,6 +37,7 @@ var ConstructNameToKey = map[string]GeoConstructType{
 	"albedo":            GeoConstructAlbedoSkill,
 	"itto":              GeoConstructIttoSkill,
 	"lunar_crystallize": GeoConstructLunarCrystallize,
+	"kachina":           GeoConstructKachinaSkill,
 }
 
 func (c GeoConstructType) String() string {

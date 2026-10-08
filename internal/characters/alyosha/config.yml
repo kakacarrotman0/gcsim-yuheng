@@ -1,0 +1,15 @@
+use: pipeline
+kind: character
+name: alyosha
+
+docs:
+  notes: |
+    Yuheng-maintained. Talent ratios are released live data (Yatta avatar 10000148).
+    Normal, charge, skill, and burst cast frames are medians from
+    https://docs.google.com/spreadsheets/d/1UWavwdGOIy1jmfrIHgKLekIe23OKbxY18Pt2KewA1_Q
+    Field interval stays the 2.0s ability think. Tugarin damage is the 0.3s Delay
+    plus the 0.3s AttackLogic, not the sheet bite hitmark.
+    Plunge cancels are still approximate.
+    Stellar-Conduct bonus is snapshotted from polestar-field at Precision activation
+    and is not a validated team path.
+    Moonsign is intentionally 0.

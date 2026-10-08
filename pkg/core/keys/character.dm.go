@@ -54,6 +54,7 @@ const (
 	Albedo                        // albedo
 	Alhaitham                     // alhaitham
 	Aloy                          // aloy
+	Alyosha                       // alyosha
 	Amber                         // amber
 	AratakiItto                   // aratakiitto
 	Arlecchino                    // arlecchino
@@ -96,6 +97,7 @@ const (
 	Ineffa                        // ineffa
 	Jahoda                        // jahoda
 	Jean                          // jean
+	Kachina                       // kachina
 	KaedeharaKazuha               // kaedeharakazuha
 	Kaeya                         // kaeya
 	KamisatoAyaka                 // kamisatoayaka
@@ -185,6 +187,7 @@ var _CharNames = [...]string{
 	"albedo",
 	"alhaitham",
 	"aloy",
+	"alyosha",
 	"amber",
 	"aratakiitto",
 	"arlecchino",
@@ -227,6 +230,7 @@ var _CharNames = [...]string{
 	"ineffa",
 	"jahoda",
 	"jean",
+	"kachina",
 	"kaedeharakazuha",
 	"kaeya",
 	"kamisatoayaka",
@@ -316,6 +320,7 @@ var _CharValues = [...]Char{
 	Albedo,
 	Alhaitham,
 	Aloy,
+	Alyosha,
 	Amber,
 	AratakiItto,
 	Arlecchino,
@@ -358,6 +363,7 @@ var _CharValues = [...]Char{
 	Ineffa,
 	Jahoda,
 	Jean,
+	Kachina,
 	KaedeharaKazuha,
 	Kaeya,
 	KamisatoAyaka,

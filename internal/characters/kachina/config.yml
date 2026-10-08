@@ -1,0 +1,15 @@
+use: pipeline
+kind: character
+name: kachina
+
+docs:
+  frames:
+    - count: https://docs.google.com/spreadsheets/d/1JHBn0s2bgj5gFqjeY8CyZaBSUs59dWWm669Gnz6Hyd8/edit?gid=0#gid=0
+      count_credit: caramielle
+      video: https://youtu.be/OuCjdLQ3Jos
+      video_credit: caramielle
+  notes: |
+    Yuheng-maintained. Talent ratios are released live data (Yatta avatar 10000100).
+    Independent slam cadence is the ability-graph think of 2.0s plus the 0.2s attack delay.
+    Normal, charge, skill-cancel, burst-cancel, and mounted hitmarks follow the community sheet above
+    and are not an independent live capture. Plunge cancel windows are the standard polearm template.
