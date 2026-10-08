@@ -21,8 +21,12 @@ const (
 	burstCD           = 18 * 60
 	burstDuration     = 14 * 60
 	c2ExtraDuration   = 6 * 60
-	fieldInterval     = 120
-	dogDelay          = 18
+	// Field pulses follow the ability think interval of 2.0s. The frame sheet
+	// measures about 118 frames between ticks; that spread stays on the graph value.
+	fieldInterval = 120
+	// Tugarin damage is the removal of AttackLogic, which is applied when the
+	// 0.3s Delay modifier ends. 0.3s + 0.3s, not the sheet's ~39f bite hitmark.
+	dogDelay          = 36
 	fieldRadius       = 6.0
 	dogRadius         = 1.0
 	huntRadius        = 15.0
@@ -36,9 +40,11 @@ const (
 	stellarBonusValue = 0.20
 	particleCount     = 5.0
 	particleICD       = 30
-	skillTapHitmark   = 24
-	skillHoldHitmark  = 48
-	burstHitmark      = 36
+	skillTapHitmark   = 18
+	skillHoldHitmark  = 113
+	burstHitmark      = 79
+	skillTapCDDelay   = 16
+	skillHoldCDDelay  = 111
 )
 
 type char struct {
@@ -60,6 +66,8 @@ func NewChar(s *core.Core, w *playercharacter.CharWrapper, _ info.CharacterProfi
 	c.NormalHitNum = normalHitNum
 	c.SkillCon = 3
 	c.BurstCon = 5
+	// Alyosha is not a Moonsign character. Leave this at 0 so he does not
+	// contribute to GetMoonsignLevel or Ascendant Gleam.
 	w.Character = &c
 	return nil
 }
@@ -176,7 +184,7 @@ func (c *char) initA4() {
 				return nil
 			}
 			switch atk.Info.AttackTag {
-			case attacks.AttackTagElementalArt, attacks.AttackTagElementalBurst:
+			case attacks.AttackTagElementalArt, attacks.AttackTagElementalArtHold, attacks.AttackTagElementalBurst:
 			default:
 				return nil
 			}

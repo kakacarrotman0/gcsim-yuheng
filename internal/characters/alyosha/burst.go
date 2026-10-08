@@ -12,13 +12,14 @@ import (
 var burstFrames []int
 
 func init() {
-	// Approximate. Field and Tugarin intervals below come from the ability graph.
-	burstFrames = frames.InitAbilSlice(70)
-	burstFrames[action.ActionAttack] = 48
-	burstFrames[action.ActionSkill] = 46
-	burstFrames[action.ActionDash] = 44
-	burstFrames[action.ActionJump] = 44
-	burstFrames[action.ActionSwap] = 42
+	// Cast cancels are sheet medians. Dash 54/55/55, jump 54/54/57, walk 52/54/54,
+	// N1 54/55/54, skill 53, swap 49/52/52. The first field tick is burstHitmark.
+	burstFrames = frames.InitAbilSlice(55)
+	burstFrames[action.ActionAttack] = 54
+	burstFrames[action.ActionSkill] = 53
+	burstFrames[action.ActionJump] = 54
+	burstFrames[action.ActionWalk] = 54
+	burstFrames[action.ActionSwap] = 52
 }
 
 func (c *char) Burst(_ map[string]int) (action.Info, error) {
@@ -28,7 +29,8 @@ func (c *char) Burst(_ map[string]int) (action.Info, error) {
 		c.AddStatus(fieldKey, c.fieldDuration(), true)
 		c.fieldPulse(src)
 	}, burstHitmark)
-	c.ConsumeEnergy(burstHitmark)
+	// Sheet energy-drain trials are 5/7/8. CD start is frame 1.
+	c.ConsumeEnergy(7)
 	c.SetCDWithDelay(action.ActionBurst, burstCD, 1)
 
 	return action.Info{
@@ -88,10 +90,11 @@ func (c *char) tugarin(src int) {
 		0,
 		0,
 		func(a info.AttackCB) {
+			// Activate an existing mark first. C0 does not apply a new one.
+			c.markHit(a.Target, true, false)
 			if c.Base.Cons >= 2 {
+				// C2 applies or refreshes a mark after that activation.
 				c.markHit(a.Target, false, true)
-			} else {
-				c.markHit(a.Target, true, false)
 			}
 			c.tugarinHeal(a)
 		},

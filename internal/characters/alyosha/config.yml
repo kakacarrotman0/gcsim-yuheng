@@ -5,6 +5,11 @@ name: alyosha
 docs:
   notes: |
     Yuheng-maintained. Talent ratios are released live data (Yatta avatar 10000148).
-    Mark, Precision, field, and Tugarin intervals are the ability graph.
-    Normal, charge, skill, burst, and plunge cancel windows are approximate.
-    Stellar-Conduct bonus is gated on the existing polestar-field status and is not a validated team path.
+    Normal, charge, skill, and burst cast frames are medians from
+    https://docs.google.com/spreadsheets/d/1UWavwdGOIy1jmfrIHgKLekIe23OKbxY18Pt2KewA1_Q
+    Field interval stays the 2.0s ability think. Tugarin damage is the 0.3s Delay
+    plus the 0.3s AttackLogic, not the sheet bite hitmark.
+    Plunge cancels are still approximate.
+    Stellar-Conduct bonus is snapshotted from polestar-field at Precision activation
+    and is not a validated team path.
+    Moonsign is intentionally 0.

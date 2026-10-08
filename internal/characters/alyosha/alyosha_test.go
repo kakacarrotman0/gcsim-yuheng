@@ -111,7 +111,7 @@ func TestSkillMarkAndParticles(t *testing.T) {
 		t.Fatalf("hits %d", len(*hits))
 	}
 	hit := (*hits)[0]
-	if hit.Element != attributes.Electro || hit.Durability != 25 || hit.ICDTag != attacks.ICDTagNone || !trg[0].AuraContains(attributes.Electro) {
+	if hit.Element != attributes.Electro || hit.Durability != 25 || hit.ICDTag != attacks.ICDTagNone || hit.AttackTag != attacks.AttackTagElementalArt || !trg[0].AuraContains(attributes.Electro) {
 		t.Fatalf("skill %+v aura %v", hit, trg[0].AuraContains(attributes.Electro))
 	}
 	if math.Abs(hit.Mult-skillTap[ch.TalentLvlSkill()]) > 1e-9 {
@@ -224,7 +224,54 @@ func TestBurstFieldDogAndHeal(t *testing.T) {
 	}
 }
 
-func TestC2DurationAndMark(t *testing.T) {
+func TestMoonsignStaysZero(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addAlyosha(t, c, 0, 1)
+	if ch.Moonsign != 0 {
+		t.Fatalf("moonsign %d", ch.Moonsign)
+	}
+	// Ascendant Gleam arms only at GetMoonsignLevel() >= 2.
+	if c.Player.GetMoonsignLevel() != 0 {
+		t.Fatalf("moonsign level %d", c.Player.GetMoonsignLevel())
+	}
+}
+
+func TestC0MarkedTargetActivates(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addAlyosha(t, c, 0, 1)
+	if err := c.Player.Exec(action.ActionSkill, keys.Alyosha, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, skillTapHitmark+2)
+	if err := c.Player.Exec(action.ActionBurst, keys.Alyosha, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, burstHitmark+dogDelay+2)
+	marks, _ := ch.Condition([]string{"marks"})
+	prec, _ := ch.Condition([]string{"precision"})
+	if marks.(int) != 0 || prec.(int) != 1 {
+		t.Fatalf("c0 marked tugarin marks %v precision %v", marks, prec)
+	}
+}
+
+func TestC2UnmarkedTargetApplies(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addAlyosha(t, c, 2, 1)
+	if err := c.Player.Exec(action.ActionBurst, keys.Alyosha, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, burstHitmark+dogDelay+2)
+	marks, _ := ch.Condition([]string{"marks"})
+	prec, _ := ch.Condition([]string{"precision"})
+	if marks.(int) != 1 || prec.(int) != 0 {
+		t.Fatalf("c2 unmarked tugarin marks %v precision %v", marks, prec)
+	}
+	if ch.StatusDuration(fieldKey) < 19*60 {
+		t.Fatalf("c2 duration %d", ch.StatusDuration(fieldKey))
+	}
+}
+
+func TestC2PremarkedTargetActivatesThenApplies(t *testing.T) {
 	c, _ := makeCore(1)
 	ch := addAlyosha(t, c, 2, 1)
 	if err := c.Player.Exec(action.ActionSkill, keys.Alyosha, nil); err != nil {
@@ -237,11 +284,8 @@ func TestC2DurationAndMark(t *testing.T) {
 	advance(c, burstHitmark+dogDelay+2)
 	marks, _ := ch.Condition([]string{"marks"})
 	prec, _ := ch.Condition([]string{"precision"})
-	if marks.(int) != 1 || prec.(int) != 0 {
-		t.Fatalf("c2 should apply without activating, marks %v precision %v", marks, prec)
-	}
-	if ch.StatusDuration(fieldKey) < 19*60 {
-		t.Fatalf("c2 duration %d", ch.StatusDuration(fieldKey))
+	if marks.(int) != 1 || prec.(int) != 1 {
+		t.Fatalf("c2 pre-marked tugarin marks %v precision %v", marks, prec)
 	}
 }
 
@@ -367,6 +411,32 @@ func TestStellarBonusNotGrantedWithoutField(t *testing.T) {
 	}
 	if ac.stellarBonusFor(ch.Index(), attacks.AttackTagElementalBurst) != 0 {
 		t.Fatal("stellar bonus leaked onto a non-reaction tag")
+	}
+}
+
+func TestHoldSkillReceivesA4(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addAlyosha(t, c, 0, 1)
+	var snaps []info.AttackEvent
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		snaps = append(snaps, *args[1].(*info.AttackEvent))
+	}, "a4-hold")
+	if err := c.Player.Exec(action.ActionSkill, keys.Alyosha, map[string]int{"hold": 1}); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, skillHoldHitmark+2)
+	if len(snaps) != 1 {
+		t.Fatalf("hold hits %d", len(snaps))
+	}
+	if snaps[0].Info.AttackTag != attacks.AttackTagElementalArtHold {
+		t.Fatalf("hold tag %v", snaps[0].Info.AttackTag)
+	}
+	want := ch.Stat(attributes.ER) * a4PerER
+	if want > a4Cap {
+		want = a4Cap
+	}
+	if math.Abs(snaps[0].Snapshot.Stats[attributes.DmgP]-want) > 1e-6 {
+		t.Fatalf("hold dmgp %v want %v", snaps[0].Snapshot.Stats[attributes.DmgP], want)
 	}
 }
 
