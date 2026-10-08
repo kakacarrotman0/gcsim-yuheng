@@ -289,6 +289,53 @@ func TestC6SecondStack(t *testing.T) {
 	}
 }
 
+func TestStellarBonusScalesWithStacks(t *testing.T) {
+	c0, _ := makeCore(1)
+	ch0 := addAlyosha(t, c0, 0, 1)
+	ch0.AddStatus(reactable.PolestarFieldKey, 30*60, true)
+	castSkills(t, c0, ch0, 2)
+	ac0 := ch0.Character.(*char)
+	if math.Abs(ac0.stellarBonusFor(ch0.Index(), attacks.AttackTagDirectStellarConduct)-stellarBonusValue) > 1e-9 {
+		t.Fatalf("c0 stellar %v", ac0.stellarBonus)
+	}
+
+	c6, _ := makeCore(1)
+	ch6 := addAlyosha(t, c6, 6, 1)
+	ch6.AddStatus(reactable.PolestarFieldKey, 30*60, true)
+	castSkills(t, c6, ch6, 2)
+	ac6 := ch6.Character.(*char)
+	if math.Abs(ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagDirectStellarConduct)-stellarBonusValue) > 1e-9 {
+		t.Fatalf("c6 one stack %v", ac6.stellarBonus)
+	}
+	castSkills(t, c6, ch6, 2)
+	want := stellarBonusValue * 2
+	if math.Abs(ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagDirectStellarConduct)-want) > 1e-9 {
+		t.Fatalf("c6 two stacks %v", ac6.stellarBonus)
+	}
+	if ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagElementalBurst) != 0 {
+		t.Fatal("stellar bonus leaked onto a non-reaction tag")
+	}
+
+	bare, _ := makeCore(1)
+	chBare := addAlyosha(t, bare, 6, 1)
+	castSkills(t, bare, chBare, 4)
+	acBare := chBare.Character.(*char)
+	if acBare.stellarBonusFor(chBare.Index(), attacks.AttackTagDirectStellarConduct) != 0 {
+		t.Fatalf("bonus without field %v", acBare.stellarBonus)
+	}
+}
+
+func castSkills(t *testing.T, c *core.Core, ch *character.CharWrapper, n int) {
+	t.Helper()
+	for range n {
+		ch.ResetActionCooldown(action.ActionSkill)
+		if err := c.Player.Exec(action.ActionSkill, keys.Alyosha, nil); err != nil {
+			t.Fatal(err)
+		}
+		advance(c, skillTapHitmark+2)
+	}
+}
+
 func TestStellarBonusNotGrantedWithoutField(t *testing.T) {
 	c, _ := makeCore(1)
 	ch := addAlyosha(t, c, 0, 1)

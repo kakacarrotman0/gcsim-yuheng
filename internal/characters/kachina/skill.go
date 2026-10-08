@@ -124,6 +124,7 @@ func (c *char) twirlyParticleCB(a info.AttackCB) {
 		return
 	}
 	c.AddStatus(particleICD, 12, true)
-	// baseEnergy 3 is one same-element particle. Fischl uses this value for Oz's single particle.
-	c.Core.QueueParticle(c.Base.Key.String(), 1, attributes.Geo, c.ParticleDelay)
+	if c.Core.Rand.Float64() < particleChance {
+		c.Core.QueueParticle(c.Base.Key.String(), 1, attributes.Geo, c.ParticleDelay)
+	}
 }

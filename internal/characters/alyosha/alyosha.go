@@ -118,7 +118,8 @@ func (c *char) grantPrecision() {
 	}
 	c.precisionUntil = c.Core.F + precisionDuration
 	if c.StatusIsActive(reactable.PolestarFieldKey) {
-		c.stellarBonus = stellarBonusValue
+		// Snapshotted at activation. C6's second stack doubles the 20%.
+		c.stellarBonus = stellarBonusValue * float64(c.precisionStacks)
 	} else {
 		c.stellarBonus = 0
 	}

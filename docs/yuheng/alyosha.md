@@ -30,7 +30,7 @@ Playstyle cross-check: off-field support, Skill then Burst. A text fetch of the 
 
 General support only. Skill applies Hunter's Mark. A second marked hit activates Hunter's Precision, which is an ATK% buff on the active character. Burst creates the Fulgurite Hunting Field and Tugarin. A1 heals the active character when Tugarin hits. A4 scales his skill and burst damage from his current Energy Recharge.
 
-Stellar-Conduct is not a validated damage path. The 20% bonus is snapshotted only when Precision is activated while Alyosha already has the engine's `polestar-field` status, and it applies only to the active character's `AttackTagDirectStellarConduct`. Without that status the bonus is zero. There is no Stellar-Conduct team config.
+Stellar-Conduct is not a validated team-damage path. There is no Stellar-Conduct team config. The bonus itself is snapshotted when Precision is activated: 20% at one stack, and 40% at C6's second stack, only if Alyosha already has the engine's `polestar-field` status at that moment. It applies only to the active character's `AttackTagDirectStellarConduct`. Without that status the snapshotted bonus is zero.
 
 ## Timing
 
@@ -49,7 +49,7 @@ Stellar-Conduct is not a validated damage path. The 20% bonus is snapshotted onl
 - A1 heals the active character for 120% of Alyosha's current ATK when Tugarin hits. C4 additionally heals the lowest HP% party member for 60% ATK. Neither heal is distance-gated.
 - A4 is dynamic DMG% on his Elemental Art and Elemental Burst: `min(0.70, ER * 0.35)`, where ER 1.0 means 100% Energy Recharge. Naked level 90 ER is about 126.67% from the 26.67% ascension.
 - C1 restores 15 energy every 18s on Overload, Electro-Charged, Lunar-Charged, Superconduct, Electro Swirl, Electro Crystallize, and Stellar-Conduct. Quicken, Aggravate, Spread, Bloom, Burgeon, and Hyperbloom do not trigger it. The ability names Overdose, OverdoseElectric, and OvergrowMushroomElectric have no confident gcsim event, so they are not wired.
-- C6 lets Precision stack to 2. The second stack is another `AttackUp`, and the active character also gains 100 EM. C6 does not double the 20% Stellar-Conduct bonus.
+- C6 lets Precision stack to 2. The second stack is another `AttackUp`, the active character gains 100 EM, and the snapshotted Stellar-Conduct bonus becomes 40% when the Polestar Field requirement was met at that activation. One stack stays at 20%.
 - The burst taunt is not simulated. Hold interruption resistance is not simulated.
 
 ## Validation

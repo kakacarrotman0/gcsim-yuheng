@@ -5,7 +5,8 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/info"
 )
 
-// twirlyConstruct registers Turbo Twirly with the Geo construct limit.
+// twirlyConstruct is a Geo construct that does not use the three-construct cap.
+// Kachina still keeps only one of her own: a new summon destroys the previous.
 // Its lifetime is the Nightsoul blessing, so Expiry stays unset and the
 // character destroys it when the gadget ends.
 type twirlyConstruct struct {
@@ -26,7 +27,7 @@ func (c *char) spawnConstruct() {
 		dir:  player.Direction(),
 	}
 	c.twirlyCon = con
-	c.Core.Constructs.New(con, true)
+	c.Core.Constructs.NewNoLimitCons(con, true)
 }
 
 func (c *char) despawnConstruct() {
@@ -52,8 +53,11 @@ func (t *twirlyConstruct) Key() int { return t.src }
 func (t *twirlyConstruct) Type() construct.GeoConstructType {
 	return construct.GeoConstructKachinaSkill
 }
-func (t *twirlyConstruct) Expiry() int           { return -1 }
-func (t *twirlyConstruct) IsLimited() bool       { return true }
+func (t *twirlyConstruct) Expiry() int { return -1 }
+
+// Unlimited list placement is what keeps it out of the cap. Count stays 1 so
+// other construct interactions, such as Zhongli resonance, can still see it.
+func (t *twirlyConstruct) IsLimited() bool       { return false }
 func (t *twirlyConstruct) Count() int            { return 1 }
 func (t *twirlyConstruct) Direction() info.Point { return t.dir }
 func (t *twirlyConstruct) Pos() info.Point       { return t.pos }

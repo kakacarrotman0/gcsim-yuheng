@@ -235,18 +235,121 @@ func TestSkillEndsWhenPointsDeplete(t *testing.T) {
 }
 
 func TestParticles(t *testing.T) {
-	c, _ := makeCore(1)
+	c, trg := makeCore(1)
 	ch := addKachina(t, c, 0, 1)
+	ac := ch.Character.(*char)
 	var particles []character.Particle
 	c.Events.Subscribe(event.OnParticleReceived, func(args ...any) {
 		particles = append(particles, args[0].(character.Particle))
 	}, "p")
+
+	const rolls = 4000
+	cb := info.AttackCB{Target: trg[0]}
+	for range rolls {
+		ch.DeleteStatus(particleICD)
+		ac.twirlyParticleCB(cb)
+	}
+	advance(c, ch.ParticleDelay+1)
+	if len(particles) == 0 || len(particles) == rolls {
+		t.Fatalf("expected a partial proc rate, got %d/%d", len(particles), rolls)
+	}
+	for _, p := range particles {
+		if p.Num != 1 || p.Ele != attributes.Geo {
+			t.Fatalf("particle %+v", p)
+		}
+	}
+	rate := float64(len(particles)) / rolls
+	if math.Abs(rate-particleChance) > 0.03 {
+		t.Fatalf("rate %v want %v (%d/%d)", rate, particleChance, len(particles), rolls)
+	}
+}
+
+type limitedStele struct{ src int }
+
+func (s *limitedStele) OnDestruct()                      {}
+func (s *limitedStele) Key() int                         { return s.src }
+func (s *limitedStele) Type() construct.GeoConstructType { return construct.GeoConstructZhongliSkill }
+func (s *limitedStele) Expiry() int                      { return -1 }
+func (s *limitedStele) IsLimited() bool                  { return true }
+func (s *limitedStele) Count() int                       { return 1 }
+func (s *limitedStele) Direction() info.Point            { return info.Point{} }
+func (s *limitedStele) Pos() info.Point                  { return info.Point{} }
+
+func addSteles(c *core.Core, n, base int) {
+	for i := range n {
+		c.Constructs.New(&limitedStele{src: base + i}, false)
+	}
+}
+
+func TestConstructIgnoresThreeCap(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addKachina(t, c, 0, 1)
+	addSteles(c, 3, 100)
+	if c.Constructs.CountByType(construct.GeoConstructZhongliSkill) != 3 {
+		t.Fatalf("steles %d", c.Constructs.CountByType(construct.GeoConstructZhongliSkill))
+	}
 	if err := c.Player.Exec(action.ActionSkill, keys.Kachina, nil); err != nil {
 		t.Fatal(err)
 	}
-	advance(c, firstSlam+ch.ParticleDelay+2)
-	if len(particles) != 1 || particles[0].Num != 1 || particles[0].Ele != attributes.Geo {
-		t.Fatalf("particles %+v", particles)
+	ac := ch.Character.(*char)
+	if ac.twirlyCon == nil {
+		t.Fatal("twirly missing")
+	}
+	if ac.twirlyCon.IsLimited() {
+		t.Fatal("twirly is limited")
+	}
+	if c.Constructs.CountByType(construct.GeoConstructKachinaSkill) != 1 {
+		t.Fatal("expected one twirly")
+	}
+	if c.Constructs.CountByType(construct.GeoConstructZhongliSkill) != 3 {
+		t.Fatal("twirly evicted a limited construct")
+	}
+	addSteles(c, 1, 200)
+	if c.Constructs.CountByType(construct.GeoConstructZhongliSkill) != 3 {
+		t.Fatalf("cap %d", c.Constructs.CountByType(construct.GeoConstructZhongliSkill))
+	}
+	if c.Constructs.CountByType(construct.GeoConstructKachinaSkill) != 1 || !c.Constructs.Has(ac.twirlyCon.Key()) {
+		t.Fatal("the limited cap evicted twirly")
+	}
+
+	c2, _ := makeCore(1)
+	ch2 := addKachina(t, c2, 0, 1)
+	if err := c2.Player.Exec(action.ActionSkill, keys.Kachina, nil); err != nil {
+		t.Fatal(err)
+	}
+	ac2 := ch2.Character.(*char)
+	key := ac2.twirlyCon.Key()
+	addSteles(c2, 3, 300)
+	if !c2.Constructs.Has(key) || c2.Constructs.CountByType(construct.GeoConstructZhongliSkill) != 3 {
+		t.Fatal("three limited constructs removed twirly")
+	}
+
+	prev := key
+	ac2.spawnConstruct()
+	if ac2.twirlyCon.Key() == prev || c2.Constructs.Has(prev) {
+		t.Fatal("a new summon did not replace the previous twirly")
+	}
+	if c2.Constructs.CountByType(construct.GeoConstructKachinaSkill) != 1 {
+		t.Fatal("replacement left more than one twirly")
+	}
+	prev = ac2.twirlyCon.Key()
+	ch2.DeleteStatus(twirlyKey)
+	ch2.ResetActionCooldown(action.ActionSkill)
+	if err := c2.Player.Exec(action.ActionSkill, keys.Kachina, nil); err != nil {
+		t.Fatal(err)
+	}
+	if ac2.twirlyCon.Key() == prev || c2.Constructs.Has(prev) {
+		t.Fatal("skill did not replace the previous twirly")
+	}
+	if c2.Constructs.CountByType(construct.GeoConstructKachinaSkill) != 1 {
+		t.Fatal("skill recast left more than one twirly")
+	}
+	ch2.ResetActionCooldown(action.ActionSkill)
+	if err := c2.Player.Exec(action.ActionSkill, keys.Kachina, nil); err != nil {
+		t.Fatal(err)
+	}
+	if c2.Constructs.CountByType(construct.GeoConstructKachinaSkill) != 1 {
+		t.Fatal("mount toggle created a second twirly")
 	}
 }
 

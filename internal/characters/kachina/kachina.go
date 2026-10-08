@@ -12,23 +12,27 @@ import (
 )
 
 const (
-	twirlyKey     = "kachina-turbo-twirly"
-	fieldKey      = "kachina-turbo-drill-field"
-	particleICD   = "kachina-particle-icd"
-	nightsoulMax  = 60
-	slamCost      = 10.0
-	dismountCost  = 2.0
-	pointEpsilon  = 0.2
-	firstSlam     = 132 // 2.0s think + 0.2s attack delay
-	slamInterval  = 120 // 2.0s
-	independentR  = 4.0
-	fieldSlamR    = 5.2
-	burstHitR     = 6.0
-	skillCD       = 20 * 60
-	fieldDuration = 12 * 60
-	burstCD       = 18 * 60
-	burstHitmark  = 35
-	a4Ratio       = 0.2
+	twirlyKey   = "kachina-turbo-twirly"
+	fieldKey    = "kachina-turbo-drill-field"
+	particleICD = "kachina-particle-icd"
+	// Avatar_Kachina_ElementalArt_DropBall rolls Randomed chance 0.667, then
+	// GenerateElemBall baseEnergy 3 (one Geo particle). The 0.2s unique
+	// modifier is the ICD and starts even when the roll fails.
+	particleChance = 0.667
+	nightsoulMax   = 60
+	slamCost       = 10.0
+	dismountCost   = 2.0
+	pointEpsilon   = 0.2
+	firstSlam      = 132 // 2.0s think + 0.2s attack delay
+	slamInterval   = 120 // 2.0s
+	independentR   = 4.0
+	fieldSlamR     = 5.2
+	burstHitR      = 6.0
+	skillCD        = 20 * 60
+	fieldDuration  = 12 * 60
+	burstCD        = 18 * 60
+	burstHitmark   = 35
+	a4Ratio        = 0.2
 )
 
 type char struct {
