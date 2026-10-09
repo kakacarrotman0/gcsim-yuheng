@@ -29,20 +29,21 @@ C1, C2, C4, C6, Hexerei, and the two combat passives bind `%n` parameters in `Co
 
 ## Validated scope
 
-Masterstroke, Joy, Will, Etched Into Bone and Soul, and Manifest Judgment. Enhanced normal and charged ratios are used while Masterstroke is active. Those normals and charged attacks stay Physical: the damage handler only swaps the multiplier by animation event, and the ability file does not mark them as Ice. Plunge during Masterstroke uses the Ice Falling Anthem attack. The Ice and physical plunge ratios on the talent sheet are the same numbers.
+Masterstroke, Joy, Will, Etched Into Bone and Soul, and Manifest Judgment. While Masterstroke is active, Normal, Charged, and Plunging Attack damage is Cryo and ignores weapon infusion. Outside Masterstroke those attacks stay Physical and can be infused. The released talent text is the source for the conversion. The damage handler only replaces the ratio; the Ice Falling Anthem attacks and the Ice weapon enhancement carry the element. Plunge ratios match on the normal-attack and skill sheets at the same level. During Masterstroke the plunge uses the skill-talent row, so High Spirits and C3 can raise it above the normal-attack level.
 
-`docs/yuheng/configs/lohen-masterstroke.txt` is a constructed baseline: Lohen / Xiangling / Bennett / Kaeya, 20 iterations, 20 seconds, `hexerei` left off. It completed 20 iterations with no failed actions. It is not a damage benchmark.
+`docs/yuheng/configs/lohen-masterstroke.txt` is a constructed baseline: Lohen / Xiangling / Bennett / Kaeya, 20 iterations, 20 seconds, `hexerei` left off. Re-run after the Cryo conversion, it completed 20 iterations with no failed actions. It is not a damage benchmark.
 
 That run's Lohen damage log, from the gcsim result JSON:
 
-- Masterstroke normals from the four-attack string
+- Masterstroke normals from the four-attack string (N3 is three hits). No Physical normal source
+- Lohen's own damage in that config is Cryo only
 - Etched Into Bone and Soul 1–4: one each
 - Manifest Judgment 1–6: one each
-- Bennett and Kaeya each recorded a Melt
+- Bennett and Kaeya each recorded a Melt. Lohen's converted hits land before Pyro is applied in this rotation, so Lohen records no Melt here. The unit test covers his own Melt
 
-The printed summary was average 263561.23 damage over 20.00 seconds (13178 dps, min 11837.43, max 14192.48, std 646.67). That number is the output of this one config. It is not a claimed team DPS.
+The printed summary was average 262404.56 damage over 20.00 seconds (13120 dps, min 11693.65, max 14356.35, std 681.68). That number is the output of this one config. It is not a claimed team DPS.
 
-Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, and six burst hits.
+Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, and Masterstroke ending on swap.
 
 ## Timing
 
@@ -50,7 +51,7 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 | --- | --- |
 | Energy 60, skill CD 18s, burst CD 15s, Masterstroke 13s at every talent level, Joy cap 100, Will cap 100 (300 at C1) | Ability graph / talent text |
 | Joy +17 per normal hit and per charged hit. Charged stamina 25, or 10 during Masterstroke | Skill talent parameters, constant across levels |
-| Will on a teammate hit: +20 if the hit is at least 10× Lohen's base ATK, otherwise +1. A1 adds +60 when the hit is at least 30× base ATK. C1 multiplies those gains by 5 and raises the cap to 300. Lohen's own hits do not add Will | Ability graph. The 30× and +60 figures are the talent text |
+| Will on a teammate hit: +20 if the hit is at least 10× Lohen's base ATK, otherwise +1. This is the skill, including at ascension 0. A1 (promote level 1) adds +60 when the hit is at least 30× base ATK. C1 multiplies those gains by 5 and raises the cap to 300. Lohen's own hits do not add Will | Ability graph. The 30× and +60 figures are the talent text |
 | Etched damage is `Raid × (1 + Will × 0.004)`. Burst damage is `Burst × (1 + Will × 0.004)`. Both snapshot Will, then Will is cleared unless C6's ICD flag is clear and Masterstroke is active | Ability graph |
 | Etched hit order 0.086, 0.2095, 0.4074, 0.5316 of the raid state, played as frames 5, 13, 24, 32 | Normalized times are from the graph. The 60-frame clip length is not in the JSON. Absolute frames are unverified |
 | Burst hits at frames 12, 36, 42, 48, 54, 78 | Gadget think of 0.1s, assuming the first increment is immediate. Six hits match the talent's ×6. The blank step is not a hit |
@@ -61,6 +62,8 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 ## Mechanics notes
 
 - Entering Masterstroke clears Joy, Will, the etched counter, and the C6 mark. The counter reset is `Lohen_CountExtraE_Report` when the mode flag rises.
+- Leaving the field ends Masterstroke before the 13s timer. `GrandHandler` `onAvatarOut` removes the modifier, and `onRemoved` zeroes Joy, Will, and the C6 mark. Etched is then unavailable. Swapping back does not resume the mode. The etched counter itself is not cleared until the next Masterstroke, matching the graph.
+- A normal or charged hit chooses Physical or Cryo when it lands. A plunge chooses when the action starts; its cancel window is after the impact, so a later swap cannot change that hit.
 - Etched is `skill[etched=1]`. It requires Masterstroke, Joy at 100, and remaining uses (3, or 5 at C6). It does not restart the 18s skill CD.
 - A plain skill while Masterstroke is already active restarts the mode. That matches `RemoveUniqueModifier` plus `AttachModifier` on the skill start.
 - Etched and Burst consume Will after the snapshot. C6 skips that clear only while its 7s flag is down. The talent sentence can be read as "never consume." The graph ties the skip to the same flag that gates the Joy refill. This implementation follows the graph.
@@ -68,10 +71,10 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 - C2 arms Evilsbane for 4s after the fourth Etched hit or the last burst hit, ICD 4s. The next normal or charged hit during Masterstroke deals 500% ATK Cryo in a radius-3 circle (the radius was not in the extracted pattern; Yatta's gauge note is 1U) and gives other members 200 EM for 8s.
 - C6 adds 175% CRIT DMG to hits whose names start with "Etched" or "Manifest" while Masterstroke is active. Evilsbane does not get that bonus.
 - A4 listens for Melt, Freeze, Superconduct, Cryo Swirl, and Cryo Crystallize from another member during Masterstroke, then gives that member and Lohen 15% ATK for 8s. Stellar Swirl and Stellar Superconductor are in the ability list and are not wired.
-- High Spirits adds 1 skill level for 9s, plus 6s when another member's normal, skill, or burst level is at least Lohen's skill level, ICD 18s. It is gated at ascension 1. The unlock row was not extracted.
+- High Spirits adds 1 skill level for 9s, plus 6s when another member's normal, skill, or burst level is at least Lohen's skill level, ICD 18s. Proud skill 12923 has no promote level on skill depot 12901. Proud skills 12921 and 12922 are promote levels 1 and 4. An omitted level is 0, so High Spirits is available at ascension 0.
 - Hexerei is off unless the character param `hexerei=1` is set. With at least two Hexerei characters and Will at least half of its cap when Etched's last hit lands or Burst is cast, normal and charged attacks gain 40% DMG for 6s.
 - The quest sneak bullet is not implemented.
 
 ## Not claimed
 
-One 20-iteration config does not prove every team or constellation. Normal and charged attacks are not Cryo infusions. Raid and burst hit frames are not a measured sheet. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text.
+One 20-iteration config does not prove every team or constellation. Raid and burst hit frames are not a measured sheet. The 0.1s Joy and Will gates are not simulated; the placeholder normal spacing is already outside 0.1s, and the two charged hits use separate Joy modifiers in the graph. The 40m Will distance check is not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.

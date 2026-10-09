@@ -8,12 +8,10 @@ import (
 	"github.com/genshinsim/gcsim/pkg/modifier"
 )
 
-func (c *char) a1Init() {
-	if c.Base.Ascension < 1 {
-		return
-	}
-	// Teammate_Attack_Monitor is attached to every avatar except Lohen while
-	// Masterstroke's think is running. Distance 40 is not simulated.
+func (c *char) willInit() {
+	// Teammate_Attack_Monitor is part of the skill, not Moratorium on
+	// Questioning. The extra 60 Will is that ascension-1 passive.
+	// Distance 40 is not simulated.
 	c.Core.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
 		if !c.masterActive() {
 			return
@@ -82,7 +80,11 @@ func (c *char) a4Init() {
 }
 
 func (c *char) highSpirits() {
-	if c.Base.Ascension < 1 || c.Core.F < c.spiritsICDUntil {
+	// When the Mood Strikes is proud skill 12923. AvatarSkillDepot 12901
+	// omits its promote level, while 12921 is promote 1 and 12922 is promote
+	// 4. An omitted level is 0, the same encoding as an always-unlocked
+	// utility passive, so High Spirits is not ascension-gated.
+	if c.Core.F < c.spiritsICDUntil {
 		return
 	}
 	c.spiritsICDUntil = c.Core.F + spiritsICD

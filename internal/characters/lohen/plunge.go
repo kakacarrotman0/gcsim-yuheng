@@ -66,7 +66,13 @@ func (c *char) plungeXY(p map[string]int, high bool) action.Info {
 	if p["collision"] > 0 {
 		c.plungeCollision(collisionHitmark)
 	}
+	// Plunge ratios match across the normal and skill sheets at the same
+	// level. Masterstroke reads the skill-talent row, which High Spirits and
+	// C3 can raise above the normal-attack level.
 	lvl := c.TalentLvlAttack()
+	if c.masterActive() {
+		lvl = c.skillLvl()
+	}
 	mult := lowPlunge[lvl]
 	hitmark := lowPlungeHitmark
 	abil := "Low Plunge"
@@ -78,20 +84,23 @@ func (c *char) plungeXY(p map[string]int, high bool) action.Info {
 		frameset = highPlungeFrames
 	}
 	ele := attributes.Physical
+	ignore := false
 	if c.masterActive() {
 		ele = attributes.Cryo
+		ignore = true
 		abil = "Masterstroke " + abil
 	}
 	ai := info.AttackInfo{
-		ActorIndex: c.Index(),
-		Abil:       abil,
-		AttackTag:  attacks.AttackTagPlunge,
-		ICDTag:     attacks.ICDTagNone,
-		ICDGroup:   attacks.ICDGroupDefault,
-		StrikeType: attacks.StrikeTypeBlunt,
-		Element:    ele,
-		Durability: 25,
-		Mult:       mult,
+		ActorIndex:     c.Index(),
+		Abil:           abil,
+		AttackTag:      attacks.AttackTagPlunge,
+		ICDTag:         attacks.ICDTagNone,
+		ICDGroup:       attacks.ICDGroupDefault,
+		StrikeType:     attacks.StrikeTypeBlunt,
+		Element:        ele,
+		Durability:     25,
+		Mult:           mult,
+		IgnoreInfusion: ignore,
 	}
 	c.Core.QueueAttack(
 		ai,
@@ -109,16 +118,32 @@ func (c *char) plungeXY(p map[string]int, high bool) action.Info {
 }
 
 func (c *char) plungeCollision(delay int) {
-	ai := info.AttackInfo{
-		ActorIndex: c.Index(),
-		Abil:       "Plunge Collision",
-		AttackTag:  attacks.AttackTagPlunge,
-		ICDTag:     attacks.ICDTagNone,
-		ICDGroup:   attacks.ICDGroupDefault,
-		StrikeType: attacks.StrikeTypeSlash,
-		Element:    attributes.Physical,
-		Durability: 0,
-		Mult:       collision[c.TalentLvlAttack()],
+	// FallingAnthem loop is Physical outside Masterstroke and Ice, with no
+	// gauge, while the mode is active. The Ice hit still counts as a
+	// FallingAttack for the particle handler.
+	lvl := c.TalentLvlAttack()
+	ele := attributes.Physical
+	ignore := false
+	if c.masterActive() {
+		lvl = c.skillLvl()
+		ele = attributes.Cryo
+		ignore = true
 	}
-	c.Core.QueueAttack(ai, combat.NewCircleHitOnTarget(c.Core.Combat.Player(), info.Point{Y: 1}, 1), delay, delay)
+	ai := info.AttackInfo{
+		ActorIndex:     c.Index(),
+		Abil:           "Plunge Collision",
+		AttackTag:      attacks.AttackTagPlunge,
+		ICDTag:         attacks.ICDTagNone,
+		ICDGroup:       attacks.ICDGroupDefault,
+		StrikeType:     attacks.StrikeTypeSlash,
+		Element:        ele,
+		Durability:     0,
+		Mult:           collision[lvl],
+		IgnoreInfusion: ignore,
+	}
+	var cb info.AttackCBFunc
+	if ele == attributes.Cryo {
+		cb = c.hitCB(0, false)
+	}
+	c.Core.QueueAttack(ai, combat.NewCircleHitOnTarget(c.Core.Combat.Player(), info.Point{Y: 1}, 1), delay, delay, cb)
 }

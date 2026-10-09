@@ -29,11 +29,11 @@ func init() {
 	attackFrames[4] = frames.InitNormalCancelSlice(attackHitmarks[4][1], 58)
 }
 
-func (c *char) normalMults() []float64 {
+func (c *char) normalMults(counter int) []float64 {
 	lvl := c.TalentLvlAttack()
 	if c.masterActive() {
 		lvl = c.skillLvl()
-		switch c.NormalCounter {
+		switch counter {
 		case 0:
 			return []float64{enhanced1[lvl]}
 		case 1:
@@ -46,7 +46,7 @@ func (c *char) normalMults() []float64 {
 			return []float64{enhanced5[lvl], enhanced6[lvl]}
 		}
 	}
-	switch c.NormalCounter {
+	switch counter {
 	case 0:
 		return []float64{attack1[lvl]}
 	case 1:
@@ -62,31 +62,34 @@ func (c *char) normalMults() []float64 {
 
 func (c *char) Attack(p map[string]int) (action.Info, error) {
 	counter := c.NormalCounter
-	mults := c.normalMults()
-	joy := 0.0
-	if c.masterActive() {
-		joy = joyOnNormal[c.skillLvl()]
-	}
-	for i, mult := range mults {
-		ai := info.AttackInfo{
-			ActorIndex: c.Index(),
-			Abil:       fmt.Sprintf("Normal %v", counter),
-			AttackTag:  attacks.AttackTagNormal,
-			ICDTag:     attacks.ICDTagNormalAttack,
-			ICDGroup:   attacks.ICDGroupDefault,
-			StrikeType: attacks.StrikeTypeSpear,
-			Element:    attributes.Physical,
-			Durability: 25,
-			Mult:       mult,
-		}
-		if c.masterActive() {
-			ai.Abil = fmt.Sprintf("Masterstroke Normal %v", counter)
-		}
-		ap := combat.NewCircleHitOnTarget(c.Core.Combat.Player(), nil, 2.2)
-		delay := attackHitmarks[counter][i]
+	ap := combat.NewCircleHitOnTarget(c.Core.Combat.Player(), nil, 2.2)
+	for i := range attackHitmarks[counter] {
+		hit := i
 		c.QueueCharTask(func() {
+			// Element is chosen when the hit lands. Masterstroke converts the
+			// strike to Cryo and blocks weapon infusion. A swap that already
+			// ended the mode leaves the hit Physical.
+			mult := c.normalMults(counter)[hit]
+			ai := info.AttackInfo{
+				ActorIndex: c.Index(),
+				Abil:       fmt.Sprintf("Normal %v", counter),
+				AttackTag:  attacks.AttackTagNormal,
+				ICDTag:     attacks.ICDTagNormalAttack,
+				ICDGroup:   attacks.ICDGroupDefault,
+				StrikeType: attacks.StrikeTypeSpear,
+				Element:    attributes.Physical,
+				Durability: 25,
+				Mult:       mult,
+			}
+			joy := 0.0
+			if c.masterActive() {
+				ai.Element = attributes.Cryo
+				ai.IgnoreInfusion = true
+				ai.Abil = fmt.Sprintf("Masterstroke Normal %v", counter)
+				joy = joyOnNormal[c.skillLvl()]
+			}
 			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, true))
-		}, delay)
+		}, attackHitmarks[counter][hit])
 	}
 	defer c.AdvanceNormalIndex()
 	return action.Info{

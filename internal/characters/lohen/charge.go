@@ -26,30 +26,35 @@ func init() {
 }
 
 func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
-	lvl := c.TalentLvlAttack()
-	mult := attack7[lvl]
-	abil := "Charged Attack"
-	joy := 0.0
-	if c.masterActive() {
-		lvl = c.skillLvl()
-		mult = enhanced7[lvl]
-		abil = "Masterstroke Charged Attack"
-		joy = joyOnCharge[lvl]
-	}
-	ai := info.AttackInfo{
-		ActorIndex: c.Index(),
-		Abil:       abil,
-		AttackTag:  attacks.AttackTagExtra,
-		ICDTag:     attacks.ICDTagExtraAttack,
-		ICDGroup:   attacks.ICDGroupDefault,
-		StrikeType: attacks.StrikeTypeSpear,
-		Element:    attributes.Physical,
-		Durability: 25,
-		Mult:       mult,
-	}
 	ap := combat.NewBoxHitOnTarget(c.Core.Combat.Player(), nil, 0.8, 4)
 	for _, delay := range chargeHitmarks {
 		c.QueueCharTask(func() {
+			lvl := c.TalentLvlAttack()
+			mult := attack7[lvl]
+			abil := "Charged Attack"
+			ele := attributes.Physical
+			ignore := false
+			joy := 0.0
+			if c.masterActive() {
+				lvl = c.skillLvl()
+				mult = enhanced7[lvl]
+				abil = "Masterstroke Charged Attack"
+				ele = attributes.Cryo
+				ignore = true
+				joy = joyOnCharge[lvl]
+			}
+			ai := info.AttackInfo{
+				ActorIndex:     c.Index(),
+				Abil:           abil,
+				AttackTag:      attacks.AttackTagExtra,
+				ICDTag:         attacks.ICDTagExtraAttack,
+				ICDGroup:       attacks.ICDGroupDefault,
+				StrikeType:     attacks.StrikeTypeSpear,
+				Element:        ele,
+				Durability:     25,
+				Mult:           mult,
+				IgnoreInfusion: ignore,
+			}
 			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, true))
 		}, delay)
 	}

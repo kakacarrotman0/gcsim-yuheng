@@ -4,6 +4,7 @@ import (
 	tmpl "github.com/genshinsim/gcsim/internal/template/character"
 	"github.com/genshinsim/gcsim/pkg/core"
 	"github.com/genshinsim/gcsim/pkg/core/action"
+	"github.com/genshinsim/gcsim/pkg/core/event"
 	"github.com/genshinsim/gcsim/pkg/core/info"
 	"github.com/genshinsim/gcsim/pkg/core/player/character"
 )
@@ -85,9 +86,18 @@ func NewChar(s *core.Core, w *character.CharWrapper, p info.CharacterProfile) er
 }
 
 func (c *char) Init() error {
-	c.a1Init()
+	c.willInit()
 	c.a4Init()
 	c.c6Init()
+	// GrandHandler onAvatarOut removes the modifier. onRemoved then zeroes
+	// Joy, Will, and the C6 mark.
+	c.Core.Events.Subscribe(event.OnCharacterSwap, func(args ...any) {
+		prev := args[0].(int)
+		if prev != c.Index() {
+			return
+		}
+		c.endMasterstroke()
+	}, "lohen-swap")
 	return nil
 }
 
@@ -139,6 +149,17 @@ func (c *char) skillLvl() int {
 
 func (c *char) masterActive() bool {
 	return c.Core.F < c.masterUntil
+}
+
+func (c *char) endMasterstroke() {
+	if !c.masterActive() {
+		return
+	}
+	c.masterUntil = c.Core.F
+	c.DeleteStatus(masterKey)
+	c.joy = 0
+	c.will = 0
+	c.c6Mark = false
 }
 
 func (c *char) etchedMax() int {
