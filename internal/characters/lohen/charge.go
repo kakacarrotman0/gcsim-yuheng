@@ -11,6 +11,8 @@ import (
 
 // Two ExtraAttack hits. Spacing is unverified. The two Joy modifiers are
 // different names, so both hits add Joy even inside 0.1s.
+// The ICD tag is normal attack, not extra attack: both hits share 洛恩战技
+// with the normal string.
 var (
 	chargeFrames   []int
 	chargeHitmarks = []int{18, 28}
@@ -47,8 +49,8 @@ func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 				ActorIndex:     c.Index(),
 				Abil:           abil,
 				AttackTag:      attacks.AttackTagExtra,
-				ICDTag:         attacks.ICDTagExtraAttack,
-				ICDGroup:       attacks.ICDGroupDefault,
+				ICDTag:         attacks.ICDTagNormalAttack,
+				ICDGroup:       attacks.ICDGroupLohenSkill,
 				StrikeType:     attacks.StrikeTypeSpear,
 				Element:        ele,
 				Durability:     25,

@@ -31,7 +31,7 @@ C1, C2, C4, C6, Hexerei, and the two combat passives bind `%n` parameters in `Co
 
 Masterstroke, Joy, Will, Etched Into Bone and Soul, and Manifest Judgment. While Masterstroke is active, Normal, Charged, and Plunging Attack damage is Cryo and ignores weapon infusion. Outside Masterstroke those attacks stay Physical and can be infused. The released talent text is the source for the conversion. The damage handler only replaces the ratio; the Ice Falling Anthem attacks and the Ice weapon enhancement carry the element. Plunge ratios match on the normal-attack and skill sheets at the same level. During Masterstroke the plunge uses the skill-talent row, so High Spirits and C3 can raise it above the normal-attack level.
 
-`docs/yuheng/configs/lohen-masterstroke.txt` is a constructed baseline: Lohen / Xiangling / Bennett / Kaeya, 20 iterations, 20 seconds, `hexerei` left off. Re-run after the Cryo conversion, it completed 20 iterations with no failed actions. It is not a damage benchmark.
+`docs/yuheng/configs/lohen-masterstroke.txt` is a constructed baseline: Lohen / Xiangling / Bennett / Kaeya, 20 iterations, 20 seconds, `hexerei` left off. Re-run after the shared 5s Cryo ICD, it completed 20 iterations with no failed actions. It is not a damage benchmark.
 
 That run's Lohen damage log, from the gcsim result JSON:
 
@@ -41,9 +41,9 @@ That run's Lohen damage log, from the gcsim result JSON:
 - Manifest Judgment 1–6: one each
 - Bennett and Kaeya each recorded a Melt. Lohen's converted hits land before Pyro is applied in this rotation, so Lohen records no Melt here. The unit test covers his own Melt
 
-The printed summary was average 262404.56 damage over 20.00 seconds (13120 dps, min 11693.65, max 14356.35, std 681.68). That number is the output of this one config. It is not a claimed team DPS.
+The printed summary was average 265553.09 damage over 20.00 seconds (13278 dps, min 11816.84, max 14058.35, std 592.64). That number is the output of this one config. It is not a claimed team DPS.
 
-Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, and Masterstroke ending on swap.
+Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, Masterstroke ending on swap, the 5s/2-hit application sequence and its reset, a normal and a charged attack sharing that sequence, and the placeholder N1C count of 13.
 
 ## Timing
 
@@ -56,8 +56,41 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 | Etched hit order 0.086, 0.2095, 0.4074, 0.5316 of the raid state, played as frames 5, 13, 24, 32 | Normalized times are from the graph. The 60-frame clip length is not in the JSON. Absolute frames are unverified |
 | Burst hits at frames 12, 36, 42, 48, 54, 78 | Gadget think of 0.1s, assuming the first increment is immediate. Six hits match the talent's ×6. The blank step is not a hit |
 | Burst extends Masterstroke by 1.65s. The next Etched after a C6 mark extends it by 1.25s, and remaining duration is capped at 20s | Ability graph |
-| Normal, charged, skill-cancel, and plunge frames | Unverified polearm spacing. Not a measured sheet |
+| Normal, charged, skill-cancel, burst-cancel, and plunge frames | Unverified polearm spacing. Reviewed against public combo counts and left unchanged. See Frame review |
 | Particles | One Cryo particle (`baseEnergy` 3, config 2022) when an Ice hit with a normal, charged, plunge, or elemental-art tag lands. Unique modifier 2.0s |
+
+## Frame review
+
+No measured Lohen frame sheet is public. The KQM library page for Lohen still says its findings have not been added. `gensri.wiki` has no Lohen frame page. The ability JSON has Joy modifiers of 0.1s and raid-bullet durations, and it does not give attack-state lengths that convert into hitmarks. No clean 60 FPS clip was counted for this review. Combo counts were not turned into hitmarks.
+
+KQM's quickguide (Version 7.1) lists `E 15–17[N1C] (N1 E)`. Average play completes 15–16 N1C loops during Masterstroke. 17 needs near-frame-perfect input and a favorable enemy. The count also depends on ping and frame rate. Charged-attack input cannot be buffered. That row is a combo count, not a frame sheet.
+
+The placeholders, unchanged:
+
+| Window | Frames |
+| --- | --- |
+| N1 hitmark / N1→CA cancel | 12 / 22 |
+| CA hitmarks | 18, 28 |
+| CA animation; cancel into attack, skill, or burst; dash; swap | 46; 36; 28; 34 |
+| N1C loop (22 + 36) | 58 |
+| Skill animation; attack, charge, or burst; dash; swap | 32; 24; 22; 26 |
+| Burst animation; attack or skill; dash; swap | 90; 80; 78; 82 |
+| Etched delays | 5, 13, 24, 32 |
+| Plunge | Standard polearm template. Low and high impact hitmarks 45 and 46 |
+
+`TestPlaceholderN1CCount` starts Masterstroke with skill, then queues N1 and CA as soon as the engine allows, and stops when the 13s (780-frame) mode ends. The result is 13 completed N1C strings. Skill cancels into attack at frame 24, and `(780 − 24) / 58` is about 13.03, which matches that count.
+
+A 12-frame N1→CA cancel would make a 48-frame loop and land near 16 loops. That window was not measured, so it was not implemented. Fitting 17 loops into 13 seconds would need an average loop under about 46 frames after the skill. The gap against KQM's 15–16 average and 17 ideal stays documented here.
+
+## Elemental application
+
+KQM and Prydwen describe 6 Cryo applications every 5 seconds from empowered normals and charged attacks during Masterstroke. With N1C, KQM says that cap is usually reached in 3–4 seconds, leaving a 1–2 second gap. The Bilibili wiki element-application table (`元素附着论/角色数据`) names the group `洛恩战技`: a 5 second reset, sequence `1,0,1,0,1,0,1,0,1,0,1,0`, and at most 6 applications before the reset. Normal attacks, charged attacks, and both of those during Masterstroke (`奇谋状态`) share tag `普通攻击` and that group. Physical hits and Masterstroke hits advance one counter.
+
+That is `ICDGroupLohenSkill`: reset timer 300, element sequence six `1,0` pairs, damage sequence all `1`. Both the normal and the charged attack use `ICDTagNormalAttack` with this group. The charged attack's damage tag stays extra attack. gcsim evaluates ICD for any hit with durability, including Physical, so the shared counter matches the table. The engine reset fires at timer − 1, the same convention as every other group.
+
+The same table gives plunge landing no tag and no ICD. Plunge stays `ICDTagNone`. GameVika writes "5s/2 Hits" on the first normal-attack row and a dash on charged attacks and plunge; the plunge dash disagrees with the wiki's explicit `无冷却`, so the wiki was followed. Etched (`镂骨彻心`, group `默认`) and Manifest Judgment (elemental burst, group `默认`) stay on the standard 2.5s/3-hit group. GameVika lists those the same way. Icy Veins' "5 applications every 6 seconds" was not used. The ability JSON has no attenuation row for this group; the published table is the source.
+
+N1C is three hits. The sequence applies on hits 1 and 3 of the first string, then one, then two, then one: six applications by the eleventh hit, the end of the fourth N1C. Later hits in the window stay dry until the 5 second reset. `TestLohenSkillICD` and `TestNormalAndChargedShareSkillICD` check that sequence on engine results.
 
 ## Mechanics notes
 
@@ -77,4 +110,4 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 
 ## Not claimed
 
-One 20-iteration config does not prove every team or constellation. Raid and burst hit frames are not a measured sheet. The 0.1s Joy and Will gates are not simulated; the placeholder normal spacing is already outside 0.1s, and the two charged hits use separate Joy modifiers in the graph. The 40m Will distance check is not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.
+One 20-iteration config does not prove every team or constellation. No confirmed frame measurement was found, so every attack, charged, skill, burst, plunge, and Etched window above stays approximate. The 13 N1C count is the engine result of those placeholders, not a measured combo. The 0.1s Joy and Will gates are not simulated; the placeholder normal spacing is already outside 0.1s, and the two charged hits use separate Joy modifiers in the graph. The 40m Will distance check and the per-character 0.1s Will ICD are not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.

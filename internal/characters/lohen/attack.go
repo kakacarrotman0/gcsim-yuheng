@@ -13,6 +13,10 @@ import (
 
 // Hitmarks are an unverified polearm spacing. They are not a frame sheet.
 // N3's three hits are 8 frames apart so they sit outside the 0.1s unique Joy modifier.
+//
+// NA and CA share BWiki group 洛恩战技: ICD tag normal attack, 5s reset,
+// sequence 1,0 repeated, and at most 6 applications before the reset.
+// The same group covers the physical string and Masterstroke.
 var (
 	attackFrames   [][]int
 	attackHitmarks = [][]int{{12}, {9}, {12, 20, 28}, {16}, {22, 34}}
@@ -75,7 +79,7 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 				Abil:       fmt.Sprintf("Normal %v", counter),
 				AttackTag:  attacks.AttackTagNormal,
 				ICDTag:     attacks.ICDTagNormalAttack,
-				ICDGroup:   attacks.ICDGroupDefault,
+				ICDGroup:   attacks.ICDGroupLohenSkill,
 				StrikeType: attacks.StrikeTypeSpear,
 				Element:    attributes.Physical,
 				Durability: 25,

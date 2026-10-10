@@ -10,6 +10,7 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/action"
 	"github.com/genshinsim/gcsim/pkg/core/attacks"
 	"github.com/genshinsim/gcsim/pkg/core/attributes"
+	"github.com/genshinsim/gcsim/pkg/core/combat"
 	"github.com/genshinsim/gcsim/pkg/core/event"
 	"github.com/genshinsim/gcsim/pkg/core/info"
 	"github.com/genshinsim/gcsim/pkg/core/keys"
@@ -518,5 +519,159 @@ func TestWillAndHighSpiritsAtAscensionZero(t *testing.T) {
 	want := willFailGain + willSuccess[lc.skillLvl()]*2
 	if math.Abs(will.(float64)-want) > 1e-6 {
 		t.Fatalf("ascension 0 extra will %v want %v", will, want)
+	}
+}
+
+func waitReady(t *testing.T, c *core.Core, act action.Action, key keys.Char, limit int) bool {
+	t.Helper()
+	for c.F < limit {
+		err := c.Player.ReadyCheck(act, key, nil)
+		if err == nil {
+			return true
+		}
+		if err != player.ErrPlayerNotReady && err != player.ErrActionNotReady {
+			t.Fatalf("ready %v: %v", act, err)
+		}
+		advance(c, 1)
+	}
+	return false
+}
+
+func TestLohenSkillICD(t *testing.T) {
+	c, trg := makeCore(1)
+	ch := addProfile(t, c, keys.Lohen, 0, 10)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	var applied []bool
+	// OnEnemyHit is emitted before ICD. OnEnemyDamage carries the post-ICD durability.
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.Abil != "icd-probe" {
+			return
+		}
+		applied = append(applied, ai.Durability > 0)
+	}, "icd")
+	probe := func() {
+		c.QueueAttack(info.AttackInfo{
+			ActorIndex: ch.Index(),
+			Abil:       "icd-probe",
+			AttackTag:  attacks.AttackTagNormal,
+			ICDTag:     attacks.ICDTagNormalAttack,
+			ICDGroup:   attacks.ICDGroupLohenSkill,
+			Element:    attributes.Cryo,
+			Durability: 25,
+		}, combat.NewSingleTargetHit(trg[0].Key()), 0, 0)
+	}
+	for range 14 {
+		probe()
+		advance(c, 1)
+	}
+	if len(applied) != 14 {
+		t.Fatalf("probes %d", len(applied))
+	}
+	for i, got := range applied {
+		want := i < 12 && i%2 == 0
+		if got != want {
+			t.Fatalf("probe %d applied %v want %v", i, got, want)
+		}
+	}
+	// The 5s group arms its reset on the first hit. gcsim schedules that reset
+	// at timer-1, the same convention as every other ICD group.
+	first := 0
+	resetAt := first + attacks.ICDGroupResetTimer[attacks.ICDGroupLohenSkill] - 1
+	for c.F < resetAt {
+		probe()
+		advance(c, 1)
+		if applied[len(applied)-1] {
+			t.Fatalf("application returned at frame %d, reset frame %d", c.F-1, resetAt)
+		}
+	}
+	probe()
+	advance(c, 1)
+	if !applied[len(applied)-1] {
+		t.Fatalf("no application after reset, frame %d applied %v", c.F, applied[len(applied)-1])
+	}
+}
+
+func TestNormalAndChargedShareSkillICD(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfile(t, c, keys.Lohen, 0, 10)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	var durs []float64
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.ActorIndex != ch.Index() {
+			return
+		}
+		if ai.AttackTag != attacks.AttackTagNormal && ai.AttackTag != attacks.AttackTagExtra {
+			return
+		}
+		durs = append(durs, float64(ai.Durability))
+	}, "hits")
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	limit := int(masterDuration[0] * 60)
+	if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) {
+		t.Fatal("attack never ready")
+	}
+	if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) {
+		t.Fatal("charge never ready")
+	}
+	if err := c.Player.Exec(action.ActionCharge, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, chargeHitmarks[len(chargeHitmarks)-1]+2)
+	if len(durs) != 3 {
+		t.Fatalf("hits %d", len(durs))
+	}
+	// N1 applies, the first charged hit does not, the second charged hit does.
+	want := []float64{25, 0, 25}
+	for i, got := range durs {
+		if got != want[i] {
+			t.Fatalf("hit %d durability %v want %v", i, got, want[i])
+		}
+	}
+}
+
+func TestPlaceholderN1CCount(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfile(t, c, keys.Lohen, 0, 10)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	limit := int(masterDuration[0] * 60)
+	n1c := 0
+	for c.F < limit {
+		if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+			break
+		}
+		if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+			t.Fatal(err)
+		}
+		if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+			break
+		}
+		if err := c.Player.Exec(action.ActionCharge, keys.Lohen, nil); err != nil {
+			t.Fatal(err)
+		}
+		n1c++
+	}
+	// Placeholder N1 cancel into CA is the 22-frame N1 recovery, and CA cancel
+	// into N1 is 36. That loop does not reach KQM's 15–16 average or 17 ideal
+	// counts. Those counts are not a frame sheet, so the windows stay as they are.
+	if n1c != 13 {
+		t.Fatalf("placeholder N1C count %d at frame %d", n1c, c.F)
 	}
 }
