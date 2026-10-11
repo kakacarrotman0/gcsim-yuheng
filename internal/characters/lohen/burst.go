@@ -36,10 +36,6 @@ func (c *char) Burst(p map[string]int) (action.Info, error) {
 		c.extendMaster(burstExtend)
 	}
 	c.tryHexerei(snapped)
-	if c.Core.F < c.c4RefundUntil {
-		c.AddEnergy("lohen-c4", c4Energy)
-		c.c4RefundUntil = 0
-	}
 
 	mult := burstDMG[lvl] * ratio
 	for i, delay := range burstHitmarks {
@@ -72,7 +68,17 @@ func (c *char) Burst(p map[string]int) (action.Info, error) {
 	}
 
 	c.SetCD(action.ActionBurst, burstCDDur)
+	// Gadget onAdded revives energy while the C4 handler is still up.
+	// The drain is a core task. Character tasks on the same frame run first,
+	// so a same-frame revive would be added to a full bar and then discarded.
+	// One frame later the bar is empty and the 15 remains.
 	c.ConsumeEnergy(4)
+	if c.Core.F < c.c4RefundUntil {
+		c.c4RefundUntil = 0
+		c.QueueCharTask(func() {
+			c.AddEnergy("lohen-c4", c4Energy)
+		}, 5)
+	}
 	return action.Info{
 		Frames:          frames.NewAbilFunc(burstFrames),
 		AnimationLength: burstFrames[action.InvalidAction],

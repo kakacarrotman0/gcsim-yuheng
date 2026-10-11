@@ -71,8 +71,9 @@ func (c *char) tryEvilsbane() {
 		Durability: 25,
 		Mult:       c2Ratio,
 	}
-	// Radius is not in the attack pattern that was extracted. 1U is from Yatta.
-	ap := combat.NewCircleHitOnTarget(c.Core.Combat.Player(), nil, 3)
+	// Box 5.5 by 5.5, offset 1.3 forward. The pattern's y extent of 2.5 is not a ground radius.
+	// 1U Cryo is elementDurability 25. The 40m party check cannot fail: one player position.
+	ap := combat.NewBoxHitOnTarget(c.Core.Combat.Player(), info.Point{Y: 1.3}, 5.5, 5.5)
 	c.Core.QueueAttack(ai, ap, 0, 0)
 	m := make([]float64, attributes.EndStatType)
 	m[attributes.EM] = c2EM

@@ -55,7 +55,8 @@ func buildCadenceFrames() {
 
 func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 	ap := combat.NewBoxHitOnTarget(c.Core.Combat.Player(), nil, 0.8, 4)
-	for _, delay := range chargeHitmarks {
+	for i, delay := range chargeHitmarks {
+		hit := i
 		c.QueueCharTask(func() {
 			lvl := c.TalentLvlAttack()
 			mult := attack7[lvl]
@@ -83,7 +84,12 @@ func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 				Mult:           mult,
 				IgnoreInfusion: ignore,
 			}
-			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, true))
+			// ExtraAttackA and ExtraAttackB are separate Joy modifiers.
+			joyKey := joyCAAKey
+			if hit == 1 {
+				joyKey = joyCABKey
+			}
+			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, joyKey, true))
 		}, delay)
 	}
 	slice := chargeFrames

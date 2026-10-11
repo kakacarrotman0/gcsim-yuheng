@@ -43,7 +43,7 @@ That run's Lohen damage log, from the gcsim result JSON:
 
 The printed summary was average 265553.09 damage over 20.00 seconds (13278 dps, min 11816.84, max 14058.35, std 592.64). That number is the output of this one config. It is not a claimed team DPS.
 
-Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, Masterstroke ending on swap, the 5s/2-hit application sequence and its reset, a normal and a charged attack sharing that sequence, the placeholder N1C count of 13, a 58-frame baseline spacing with hitlag on, and the optional `n1c_cadence=1` profile.
+Unit tests in `lohen_test.go` check identity, Joy on a normal hit, the 0.1s Joy gates (normal, charged A, and charged B are separate), Will from a teammate hit including the A1 extra, the per-character 0.1s Will gates, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C1's 5× gain and 300 cap, C2 Evilsbane damage and the 200 EM buff and its 8s expiry, C4's immediate 15 energy and the post-burst 15, C5's burst index, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, Stellar Swirl, and Stellar Conduct plus the 8s expiry, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, Masterstroke ending on swap, the 5s/2-hit application sequence and its reset, a normal and a charged attack sharing that sequence, the placeholder N1C count of 13, a 58-frame baseline spacing with hitlag on, the optional `n1c_cadence=1` profile, Hexerei's 40% normal bonus, the excluded fifth-normal second hit, the 6s expiry, and a one-Hexerei party that does not gain the buff. `TestCadenceLeavesOtherCancels` checks that the optional profile changes N1→CA and CA→N1 only.
 
 ## Timing
 
@@ -51,7 +51,8 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 | --- | --- |
 | Energy 60, skill CD 18s, burst CD 15s, Masterstroke 13s at every talent level, Joy cap 100, Will cap 100 (300 at C1) | Ability graph / talent text |
 | Joy +17 per normal hit and per charged hit. Charged stamina 25, or 10 during Masterstroke | Skill talent parameters, constant across levels |
-| Will on a teammate hit: +20 if the hit is at least 10× Lohen's base ATK, otherwise +1. This is the skill, including at ascension 0. A1 (promote level 1) adds +60 when the hit is at least 30× base ATK. C1 multiplies those gains by 5 and raises the cap to 300. Lohen's own hits do not add Will | Ability graph. The 30× and +60 figures are the talent text |
+| Will on a teammate hit: +20 if the hit is at least 10× Lohen's base ATK, otherwise +1. This is the skill, including at ascension 0. A1 (promote level 1) adds +60 when the hit is at least 30× base ATK. C1 multiplies those gains by 5 and raises the cap to 300. Lohen's own hits do not add Will. Success, fail, and the A1 extra each have their own 0.1s unique modifier on that teammate | Ability graph. The 30× and +60 figures are the talent text |
+| Joy's normal, charged-A, and charged-B modifiers are each unique for 0.1s. A second hit of the same kind inside that window adds nothing. The three kinds do not block each other | `AddShowLevel` modifiers on `GrandHandler` |
 | Etched damage is `Raid × (1 + Will × 0.004)`. Burst damage is `Burst × (1 + Will × 0.004)`. Both snapshot Will, then Will is cleared unless C6's ICD flag is clear and Masterstroke is active | Ability graph |
 | Etched hit order 0.086, 0.2095, 0.4074, 0.5316 of the raid state, played as frames 5, 13, 24, 32 | Normalized times are from the graph. The 60-frame clip length is not in the JSON. Absolute frames are unverified |
 | Burst hits at frames 12, 36, 42, 48, 54, 78 | Gadget think of 0.1s, assuming the first increment is immediate. Six hits match the talent's ×6. The blank step is not a hit |
@@ -114,14 +115,52 @@ N1C is three hits. The sequence applies on hits 1 and 3 of the first string, the
 - A plain skill while Masterstroke is already active restarts the mode. That matches `RemoveUniqueModifier` plus `AttachModifier` on the skill start.
 - Etched and Burst consume Will after the snapshot. C6 skips that clear only while its 7s flag is down. The talent sentence can be read as "never consume." The graph ties the skip to the same flag that gates the Joy refill. This implementation follows the graph.
 - C4, on entering Masterstroke, refunds 15 energy when energy is not full. When it is full, the next Burst within 15s refunds 15. A Burst during Masterstroke sets Will to its cap before the snapshot.
-- C2 arms Evilsbane for 4s after the fourth Etched hit or the last burst hit, ICD 4s. The next normal or charged hit during Masterstroke deals 500% ATK Cryo in a radius-3 circle (the radius was not in the extracted pattern; Yatta's gauge note is 1U) and gives other members 200 EM for 8s.
+- C2 arms Evilsbane for 4s after the fourth Etched hit or the last burst hit, ICD 4s. The next normal or charged hit during Masterstroke deals 500% ATK Cryo. The pattern is a 5.5 by 5.5 box starting 1.3 in front of Lohen. The pattern's vertical extent of 2.5 is not a ground radius. Gauge is 1U. Other members within 40m gain 200 EM for 8s. The caster is excluded (`isTarget: false`).
+- C4's burst revive is queued one frame after the energy drain. Character tasks run before that drain, so a same-frame revive would be added to a full bar and lost. The net result is 15 energy once the bar is empty.
 - C6 adds 175% CRIT DMG to hits whose names start with "Etched" or "Manifest" while Masterstroke is active. Evilsbane does not get that bonus.
-- A4 listens for Melt, Freeze, Superconduct, Cryo Swirl, and Cryo Crystallize from another member during Masterstroke, then gives that member and Lohen 15% ATK for 8s. Stellar Swirl and Stellar Superconductor are in the ability list and are not wired.
+- A4 listens for Melt, Freeze, Superconduct, Cryo Swirl, Stellar Swirl, Cryo Crystallize, and Stellar Conduct from another member during Masterstroke, then gives that member and Lohen 15% ATK for 8s. The graph names those `Melt`, `Freeze`, `Superconductor`, `SwirlIce`, `StarSwirlIce`, `CrystallizeIce`, and `StarSuperconductor`. `OnStellarSwirl` is emitted only for Cryo or Frozen. `OnStellarConduct` is the Cryo and Electro Stellar reaction.
 - High Spirits adds 1 skill level for 9s, plus 6s when another member's normal, skill, or burst level is at least Lohen's skill level, ICD 18s. Proud skill 12923 has no promote level on skill depot 12901. Proud skills 12921 and 12922 are promote levels 1 and 4. An omitted level is 0, so High Spirits is available at ascension 0.
-- Hexerei is off unless the character param `hexerei=1` is set. With at least two Hexerei characters and Will at least half of its cap when Etched's last hit lands or Burst is cast, normal and charged attacks gain 40% DMG for 6s.
+- Hexerei is off unless the character param `hexerei=1` is set. With at least two Hexerei characters and Will at least half of its cap when Etched's last hit lands or Burst is cast, normals and charged attacks gain 40% DMG for 6s. The mixin lists `NormalAttack_01` through `NormalAttack_05` and `ExtraAttack`. The second hit of the fifth normal is `NormalAttack_06` and is excluded. Its ability name ends in ` B`.
 - `n1c_cadence=1` selects the optional 46-frame N1C loop. The default is the 58-frame placeholder. Hitmarks do not change with the param.
 - The quest sneak bullet is not implemented.
 
-## Not claimed
+## Completion
 
-One 20-iteration config does not prove every team or constellation. The 46-frame cadence profile matches a measured input interval. It is not a measured cancel pair, not a hitmark sheet, and not a damage number. The 15 and 31 frame cancels are only how that sum was partitioned around the old hitmarks. Hitlag halt was not visible as a stable freeze in the clip, so none is applied. A real halt would make a 46-frame animation loop slower than the video, because the 46 already includes the freeze. A constant input delay drops out of the interval between two presses. The overlay can still shift that interval by a few frames, and the opening gap in the video is 51 rather than 46. The skill, burst, plunge, and Etched windows stay approximate. The 0.1s Joy and Will gates are not simulated. The 40m Will distance check and the per-character 0.1s Will ICD are not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.
+| Item | Status | Source and check |
+| --- | --- | --- |
+| Masterstroke Cryo conversion, Joy cap 100, Etched at 100 Joy, Will ratio 0.004, particle 1 Cryo / 2s, swap ends the mode | IMPLEMENTED AND TESTED | Ability graph. `TestMasterstrokeCryoConversion`, `TestMasterstrokeEndsOnSwap`, `TestEtchedConsumesWill` |
+| Joy 0.1s unique gates, separate for normal, charged A, and charged B | IMPLEMENTED AND TESTED | `AddShowLevel` modifiers, duration 0.1, stacking Unique. `TestJoyAndWillGates` |
+| Will 0.1s gates, separate for success, fail, and the A1 extra, and separate per teammate | IMPLEMENTED AND TESTED | `AddAnswerLevel_*_Pre` modifiers on the teammate monitor. `TestJoyAndWillGates` |
+| 40m check before a teammate receives the Will monitor, the A4 monitor, or the C2 EM buff | NOT IMPLEMENTED | Graph predicate `LesserOrEqual` 40 on `AllPlayerAvatars`. Blocked: gcsim has one player position, so two party members are never 40m apart |
+| A4 Melt, Freeze, Superconduct, Cryo Swirl, Cryo Crystallize | IMPLEMENTED AND TESTED | `TestA4CryoReaction`. Melt also appears in the team configs below |
+| A4 Stellar Swirl and Stellar Conduct | IMPLEMENTED AND TESTED | `OnStellarSwirl`, `OnStellarConduct`. `TestStellarA4AndHexerei` emits those events and checks the 15% ATK buff and the 8s expiry. The validation teams do not enable Stellar aura mode, so those reactions are not in the config output |
+| C1 5× Will and cap 300, C3 skill +3, C5 burst +3 | IMPLEMENTED AND TESTED | Talent text for the magnitudes. `TestC1C2C4C5`, `TestC6KeepsWill` |
+| C2 Evilsbane 500% / 200 EM / 8s / 4s, box 5.5 starting 1.3 forward | IMPLEMENTED AND TESTED | Graph pattern and talent text. `TestC1C2C4C5`. `lohen-c2-melt.txt` records Evilsbane hits |
+| C4 15 energy now, or 15 on the next burst within 15s, and Burst sets Will to the cap | IMPLEMENTED AND TESTED | `ReviveElemEnergy` on the C4 handler and on the burst gadget. The burst revive is one frame after the drain because of queue order. `TestC1C2C4C5` |
+| C6 keep Will, refill Joy, 1.25s extension, +2 Etched, 175% CRIT DMG, then consume Will while the 7s flag is up | IMPLEMENTED AND TESTED | `TestC6KeepsWill` |
+| Hexerei 40% for 6s, two Hexerei members, Will at half the cap, fifth-normal second hit excluded | IMPLEMENTED AND TESTED | `UNIQUE_Lohen_Hexenzirkel_Buff`. `TestStellarA4AndHexerei`. Config pair below |
+| Energy, particles, swap | IMPLEMENTED AND TESTED | `TestPhysicalOutsideMasterstroke`, `TestMasterstrokeCryoConversion`, `TestMasterstrokeEndsOnSwap` |
+| `n1c_cadence=1` changes only the Masterstroke N1C loop cancels | IMPLEMENTED AND TESTED | `TestCadenceLeavesOtherCancels`. N2, dash, skill cancel, and the charged dash and skill cancels stay on the baseline slices |
+| N1C hitmarks, skill, burst, plunge, and Etched windows | IMPLEMENTED BUT APPROXIMATE | No public frame sheet. Hitmarks are the previous placeholders. The 46-frame profile is a measured input interval, and 15/31 is a partition of that interval |
+| C2 vertical hitbox extent 2.5 | NOT IMPLEMENTED | The combat space is flat. The ground box is 5.5 by 5.5 |
+| ProudSkill numeric rows for C1, C2, C4, C6, A1, A4, and Hexerei | BLOCKED BY MISSING EVIDENCE | `ConfigTalent` binds `%n` and does not carry the numbers. Magnitudes follow the released talent text |
+
+## Validation runs
+
+Each file was run with `/tmp/gcsim-lohen` for 20 iterations. Failed actions were 0 on every file. These are engine results for these files. They are not a leaderboard and not a claim that the support casts are a KQM sheet. The on-field string `E 2[N1C] E 4[N1C] E 5[N1C] E` is the average combo from KQM's Lohen quick guide. `E` after Masterstroke is `skill[etched=1]`. The melt files put Burst in the first special-cast slot, which is the guide's `E/Q`. Team configs place the target at `(0, 3)` so it sits inside the forward Evilsbane box.
+
+| Config | Profile | Team DPS mean (min–max, sd) | What the run showed |
+| --- | --- | --- | --- |
+| `lohen-n1c-baseline.txt` | 58f | 4993.8 (4421.8–5515.4, sd 267.6) | 13 N1 and 13 CA, all Masterstroke. 13 normal hits, 26 charged hits |
+| `lohen-n1c-cadence.txt` | experimental 46f | 6318.3 (5751.6–6892.0, sd 300.0) | 17 N1 and 17 CA started. 17 Masterstroke normals, 32 Masterstroke charged hits, 2 charged hits after the mode ended |
+| `lohen-standard-rotation.txt` | 58f | 12190.7 | 11 N1C, 3 Etched, Lohen Melt mean 10 |
+| `lohen-standard-cadence.txt` | experimental 46f | 13763.6 | Same action list. Lohen Melt mean 6 |
+| `lohen-c0-melt.txt` | 58f | 11993.5 (Lohen 6802.6) | Burst plus 2 Etched. Lohen Melt mean 14. Six Manifest hits |
+| `lohen-c1-melt.txt` | 58f | 12543.2 (Lohen 7282.1) | Same actions as C0 |
+| `lohen-c2-melt.txt` | 58f | 13772.7 (Lohen 8519.4) | Evilsbane Blade mean 1 and Evilsbane Blade (melt) mean 1. Lohen Melt mean 15 |
+| `lohen-c6-melt.txt` | 58f | 18496.5 (Lohen 13155.4) | Same Evilsbane counts. Lohen damage is higher on the same action list |
+| `lohen-freeze.txt` | 58f | 5096.7 | Lohen Freeze mean 8. Xingqiu Freeze mean 1, Kaeya Freeze mean 1 |
+| `lohen-hexerei.txt` | 58f | 14775.1 (Lohen 5375.4) | `hexerei=1` plus Fischl. Lohen Melt mean 9 |
+| `lohen-hexerei-off.txt` | 58f | 13691.2 (Lohen 4710.6) | Same actions, param omitted. Lohen Melt mean 9. Lohen's own damage is lower |
+
+The 46-frame cadence matches a measured input interval. It is not a measured cancel pair and not a hitmark sheet. The 15 and 31 frame cancels are only how that sum was partitioned around the old hitmarks. Hitlag halt was not visible as a stable freeze in the clip, so none is applied. A real halt would make a 46-frame animation loop slower than the video, because the 46 already includes the freeze. A constant input delay drops out of the interval between two presses. The overlay can still shift that interval by a few frames, and the opening gap in the video is 51 rather than 46.

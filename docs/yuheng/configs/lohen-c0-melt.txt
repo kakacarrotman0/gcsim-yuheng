@@ -1,0 +1,33 @@
+# Yuheng validation config. Real gcsim run. Not a damage benchmark and not a claimed optimum.
+# Gear is a short placeholder so the actions resolve. Numbers are engine output for this file only.
+# C0. Burst stands in for the first special cast (KQM writes E/Q). Xiangling Pyro is the Melt aura.
+# Same on-field string as lohen-standard-rotation.txt. Baseline 58-frame N1C.
+options iteration=20 duration=30 swap_delay=12;
+target lvl=100 resist=0.1 pos=0,3;
+
+lohen char lvl=90/90 cons=0 talent=8,8,8 +params=[start_energy=60];
+lohen add weapon="favoniuslance" refine=3 lvl=90/90;
+lohen add set="blizzardstrayer" count=4;
+lohen add stats hp=4780 atk=311 cr=0.311 cd=0.622 er=0.518 atk%=0.466;
+
+xiangling char lvl=90/90 cons=4 talent=8,8,8 +params=[start_energy=80];
+xiangling add weapon="thecatch" refine=5 lvl=90/90;
+xiangling add set="emblemofseveredfate" count=4;
+xiangling add stats hp=4780 atk=311 er=0.518 pyro%=0.466 cr=0.311;
+
+bennett char lvl=90/90 cons=6 talent=8,8,8 +params=[start_energy=60];
+bennett add weapon="sapwoodblade" refine=1 lvl=90/90;
+bennett add set="noblesseoblige" count=4;
+bennett add stats hp=4780 atk=311 er=0.518 hp%=0.466 cr=0.311;
+
+kaeya char lvl=90/90 cons=0 talent=8,8,8 +params=[start_energy=60];
+kaeya add weapon="favoniussword" refine=3 lvl=90/90;
+kaeya add set="blizzardstrayer" count=4;
+kaeya add stats hp=4780 atk=311 er=0.518 cryo%=0.466 cr=0.311;
+
+active bennett;
+
+bennett skill, burst;
+xiangling skill, burst;
+kaeya skill;
+lohen skill, attack, charge, attack, charge, burst, attack, charge, attack, charge, attack, charge, attack, charge, skill[etched=1], attack, charge, attack, charge, attack, charge, attack, charge, attack, charge, skill[etched=1];

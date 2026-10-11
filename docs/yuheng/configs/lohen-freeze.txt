@@ -1,0 +1,34 @@
+# Yuheng validation config. Real gcsim run. Not a damage benchmark and not a claimed optimum.
+# Gear is a short placeholder so the actions resolve. Numbers are engine output for this file only.
+# Freeze check. Xingqiu's burst and Kokomi's skill apply Hydro. Lohen's Masterstroke normals and charged attacks are Cryo.
+# On-field string is a short N1C plus one Etched, not a published Freeze sheet.
+# Baseline 58-frame N1C.
+options iteration=20 duration=25 swap_delay=12;
+target lvl=100 resist=0.1 pos=0,3;
+
+lohen char lvl=90/90 cons=0 talent=8,8,8 +params=[start_energy=60];
+lohen add weapon="favoniuslance" refine=3 lvl=90/90;
+lohen add set="blizzardstrayer" count=4;
+lohen add stats hp=4780 atk=311 cr=0.311 cd=0.622 er=0.518 atk%=0.466;
+
+xingqiu char lvl=90/90 cons=6 talent=8,8,8 +params=[start_energy=80];
+xingqiu add weapon="sacrificialsword" refine=5 lvl=90/90;
+xingqiu add set="emblemofseveredfate" count=4;
+xingqiu add stats hp=4780 atk=311 er=0.518 atk%=0.466 cr=0.311;
+
+kokomi char lvl=90/90 cons=0 talent=8,8,8 +params=[start_energy=70];
+kokomi add weapon="thrillingtalesofdragonslayers" refine=5 lvl=90/90;
+kokomi add set="tenacityofthemillelith" count=4;
+kokomi add stats hp=4780 atk=311 er=0.518 hp%=0.466;
+
+kaeya char lvl=90/90 cons=0 talent=8,8,8 +params=[start_energy=60];
+kaeya add weapon="favoniussword" refine=3 lvl=90/90;
+kaeya add set="blizzardstrayer" count=4;
+kaeya add stats hp=4780 atk=311 er=0.518 cryo%=0.466 cr=0.311;
+
+active xingqiu;
+
+xingqiu skill, burst;
+kokomi skill;
+kaeya skill;
+lohen skill, attack, charge, attack, charge, attack, charge, attack, charge, attack, charge, attack, charge, skill[etched=1];

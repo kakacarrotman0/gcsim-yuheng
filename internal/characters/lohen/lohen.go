@@ -49,6 +49,13 @@ const (
 	particleICD  = 2 * 60
 	skillCD      = 18 * 60
 	burstCDDur   = 15 * 60
+	// Unique modifiers of duration 0.1s. Six frames is 0.1s at 60 fps.
+	// The graph does not mark these gates as hitlag-scaled, so the window is not extended.
+	joyWindow   = 6
+	willWindowF = 6
+	joyNAKey    = "lohen-joy-na"
+	joyCAAKey   = "lohen-joy-caa"
+	joyCABKey   = "lohen-joy-cab"
 )
 
 // Burst gadget count steps, assuming the 0.1s think starts immediately.
@@ -71,6 +78,17 @@ type char struct {
 	// n1cCadence selects the optional combined-loop profile. The default
 	// keeps the 58-frame placeholder. See experimentalN1C.
 	n1cCadence bool
+	// Per teammate. Success, fail, and the A1 extra are separate unique 0.1s gates.
+	willGate map[int]willWindow
+	// Frames at which each Joy modifier expires. A hit at that frame is allowed.
+	joyUntil map[string]int
+}
+
+// willWindow is the frame at which that teammate's unique Will modifier expires.
+type willWindow struct {
+	success int
+	fail    int
+	extra   int
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, p info.CharacterProfile) error {
@@ -94,6 +112,8 @@ func NewChar(s *core.Core, w *character.CharWrapper, p info.CharacterProfile) er
 }
 
 func (c *char) Init() error {
+	c.willGate = map[int]willWindow{}
+	c.joyUntil = map[string]int{}
 	c.willInit()
 	c.a4Init()
 	c.c6Init()
@@ -203,6 +223,24 @@ func (c *char) addWill(amt float64) {
 	if c.will < 0 {
 		c.will = 0
 	}
+}
+
+func (c *char) tryJoy(key string, amt float64) {
+	if amt == 0 || !c.masterActive() {
+		return
+	}
+	// The hit predicate compares ExtraE with MaxCount-1 before the modifier is applied.
+	if c.extraE > c.etchedMax()-1 {
+		return
+	}
+	// Unique stacking: a second hit of the same kind inside 0.1s does not add Joy.
+	// The gate opens on the frame it was set plus 0.1s, matching the Will gates.
+	// Normal, charged A, and charged B are three modifiers, so they do not block each other.
+	if c.Core.F < c.joyUntil[key] {
+		return
+	}
+	c.joyUntil[key] = c.Core.F + joyWindow
+	c.addJoy(amt)
 }
 
 func (c *char) addJoy(amt float64) {

@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	_ "github.com/genshinsim/gcsim/internal/characters/bennett"
+	_ "github.com/genshinsim/gcsim/internal/characters/fischl"
+	_ "github.com/genshinsim/gcsim/internal/characters/kaeya"
 	"github.com/genshinsim/gcsim/pkg/avatar"
 	"github.com/genshinsim/gcsim/pkg/core"
 	"github.com/genshinsim/gcsim/pkg/core/action"
@@ -138,11 +140,12 @@ func TestJoyAndWill(t *testing.T) {
 	if math.Abs(will.(float64)-willSuccess[asLohen(ch).skillLvl()]) > 1e-9 {
 		t.Fatalf("will %v", will)
 	}
+	// Same frame, same teammate. The success gate is already up. The A1 extra is a separate gate.
 	c.Events.Emit(event.OnEnemyDamage, trg[0], &info.AttackEvent{
 		Info: info.AttackInfo{ActorIndex: ben.Index()},
 	}, base*a1ExtraRatio, false)
 	will, _ = ch.Condition([]string{"will"})
-	want := willSuccess[asLohen(ch).skillLvl()] + willSuccess[asLohen(ch).skillLvl()] + a1ExtraWill
+	want := willSuccess[asLohen(ch).skillLvl()] + a1ExtraWill
 	if math.Abs(will.(float64)-want) > 1e-6 {
 		t.Fatalf("will after a1 %v want %v", will, want)
 	}
@@ -200,6 +203,13 @@ func TestC6KeepsWill(t *testing.T) {
 	lc := asLohen(ch)
 	lc.joy = joyCap
 	lc.will = 80
+	var etchedCD float64
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ae := args[1].(*info.AttackEvent)
+		if etchedCD == 0 && len(ae.Info.Abil) >= 6 && ae.Info.Abil[:6] == "Etched" {
+			etchedCD = ae.Snapshot.Stats[attributes.CD]
+		}
+	}, "c6cd")
 	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, map[string]int{"etched": 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -211,6 +221,26 @@ func TestC6KeepsWill(t *testing.T) {
 	joy, _ := ch.Condition([]string{"joy"})
 	if joy.(float64) != joyCap {
 		t.Fatalf("c6 joy %v", joy)
+	}
+	if math.Abs(etchedCD-(ch.Stat(attributes.CD)+c6Crit)) > 1e-6 {
+		t.Fatalf("c6 crit dmg %v stat %v", etchedCD, ch.Stat(attributes.CD))
+	}
+	if !lc.c6Mark {
+		t.Fatal("c6 mark was not set on the etched final hit")
+	}
+	if lc.etchedMax() != etchedBase+2 {
+		t.Fatalf("c6 etched uses %d", lc.etchedMax())
+	}
+	until := lc.masterUntil
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, map[string]int{"etched": 1}); err != nil {
+		t.Fatal(err)
+	}
+	if lc.masterUntil-until != c6Extend {
+		t.Fatalf("c6 extension %d", lc.masterUntil-until)
+	}
+	will, _ = ch.Condition([]string{"will"})
+	if will.(float64) != 0 {
+		t.Fatalf("c6 will inside the 7s flag %v", will)
 	}
 	if ch.TalentLvlSkill() != 12 {
 		t.Fatalf("c3 skill index %d", ch.TalentLvlSkill())
@@ -522,9 +552,10 @@ func TestWillAndHighSpiritsAtAscensionZero(t *testing.T) {
 	if math.Abs(will.(float64)-(willFailGain+willSuccess[lc.skillLvl()])) > 1e-6 {
 		t.Fatalf("base will %v", will)
 	}
+	// 30× is also a success. That gate is still up, and ascension 0 has no extra.
 	emit(base * a1ExtraRatio)
 	will, _ = ch.Condition([]string{"will"})
-	want := willFailGain + willSuccess[lc.skillLvl()]*2
+	want := willFailGain + willSuccess[lc.skillLvl()]
 	if math.Abs(will.(float64)-want) > 1e-6 {
 		t.Fatalf("ascension 0 extra will %v want %v", will, want)
 	}
@@ -890,5 +921,356 @@ func TestN1CProfilesAgainstVideoCadence(t *testing.T) {
 		if rel[i] != want[i] {
 			t.Fatalf("hit %d at +%d, placeholder hitmark %d", i, rel[i], want[i])
 		}
+	}
+}
+
+func enemyCB(t info.Target) info.AttackCB {
+	return info.AttackCB{Target: t, AttackEvent: &info.AttackEvent{Info: info.AttackInfo{Element: attributes.Physical}}}
+}
+
+func TestJoyAndWillGates(t *testing.T) {
+	c, trg := makeCore(1)
+	ch := addProfile(t, c, keys.Lohen, 0, 10)
+	ben := addProfile(t, c, keys.Bennett, 0, 10)
+	kaeya := addProfile(t, c, keys.Kaeya, 0, 10)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	lc := asLohen(ch)
+	joyAmt := joyOnNormal[lc.skillLvl()]
+	cb := enemyCB(trg[0])
+	lc.hitCB(joyAmt, joyNAKey, false)(cb)
+	lc.hitCB(joyAmt, joyNAKey, false)(cb)
+	joy, _ := ch.Condition([]string{"joy"})
+	if math.Abs(joy.(float64)-joyAmt) > 1e-9 {
+		t.Fatalf("second normal inside 0.1s joy %v", joy)
+	}
+	// Charged A and charged B do not share the normal gate, or each other.
+	chargeAmt := joyOnCharge[lc.skillLvl()]
+	lc.hitCB(chargeAmt, joyCAAKey, false)(cb)
+	lc.hitCB(chargeAmt, joyCABKey, false)(cb)
+	joy, _ = ch.Condition([]string{"joy"})
+	if math.Abs(joy.(float64)-(joyAmt+2*chargeAmt)) > 1e-9 {
+		t.Fatalf("charged joy %v", joy)
+	}
+	advance(c, joyWindow-1)
+	lc.hitCB(joyAmt, joyNAKey, false)(cb)
+	joy, _ = ch.Condition([]string{"joy"})
+	if math.Abs(joy.(float64)-(joyAmt+2*chargeAmt)) > 1e-9 {
+		t.Fatalf("joy before window end %v", joy)
+	}
+	advance(c, 1)
+	lc.hitCB(joyAmt, joyNAKey, false)(cb)
+	joy, _ = ch.Condition([]string{"joy"})
+	if math.Abs(joy.(float64)-(2*joyAmt+2*chargeAmt)) > 1e-9 {
+		t.Fatalf("joy after 0.1s %v", joy)
+	}
+
+	base := ch.Stat(attributes.BaseATK)
+	lvl := lc.skillLvl()
+	emit := func(src int, dmg float64) {
+		c.Events.Emit(event.OnEnemyDamage, trg[0], &info.AttackEvent{
+			Info: info.AttackInfo{ActorIndex: src},
+		}, dmg, false)
+	}
+	emit(ben.Index(), base*willAtkRatio[lvl])
+	emit(ben.Index(), base*willAtkRatio[lvl])
+	will, _ := ch.Condition([]string{"will"})
+	one := willSuccess[lvl]
+	if math.Abs(will.(float64)-one) > 1e-6 {
+		t.Fatalf("same-character will %v", will)
+	}
+	// Another teammate is a different unique modifier.
+	emit(kaeya.Index(), base*willAtkRatio[lvl])
+	will, _ = ch.Condition([]string{"will"})
+	if math.Abs(will.(float64)-2*one) > 1e-6 {
+		t.Fatalf("second character will %v", will)
+	}
+	advance(c, willWindowF)
+	emit(ben.Index(), 1)
+	will, _ = ch.Condition([]string{"will"})
+	if math.Abs(will.(float64)-(2*one+willFailGain)) > 1e-6 {
+		t.Fatalf("fail after window %v", will)
+	}
+}
+
+func TestC1C2C4C5(t *testing.T) {
+	c, trg := makeCore(1)
+	ch := addProfile(t, c, keys.Lohen, 1, 8)
+	ben := addProfile(t, c, keys.Bennett, 0, 8)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	lc := asLohen(ch)
+	base := ch.Stat(attributes.BaseATK)
+	c.Events.Emit(event.OnEnemyDamage, trg[0], &info.AttackEvent{
+		Info: info.AttackInfo{ActorIndex: ben.Index()},
+	}, base*willAtkRatio[lc.skillLvl()], false)
+	will, _ := ch.Condition([]string{"will"})
+	if math.Abs(will.(float64)-willSuccess[lc.skillLvl()]*c1Efficiency) > 1e-6 {
+		t.Fatalf("c1 will %v", will)
+	}
+	if lc.willMax() != willCapBase*c1MaxRatio {
+		t.Fatalf("c1 cap %v", lc.willMax())
+	}
+
+	c2, trg2 := makeCore(1)
+	// Evilsbane is a 5.5 box starting 1.3 in front of Lohen. The default target sits on him.
+	trg2[0].SetPos(info.Point{X: 0, Y: 3})
+	ch2 := addProfile(t, c2, keys.Lohen, 2, 8)
+	ben2 := addProfile(t, c2, keys.Bennett, 0, 8)
+	if err := c2.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c2.Player.SetActive(ch2.Index())
+	if err := c2.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	lc2 := asLohen(ch2)
+	lc2.joy = joyCap
+	var evils []float64
+	c2.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.Abil == "Evilsbane Blade" {
+			evils = append(evils, ai.Mult)
+		}
+	}, "c2")
+	if err := c2.Player.Exec(action.ActionSkill, keys.Lohen, map[string]int{"etched": 1}); err != nil {
+		t.Fatal(err)
+	}
+	advance(c2, 40)
+	before := ben2.Stat(attributes.EM)
+	lohenEM := ch2.Stat(attributes.EM)
+	if err := c2.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c2, attackHitmarks[0][0]+2)
+	if len(evils) != 1 || math.Abs(evils[0]-c2Ratio) > 1e-9 {
+		t.Fatalf("evilsbane %v", evils)
+	}
+	if math.Abs(ben2.Stat(attributes.EM)-(before+c2EM)) > 1e-6 {
+		t.Fatalf("c2 em %v", ben2.Stat(attributes.EM))
+	}
+	if math.Abs(ch2.Stat(attributes.EM)-lohenEM) > 1e-6 {
+		t.Fatalf("lohen em changed from %v to %v", lohenEM, ch2.Stat(attributes.EM))
+	}
+	advance(c2, c2Duration)
+	if math.Abs(ben2.Stat(attributes.EM)-before) > 1e-6 {
+		t.Fatalf("c2 em after 8s %v", ben2.Stat(attributes.EM))
+	}
+
+	c4, _ := makeCore(1)
+	ch4 := addProfile(t, c4, keys.Lohen, 4, 8)
+	if err := c4.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c4.Player.SetActive(ch4.Index())
+	ch4.Energy = 0
+	if err := c4.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	if ch4.Energy != c4Energy {
+		t.Fatalf("c4 immediate energy %v", ch4.Energy)
+	}
+	if ch4.TalentLvlBurst() != 7 {
+		t.Fatalf("c4 burst index %d", ch4.TalentLvlBurst())
+	}
+	ch4.Energy = ch4.EnergyMax
+	asLohen(ch4).will = 1
+	asLohen(ch4).enterMasterstroke()
+	var burstMult float64
+	c4.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.AttackTag == attacks.AttackTagElementalBurst && burstMult == 0 {
+			burstMult = ai.Mult
+		}
+	}, "c4burst")
+	if err := c4.Player.Exec(action.ActionBurst, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c4, burstHitmarks[0]+2)
+	lvl := ch4.TalentLvlBurst()
+	want := burstDMG[lvl] * (1 + asLohen(ch4).willMax()*burstWillRatio[lvl])
+	if math.Abs(burstMult-want) > 1e-4 {
+		t.Fatalf("c4 burst mult %v want %v", burstMult, want)
+	}
+	if ch4.Energy != c4Energy {
+		t.Fatalf("c4 refund after burst %v", ch4.Energy)
+	}
+
+	c5, _ := makeCore(1)
+	ch5 := addProfile(t, c5, keys.Lohen, 5, 8)
+	if err := c5.Init(); err != nil {
+		t.Fatal(err)
+	}
+	if ch5.TalentLvlBurst() != 10 {
+		t.Fatalf("c5 burst index %d", ch5.TalentLvlBurst())
+	}
+}
+
+func TestStellarA4AndHexerei(t *testing.T) {
+	c, trg := makeCore(1)
+	ch := addProfile(t, c, keys.Lohen, 0, 10)
+	ben := addProfile(t, c, keys.Bennett, 0, 10)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	before := ch.Stat(attributes.ATKP)
+	atk := &info.AttackEvent{Info: info.AttackInfo{ActorIndex: ben.Index()}}
+	c.Events.Emit(event.OnStellarSwirl, trg[0], atk)
+	if math.Abs(ch.Stat(attributes.ATKP)-(before+a4ATK)) > 1e-9 {
+		t.Fatalf("stellar swirl atk %v", ch.Stat(attributes.ATKP))
+	}
+	c.Events.Emit(event.OnStellarConduct, trg[0], atk)
+	if math.Abs(ben.Stat(attributes.ATKP)-a4ATK) > 1e-9 {
+		t.Fatalf("stellar conduct source atk %v", ben.Stat(attributes.ATKP))
+	}
+	advance(c, a4Duration)
+	if math.Abs(ch.Stat(attributes.ATKP)-before) > 1e-9 {
+		t.Fatalf("a4 after 8s %v", ch.Stat(attributes.ATKP))
+	}
+
+	hx, _ := makeCore(1)
+	lo := addProfileWithParams(t, hx, keys.Lohen, 0, 10, map[string]int{"hexerei": 1})
+	addProfile(t, hx, keys.Fischl, 0, 10)
+	if err := hx.Init(); err != nil {
+		t.Fatal(err)
+	}
+	hx.Player.SetActive(lo.Index())
+	if err := hx.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	lc := asLohen(lo)
+	lc.joy = joyCap
+	lc.will = lc.willMax() * hexThreshold
+	var dmg []float64
+	var names []string
+	// OnEnemyHit is emitted before attack mods are written into the snapshot.
+	hx.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ae := args[1].(*info.AttackEvent)
+		if ae.Info.ActorIndex != lo.Index() || ae.Info.AttackTag != attacks.AttackTagNormal {
+			return
+		}
+		names = append(names, ae.Info.Abil)
+		dmg = append(dmg, ae.Snapshot.Stats[attributes.DmgP])
+	}, "hex")
+	if err := hx.Player.Exec(action.ActionSkill, keys.Lohen, map[string]int{"etched": 1}); err != nil {
+		t.Fatal(err)
+	}
+	advance(hx, 40)
+	if err := hx.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(hx, attackHitmarks[0][0]+2)
+	if len(dmg) != 1 || math.Abs(dmg[0]-hexBonus) > 1e-6 {
+		t.Fatalf("hexerei normal %v %v", names, dmg)
+	}
+	lc.NormalCounter = 4
+	if err := hx.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(hx, attackHitmarks[4][1]+2)
+	if len(dmg) != 3 {
+		t.Fatalf("n5 hits %v %v", names, dmg)
+	}
+	if math.Abs(dmg[1]-hexBonus) > 1e-6 || math.Abs(dmg[2]) > 1e-6 {
+		t.Fatalf("n5 hexerei %v %v", names, dmg)
+	}
+	advance(hx, hexDuration)
+	lc.NormalCounter = 0
+	if err := hx.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(hx, attackHitmarks[0][0]+2)
+	if math.Abs(dmg[len(dmg)-1]) > 1e-6 {
+		t.Fatalf("hexerei after 6s %v", dmg)
+	}
+
+	off, _ := makeCore(1)
+	solo := addProfileWithParams(t, off, keys.Lohen, 0, 10, map[string]int{"hexerei": 1})
+	if err := off.Init(); err != nil {
+		t.Fatal(err)
+	}
+	off.Player.SetActive(solo.Index())
+	if err := off.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	asLohen(solo).joy = joyCap
+	asLohen(solo).will = 100
+	var bonus float64
+	off.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ae := args[1].(*info.AttackEvent)
+		if ae.Info.AttackTag == attacks.AttackTagNormal {
+			bonus = ae.Snapshot.Stats[attributes.DmgP]
+		}
+	}, "off")
+	if err := off.Player.Exec(action.ActionSkill, keys.Lohen, map[string]int{"etched": 1}); err != nil {
+		t.Fatal(err)
+	}
+	advance(off, 40)
+	if err := off.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(off, attackHitmarks[0][0]+2)
+	if math.Abs(bonus) > 1e-6 {
+		t.Fatalf("solo hexerei bonus %v", bonus)
+	}
+}
+
+func TestCadenceLeavesOtherCancels(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfileWithParams(t, c, keys.Lohen, 0, 10, map[string]int{"n1c_cadence": 1})
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	lc := asLohen(ch)
+	n1, err := lc.Attack(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n1.Frames(action.ActionCharge) != experimentalN1ToCA {
+		t.Fatalf("n1 charge cancel %d", n1.Frames(action.ActionCharge))
+	}
+	n2, err := lc.Attack(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n2.Frames(action.ActionCharge) != attackFrames[1][action.ActionCharge] {
+		t.Fatalf("n2 charge cancel %d, baseline %d", n2.Frames(action.ActionCharge), attackFrames[1][action.ActionCharge])
+	}
+	if n2.Frames(action.ActionDash) != attackFrames[1][action.ActionDash] {
+		t.Fatalf("n2 dash %d", n2.Frames(action.ActionDash))
+	}
+	ca, err := lc.ChargeAttack(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ca.Frames(action.ActionDash) != chargeFrames[action.ActionDash] {
+		t.Fatalf("ca dash %d", ca.Frames(action.ActionDash))
+	}
+	if ca.Frames(action.ActionSkill) != chargeFrames[action.ActionSkill] {
+		t.Fatalf("ca skill %d", ca.Frames(action.ActionSkill))
+	}
+	if ca.Frames(action.ActionAttack) != experimentalCAToN1 {
+		t.Fatalf("ca attack cancel %d", ca.Frames(action.ActionAttack))
+	}
+	sk, err := lc.Skill(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sk.Frames(action.ActionAttack) != skillFrames[action.ActionAttack] {
+		t.Fatalf("skill attack cancel %d", sk.Frames(action.ActionAttack))
 	}
 }

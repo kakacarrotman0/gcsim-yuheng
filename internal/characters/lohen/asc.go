@@ -11,27 +11,40 @@ import (
 func (c *char) willInit() {
 	// Teammate_Attack_Monitor is part of the skill, not Moratorium on
 	// Questioning. The extra 60 Will is that ascension-1 passive.
-	// Distance 40 is not simulated.
+	// The monitor is attached to each other avatar within 40m. gcsim has one
+	// player position, so that distance cannot fail. See docs/yuheng/lohen.md.
 	c.Core.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
 		if !c.masterActive() {
 			return
 		}
 		atk := args[1].(*info.AttackEvent)
-		if atk.Info.ActorIndex == c.Index() {
+		src := atk.Info.ActorIndex
+		if src == c.Index() {
 			return
 		}
 		dmg := args[2].(float64)
 		base := c.Stat(attributes.BaseATK)
 		lvl := c.skillLvl()
 		eff := c.willEfficiency()
+		gate := c.willGate[src]
+		// Success_Pre, Fail_Pre, and Success_Extra_Pre are separate unique 0.1s
+		// modifiers on the attacker, so one character's gate does not block another.
 		if dmg >= base*willAtkRatio[lvl] {
-			c.addWill(willSuccess[lvl] * eff)
+			if c.Core.F >= gate.success {
+				c.addWill(willSuccess[lvl] * eff)
+				gate.success = c.Core.F + willWindowF
+			}
 		} else if dmg >= 0 {
-			c.addWill(willFailGain * eff)
+			if c.Core.F >= gate.fail {
+				c.addWill(willFailGain * eff)
+				gate.fail = c.Core.F + willWindowF
+			}
 		}
-		if c.Base.Ascension >= 1 && dmg >= base*a1ExtraRatio {
+		if c.Base.Ascension >= 1 && dmg >= base*a1ExtraRatio && c.Core.F >= gate.extra {
 			c.addWill(a1ExtraWill * eff)
+			gate.extra = c.Core.F + willWindowF
 		}
+		c.willGate[src] = gate
 	}, "lohen-will")
 }
 
@@ -65,15 +78,18 @@ func (c *char) a4Init() {
 			},
 		})
 	}
-	// PermanentSkill_2 lists Melt, Freeze, Superconductor, Cryo Swirl, and Cryo Crystallize.
-	// Stellar-Swirl and Stellar-Superconductor are in that list and are not wired:
-	// the engine events do not identify the ice variant.
+	// PermanentSkill_2 lists Melt, Freeze, Superconductor, SwirlIce,
+	// StarSwirlIce, CrystallizeIce, and StarSuperconductor.
+	// OnStellarSwirl is only emitted for Cryo or Frozen. OnStellarConduct is
+	// the Cryo and Electro Stellar reaction.
 	for _, evt := range []event.Event{
 		event.OnMelt,
 		event.OnFrozen,
 		event.OnSuperconduct,
 		event.OnSwirlCryo,
+		event.OnStellarSwirl,
 		event.OnCrystallizeCryo,
+		event.OnStellarConduct,
 	} {
 		c.Core.Events.Subscribe(evt, hook, "lohen-a4")
 	}
@@ -115,7 +131,14 @@ func (c *char) tryHexerei(snapped float64) {
 		Base: modifier.NewBaseWithHitlag(hexKey, hexDuration),
 		Amount: func(atk *info.AttackEvent, _ info.Target) []float64 {
 			switch atk.Info.AttackTag {
-			case attacksTagNormal(), attacksTagExtra():
+			case attacksTagNormal():
+				// NormalAttack_06 is the second hit of the fifth normal. The
+				// Hexenzirkel mixin lists NormalAttack_01 through _05 and ExtraAttack.
+				if len(atk.Info.Abil) >= 2 && atk.Info.Abil[len(atk.Info.Abil)-2:] == " B" {
+					return nil
+				}
+				return m
+			case attacksTagExtra():
 				return m
 			default:
 				return nil

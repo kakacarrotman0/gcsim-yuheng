@@ -107,7 +107,7 @@ func (c *char) plungeXY(p map[string]int, high bool) action.Info {
 		combat.NewCircleHitOnTarget(c.Core.Combat.Player(), info.Point{Y: 1}, 3),
 		hitmark,
 		hitmark,
-		c.hitCB(0, false),
+		c.hitCB(0, "", false),
 	)
 	return action.Info{
 		Frames:          frames.NewAbilFunc(frameset),
@@ -143,7 +143,7 @@ func (c *char) plungeCollision(delay int) {
 	}
 	var cb info.AttackCBFunc
 	if ele == attributes.Cryo {
-		cb = c.hitCB(0, false)
+		cb = c.hitCB(0, "", false)
 	}
 	c.Core.QueueAttack(ai, combat.NewCircleHitOnTarget(c.Core.Combat.Player(), info.Point{Y: 1}, 1), delay, delay, cb)
 }

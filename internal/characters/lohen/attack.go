@@ -109,7 +109,11 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 				ai.Abil = fmt.Sprintf("Masterstroke Normal %v", counter)
 				joy = joyOnNormal[c.skillLvl()]
 			}
-			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, true))
+			// The fifth normal's second hit is NormalAttack_06.
+			if counter == 4 && hit == 1 {
+				ai.Abil += " B"
+			}
+			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, joyNAKey, true))
 		}, attackHitmarks[counter][hit])
 	}
 	defer c.AdvanceNormalIndex()
@@ -125,13 +129,13 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 	}, nil
 }
 
-func (c *char) hitCB(joy float64, canEvilsbane bool) info.AttackCBFunc {
+func (c *char) hitCB(joy float64, joyKey string, canEvilsbane bool) info.AttackCBFunc {
 	return func(a info.AttackCB) {
 		if a.Target.Type() != info.TargettableEnemy {
 			return
 		}
 		if joy > 0 {
-			c.addJoy(joy)
+			c.tryJoy(joyKey, joy)
 		}
 		if canEvilsbane {
 			c.tryEvilsbane()
