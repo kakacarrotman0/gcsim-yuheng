@@ -43,7 +43,7 @@ That run's Lohen damage log, from the gcsim result JSON:
 
 The printed summary was average 265553.09 damage over 20.00 seconds (13278 dps, min 11816.84, max 14058.35, std 592.64). That number is the output of this one config. It is not a claimed team DPS.
 
-Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, Masterstroke ending on swap, the 5s/2-hit application sequence and its reset, a normal and a charged attack sharing that sequence, and the placeholder N1C count of 13.
+Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, Masterstroke ending on swap, the 5s/2-hit application sequence and its reset, a normal and a charged attack sharing that sequence, the placeholder N1C count of 13, and a 58-frame N1C spacing that stays 58 with hitlag and defense halt enabled.
 
 ## Timing
 
@@ -61,9 +61,11 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 
 ## Frame review
 
-No measured Lohen frame sheet is public. The KQM library page for Lohen still says its findings have not been added. `gensri.wiki` has no Lohen frame page. The ability JSON has Joy modifiers of 0.1s and raid-bullet durations, and it does not give attack-state lengths that convert into hitmarks. No clean 60 FPS clip was counted for this review. Combo counts were not turned into hitmarks.
+No measured Lohen frame sheet is public. The KQM library page for Lohen still says its findings have not been added. `gensri.wiki` has no Lohen frame page. The ability JSON has Joy modifiers of 0.1s and raid-bullet durations, and it does not give attack-state lengths that convert into hitmarks. Combo counts were not turned into hitmarks.
 
-KQM's quickguide (Version 7.1) lists `E 15–17[N1C] (N1 E)`. Average play completes 15–16 N1C loops during Masterstroke. 17 needs near-frame-perfect input and a favorable enemy. The count also depends on ping and frame rate. Charged-attack input cannot be buffered. That row is a combo count, not a frame sheet.
+BowTae's 60 FPS recording (`Day 1 Lohen Combos 60fps`) has a gamepad overlay. On the final `E 17N1C N1 E` segment the attack-trigger onsets are 46–47 frames apart after the first transition (median 46, mean 46.47, range 46–48). The same cadence shows up on the earlier 14, 15, and 13 N1C runs. The split clip reproduces that interval sequence. The on-screen ping in the clip is 24 ms. The overlay can shift the represented input by a few frames. A press start is not the animation start, the hitmark, or the earliest legal cancel, and the recorded frames include hitlag.
+
+KQM's quickguide (Version 7.1) lists `E 15–17[N1C] (N1 E)`. Average play completes 15–16 N1C loops during Masterstroke. 17 needs near-frame-perfect input and a favorable enemy. The count also depends on ping and frame rate. Charged-attack input cannot be buffered. That row is a combo count, not a frame sheet. The footage is one optimized 17-loop example of that count.
 
 The placeholders, unchanged:
 
@@ -80,7 +82,9 @@ The placeholders, unchanged:
 
 `TestPlaceholderN1CCount` starts Masterstroke with skill, then queues N1 and CA as soon as the engine allows, and stops when the 13s (780-frame) mode ends. The result is 13 completed N1C strings. Skill cancels into attack at frame 24, and `(780 − 24) / 58` is about 13.03, which matches that count.
 
-A 12-frame N1→CA cancel would make a 48-frame loop and land near 16 loops. That window was not measured, so it was not implemented. Fitting 17 loops into 13 seconds would need an average loop under about 46 frames after the skill. The gap against KQM's 15–16 average and 17 ideal stays documented here.
+gcsim's default config enables hitlag, and defense halt adds frames when an attack asks for it. Lohen's normals and charged attacks set no halt and no defense halt, so enabling that clock does not grow the action. `TestN1CSpacingStaysPlaceholderWithHitlag` runs the earliest-legal N1C loop with both switches on. Every attack-to-attack gap is 58 engine frames. A guessed halt on top of these windows would make the simulated loop slower than 58, farther from the recorded 46–47.
+
+The recorded interval sits above the two cancel windows by the hitlag and the input delay, and this footage does not isolate either one. More than one split of 46 frames between N1→CA and CA→N1 is possible. None of them was measured. The N1 hitmark, the two charged hitmarks, the skill and burst windows, the Etched delays, and the plunge template stay as they were. A 12-frame N1→CA cancel would make a 48-frame loop before hitlag and was not implemented.
 
 ## Elemental application
 
@@ -110,4 +114,4 @@ N1C is three hits. The sequence applies on hits 1 and 3 of the first string, the
 
 ## Not claimed
 
-One 20-iteration config does not prove every team or constellation. No confirmed frame measurement was found, so every attack, charged, skill, burst, plunge, and Etched window above stays approximate. The 13 N1C count is the engine result of those placeholders, not a measured combo. The 0.1s Joy and Will gates are not simulated; the placeholder normal spacing is already outside 0.1s, and the two charged hits use separate Joy modifiers in the graph. The 40m Will distance check and the per-character 0.1s Will ICD are not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.
+One 20-iteration config does not prove every team or constellation. The 46–47 frame figure is a measured attack-input cadence, not a cancel window or a hitmark. Every attack, charged, skill, burst, plunge, and Etched window above stays approximate. The 13 N1C count and the 58-frame engine spacing are the result of those placeholders. The 0.1s Joy and Will gates are not simulated; the placeholder normal spacing is already outside 0.1s, and the two charged hits use separate Joy modifiers in the graph. The 40m Will distance check and the per-character 0.1s Will ICD are not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.

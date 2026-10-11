@@ -675,3 +675,60 @@ func TestPlaceholderN1CCount(t *testing.T) {
 		t.Fatalf("placeholder N1C count %d at frame %d", n1c, c.F)
 	}
 }
+
+// BowTae's 60 FPS recording, measured from the controller overlay, repeats an
+// attack press every 46–47 frames (median 46, first transition 51). That is
+// wall-clock time between inputs. It includes hitlag and input delay, and it
+// does not separate the N1 cancel from the CA cancel. Parser sims enable
+// hitlag; Lohen sets no halt, so the action clock is not extended and the
+// engine spacing stays the placeholder sum.
+func TestN1CSpacingStaysPlaceholderWithHitlag(t *testing.T) {
+	c, err := core.New(core.Opt{Seed: 1, EnableHitlag: true, DefHalt: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
+	c.Combat.SetPlayer(a)
+	e := enemy.New(c, info.EnemyProfile{
+		Level:  100,
+		Resist: make(map[attributes.Element]float64),
+		Pos:    info.Coord{X: 0, Y: 0, R: 1},
+	})
+	c.Combat.AddEnemy(e)
+	c.Combat.DefaultTarget = e.Key()
+	c.Player.SetActive(0)
+	ch := addProfile(t, c, keys.Lohen, 0, 10)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	limit := int(masterDuration[0] * 60)
+	var starts []int
+	for c.F < limit {
+		if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+			break
+		}
+		starts = append(starts, c.F)
+		if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+			t.Fatal(err)
+		}
+		if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+			break
+		}
+		if err := c.Player.Exec(action.ActionCharge, keys.Lohen, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(starts) < 2 {
+		t.Fatalf("attack starts %d", len(starts))
+	}
+	for i := 1; i < len(starts); i++ {
+		delta := starts[i] - starts[i-1]
+		if delta != 58 {
+			t.Fatalf("N1C spacing %d at loop %d, want 58 (placeholder 22+36, not the 46–47 frame input cadence)", delta, i)
+		}
+	}
+}

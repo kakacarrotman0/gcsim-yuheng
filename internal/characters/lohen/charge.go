@@ -9,7 +9,10 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/info"
 )
 
-// Two ExtraAttack hits. Spacing is unverified. The two Joy modifiers are
+// Two ExtraAttack hits. Spacing is unverified. CA→N1 stays at 36.
+// A 46–47 frame attack-input cadence from 60 FPS footage is the whole N1C
+// press interval, including hitlag, so it is not this cancel.
+// The two Joy modifiers are
 // different names, so both hits add Joy even inside 0.1s.
 // The ICD tag is normal attack, not extra attack: both hits share 洛恩战技
 // with the normal string.

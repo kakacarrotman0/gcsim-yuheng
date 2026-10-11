@@ -12,6 +12,9 @@ import (
 )
 
 // Hitmarks are an unverified polearm spacing. They are not a frame sheet.
+// N1→CA stays at the 22-frame recovery. BowTae's 60 FPS footage repeats attack
+// inputs every 46–47 wall frames; that interval includes hitlag and input
+// delay, so it is not this cancel and it does not locate the hitmark.
 // N3's three hits are 8 frames apart so they sit outside the 0.1s unique Joy modifier.
 //
 // NA and CA share BWiki group 洛恩战技: ICD tag normal attack, 5s reset,
