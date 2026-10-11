@@ -117,8 +117,10 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 		}, attackHitmarks[counter][hit])
 	}
 	defer c.AdvanceNormalIndex()
+	// The 46-frame loop is from Masterstroke footage. Outside that mode the
+	// placeholder cancels stay in place. Hitmarks in both slices are approximate.
 	slice := attackFrames
-	if c.n1cCadence {
+	if c.n1cCadence && c.masterActive() {
 		slice = attackFramesCadence
 	}
 	return action.Info{

@@ -7,6 +7,7 @@ import (
 	_ "github.com/genshinsim/gcsim/internal/characters/bennett"
 	_ "github.com/genshinsim/gcsim/internal/characters/fischl"
 	_ "github.com/genshinsim/gcsim/internal/characters/kaeya"
+	_ "github.com/genshinsim/gcsim/internal/characters/traveler/cryo/lumine"
 	"github.com/genshinsim/gcsim/pkg/avatar"
 	"github.com/genshinsim/gcsim/pkg/core"
 	"github.com/genshinsim/gcsim/pkg/core/action"
@@ -19,6 +20,7 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/player"
 	"github.com/genshinsim/gcsim/pkg/core/player/character"
 	"github.com/genshinsim/gcsim/pkg/enemy"
+	"github.com/genshinsim/gcsim/pkg/reactable"
 	"github.com/genshinsim/gcsim/pkg/testhelper"
 )
 
@@ -1229,48 +1231,152 @@ func TestStellarA4AndHexerei(t *testing.T) {
 	}
 }
 
-func TestCadenceLeavesOtherCancels(t *testing.T) {
+func TestCadenceOnlyInMasterstroke(t *testing.T) {
 	c, _ := makeCore(1)
 	ch := addProfileWithParams(t, c, keys.Lohen, 0, 10, map[string]int{"n1c_cadence": 1})
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
 	lc := asLohen(ch)
+	// Outside Masterstroke the param does not change the placeholder cancels.
 	n1, err := lc.Attack(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n1.Frames(action.ActionCharge) != experimentalN1ToCA {
-		t.Fatalf("n1 charge cancel %d", n1.Frames(action.ActionCharge))
+	if n1.Frames(action.ActionCharge) != attackFrames[0][action.ActionCharge] {
+		t.Fatalf("outside n1 charge cancel %d, baseline %d", n1.Frames(action.ActionCharge), attackFrames[0][action.ActionCharge])
 	}
 	n2, err := lc.Attack(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if n2.Frames(action.ActionCharge) != attackFrames[1][action.ActionCharge] {
-		t.Fatalf("n2 charge cancel %d, baseline %d", n2.Frames(action.ActionCharge), attackFrames[1][action.ActionCharge])
+		t.Fatalf("outside n2 charge cancel %d, baseline %d", n2.Frames(action.ActionCharge), attackFrames[1][action.ActionCharge])
 	}
 	if n2.Frames(action.ActionDash) != attackFrames[1][action.ActionDash] {
-		t.Fatalf("n2 dash %d", n2.Frames(action.ActionDash))
+		t.Fatalf("outside n2 dash %d", n2.Frames(action.ActionDash))
 	}
 	ca, err := lc.ChargeAttack(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if ca.Frames(action.ActionAttack) != chargeFrames[action.ActionAttack] {
+		t.Fatalf("outside ca attack cancel %d", ca.Frames(action.ActionAttack))
+	}
 	if ca.Frames(action.ActionDash) != chargeFrames[action.ActionDash] {
-		t.Fatalf("ca dash %d", ca.Frames(action.ActionDash))
+		t.Fatalf("outside ca dash %d", ca.Frames(action.ActionDash))
 	}
 	if ca.Frames(action.ActionSkill) != chargeFrames[action.ActionSkill] {
-		t.Fatalf("ca skill %d", ca.Frames(action.ActionSkill))
+		t.Fatalf("outside ca skill %d", ca.Frames(action.ActionSkill))
 	}
-	if ca.Frames(action.ActionAttack) != experimentalCAToN1 {
-		t.Fatalf("ca attack cancel %d", ca.Frames(action.ActionAttack))
-	}
+
 	sk, err := lc.Skill(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if sk.Frames(action.ActionAttack) != skillFrames[action.ActionAttack] {
 		t.Fatalf("skill attack cancel %d", sk.Frames(action.ActionAttack))
+	}
+	if !lc.masterActive() {
+		t.Fatal("masterstroke did not start")
+	}
+	lc.ResetNormalCounter()
+	n1m, err := lc.Attack(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n1m.Frames(action.ActionCharge) != experimentalN1ToCA {
+		t.Fatalf("masterstroke n1 charge cancel %d, want %d", n1m.Frames(action.ActionCharge), experimentalN1ToCA)
+	}
+	n2m, err := lc.Attack(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n2m.Frames(action.ActionCharge) != attackFrames[1][action.ActionCharge] {
+		t.Fatalf("masterstroke n2 charge cancel %d", n2m.Frames(action.ActionCharge))
+	}
+	cam, err := lc.ChargeAttack(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cam.Frames(action.ActionAttack) != experimentalCAToN1 {
+		t.Fatalf("masterstroke ca attack cancel %d, want %d", cam.Frames(action.ActionAttack), experimentalCAToN1)
+	}
+	if cam.Frames(action.ActionDash) != chargeFrames[action.ActionDash] {
+		t.Fatalf("masterstroke ca dash %d", cam.Frames(action.ActionDash))
+	}
+}
+
+func TestA4StellarFromReactions(t *testing.T) {
+	c, trg := makeCore(1)
+	ch := addProfile(t, c, keys.Lohen, 0, 10)
+	// Cryo Traveler's Init is what turns Cryo Swirl and Superconduct into the
+	// Stellar reactions. Lohen does not set those flags.
+	trv := addProfile(t, c, keys.LumineCryo, 0, 10)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := c.Flags.Custom[reactable.StellarSwirlEnableKey]; !ok {
+		t.Fatal("stellar swirl flag")
+	}
+	if _, ok := c.Flags.Custom[reactable.StellarConductEnableKey]; !ok {
+		t.Fatal("stellar conduct flag")
+	}
+	c.Player.SetActive(ch.Index())
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	var stellarSwirl, plainSwirl, stellarConduct, plainSuper int
+	c.Events.Subscribe(event.OnStellarSwirl, func(args ...any) { stellarSwirl++ }, "ssw")
+	c.Events.Subscribe(event.OnSwirlCryo, func(args ...any) { plainSwirl++ }, "swirl")
+	c.Events.Subscribe(event.OnStellarConduct, func(args ...any) { stellarConduct++ }, "ssc")
+	c.Events.Subscribe(event.OnSuperconduct, func(args ...any) { plainSuper++ }, "sc")
+
+	beforeL := ch.Stat(attributes.ATKP)
+	beforeT := trv.Stat(attributes.ATKP)
+	trg[0].AttachOrRefill(&info.AttackEvent{
+		Info: info.AttackInfo{Element: attributes.Cryo, Durability: 25},
+	})
+	advance(c, 1)
+	c.QueueAttack(info.AttackInfo{
+		ActorIndex: trv.Index(),
+		Abil:       "anemo-gauge",
+		AttackTag:  attacks.AttackTagElementalArt,
+		ICDTag:     attacks.ICDTagNone,
+		ICDGroup:   attacks.ICDGroupDefault,
+		Element:    attributes.Anemo,
+		Durability: 25,
+	}, combat.NewSingleTargetHit(trg[0].Key()), 0, 0)
+	if stellarSwirl != 1 || plainSwirl != 0 {
+		t.Fatalf("swirl stellar %d plain %d", stellarSwirl, plainSwirl)
+	}
+	if math.Abs(ch.Stat(attributes.ATKP)-(beforeL+a4ATK)) > 1e-9 {
+		t.Fatalf("lohen atk after stellar swirl %v", ch.Stat(attributes.ATKP))
+	}
+	if math.Abs(trv.Stat(attributes.ATKP)-(beforeT+a4ATK)) > 1e-9 {
+		t.Fatalf("traveler atk after stellar swirl %v", trv.Stat(attributes.ATKP))
+	}
+
+	// Let the Stellar Swirl attack land, then apply a fresh Cryo aura.
+	advance(c, 5)
+	trg[0].AttachOrRefill(&info.AttackEvent{
+		Info: info.AttackInfo{Element: attributes.Cryo, Durability: 50},
+	})
+	advance(c, 1)
+	c.QueueAttack(info.AttackInfo{
+		ActorIndex: trv.Index(),
+		Abil:       "electro-gauge",
+		AttackTag:  attacks.AttackTagElementalArt,
+		ICDTag:     attacks.ICDTagNone,
+		ICDGroup:   attacks.ICDGroupDefault,
+		Element:    attributes.Electro,
+		Durability: 25,
+	}, combat.NewSingleTargetHit(trg[0].Key()), 0, 0)
+	if stellarConduct != 1 || plainSuper != 0 {
+		t.Fatalf("conduct stellar %d plain %d", stellarConduct, plainSuper)
+	}
+	if math.Abs(ch.Stat(attributes.ATKP)-(beforeL+a4ATK)) > 1e-9 {
+		t.Fatalf("lohen atk after stellar conduct %v", ch.Stat(attributes.ATKP))
 	}
 }

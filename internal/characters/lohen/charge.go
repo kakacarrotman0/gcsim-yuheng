@@ -92,8 +92,10 @@ func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, joyKey, true))
 		}, delay)
 	}
+	// CA→N1 uses the experimental split only when this charged attack starts
+	// during Masterstroke. The footage does not show the physical string.
 	slice := chargeFrames
-	if c.n1cCadence {
+	if c.n1cCadence && c.masterActive() {
 		slice = chargeFramesCadence
 	}
 	return action.Info{
