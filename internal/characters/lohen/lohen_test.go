@@ -57,9 +57,17 @@ func advance(c *core.Core, n int) {
 
 func addProfile(t *testing.T, c *core.Core, key keys.Char, cons, talent int) *character.CharWrapper {
 	t.Helper()
+	return addProfileWithParams(t, c, key, cons, talent, nil)
+}
+
+func addProfileWithParams(t *testing.T, c *core.Core, key keys.Char, cons, talent int, params map[string]int) *character.CharWrapper {
+	t.Helper()
 	prof := testhelper.DefaultProfile(key, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
 	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	if params != nil {
+		prof.Params = params
+	}
 	idx, err := c.AddChar(prof)
 	if err != nil {
 		t.Fatalf("add %v: %v", key, err)
@@ -729,6 +737,158 @@ func TestN1CSpacingStaysPlaceholderWithHitlag(t *testing.T) {
 		delta := starts[i] - starts[i-1]
 		if delta != 58 {
 			t.Fatalf("N1C spacing %d at loop %d, want 58 (placeholder 22+36, not the 46–47 frame input cadence)", delta, i)
+		}
+	}
+}
+
+type n1cHit struct {
+	frame int
+	abil  string
+	ele   attributes.Element
+}
+
+type n1cRun struct {
+	attackStarts []int
+	chargeStarts []int
+	hits         []n1cHit
+}
+
+// runEarliestN1C queues N1 then CA as soon as the engine allows, with the
+// hitlag clock and defense halt on. params selects the timing profile.
+func runEarliestN1C(t *testing.T, params map[string]int) n1cRun {
+	t.Helper()
+	c, err := core.New(core.Opt{Seed: 1, EnableHitlag: true, DefHalt: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
+	c.Combat.SetPlayer(a)
+	e := enemy.New(c, info.EnemyProfile{
+		Level:  100,
+		Resist: make(map[attributes.Element]float64),
+		Pos:    info.Coord{X: 0, Y: 0, R: 1},
+	})
+	c.Combat.AddEnemy(e)
+	c.Combat.DefaultTarget = e.Key()
+	c.Player.SetActive(0)
+	ch := addProfileWithParams(t, c, keys.Lohen, 0, 10, params)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	var run n1cRun
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.ActorIndex != ch.Index() {
+			return
+		}
+		if ai.AttackTag != attacks.AttackTagNormal && ai.AttackTag != attacks.AttackTagExtra {
+			return
+		}
+		run.hits = append(run.hits, n1cHit{frame: c.F, abil: ai.Abil, ele: ai.Element})
+	}, "n1c-hits")
+	if err := c.Player.Exec(action.ActionSkill, keys.Lohen, nil); err != nil {
+		t.Fatal(err)
+	}
+	limit := int(masterDuration[0] * 60)
+	for c.F < limit {
+		if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+			break
+		}
+		run.attackStarts = append(run.attackStarts, c.F)
+		if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
+			t.Fatal(err)
+		}
+		if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+			break
+		}
+		run.chargeStarts = append(run.chargeStarts, c.F)
+		if err := c.Player.Exec(action.ActionCharge, keys.Lohen, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return run
+}
+
+func TestN1CProfilesAgainstVideoCadence(t *testing.T) {
+	if experimentalN1ToCA+experimentalCAToN1 != experimentalN1C {
+		t.Fatalf("cadence split %d+%d, want sum %d", experimentalN1ToCA, experimentalCAToN1, experimentalN1C)
+	}
+	// The split is the placeholder hitmarks plus an even share of whatever
+	// is left. 12 and 28 are the old hitmarks, not new measurements.
+	if experimentalN1ToCA != attackHitmarks[0][0]+3 || experimentalCAToN1 != chargeHitmarks[1]+3 {
+		t.Fatalf("split %d/%d drifted from hitmarks %d and %d", experimentalN1ToCA, experimentalCAToN1, attackHitmarks[0][0], chargeHitmarks[1])
+	}
+
+	base := runEarliestN1C(t, nil)
+	cadence := runEarliestN1C(t, map[string]int{"n1c_cadence": 1})
+
+	if len(base.attackStarts) < 2 || base.attackStarts[0] != 24 {
+		t.Fatalf("baseline first attack %v", base.attackStarts)
+	}
+	for i := 1; i < len(base.attackStarts); i++ {
+		if got := base.attackStarts[i] - base.attackStarts[i-1]; got != 58 {
+			t.Fatalf("baseline spacing %d", got)
+		}
+	}
+	if len(base.chargeStarts) != 13 {
+		t.Fatalf("baseline completed N1C %d, want 13", len(base.chargeStarts))
+	}
+
+	if len(cadence.attackStarts) < 2 || cadence.attackStarts[0] != 24 {
+		t.Fatalf("cadence first attack %v", cadence.attackStarts)
+	}
+	for i := 1; i < len(cadence.attackStarts); i++ {
+		if got := cadence.attackStarts[i] - cadence.attackStarts[i-1]; got != experimentalN1C {
+			t.Fatalf("cadence spacing %d, want %d", got, experimentalN1C)
+		}
+	}
+	// Skill→N1 is still the unverified 24-frame placeholder. With that
+	// window and a 46-frame loop, the engine starts 17 N1C strings. The
+	// 17th charged attack's hits fall after the unextended 13s, so 16
+	// strings land both charged hits inside Masterstroke.
+	if len(cadence.chargeStarts) != 17 {
+		t.Fatalf("cadence started N1C %d, want 17", len(cadence.chargeStarts))
+	}
+	var n1, ca int
+	for _, h := range cadence.hits {
+		if h.ele != attributes.Cryo || len(h.abil) < 12 || h.abil[:12] != "Masterstroke" {
+			continue
+		}
+		switch h.abil {
+		case "Masterstroke Normal 0":
+			n1++
+		case "Masterstroke Charged Attack":
+			ca++
+		}
+	}
+	if n1 != 17 || ca != 32 {
+		t.Fatalf("in-mode hits N1 %d CA %d, want 17 and 32", n1, ca)
+	}
+
+	// One cadence cycle keeps the placeholder hitmarks: N1 at +12, CA at +18 and +28.
+	a0 := cadence.attackStarts[0]
+	c0 := cadence.chargeStarts[0]
+	var rel []int
+	for _, h := range cadence.hits {
+		switch h.abil {
+		case "Masterstroke Normal 0":
+			if h.frame >= a0 && h.frame < c0 {
+				rel = append(rel, h.frame-a0)
+			}
+		case "Masterstroke Charged Attack":
+			if h.frame >= c0 && h.frame < cadence.attackStarts[1] {
+				rel = append(rel, h.frame-c0)
+			}
+		}
+	}
+	want := []int{attackHitmarks[0][0], chargeHitmarks[0], chargeHitmarks[1]}
+	if len(rel) != len(want) {
+		t.Fatalf("first-cycle hit offsets %v", rel)
+	}
+	for i := range want {
+		if rel[i] != want[i] {
+			t.Fatalf("hit %d at +%d, placeholder hitmark %d", i, rel[i], want[i])
 		}
 	}
 }

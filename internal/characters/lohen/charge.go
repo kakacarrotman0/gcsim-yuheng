@@ -9,16 +9,16 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/info"
 )
 
-// Two ExtraAttack hits. Spacing is unverified. CA→N1 stays at 36.
-// A 46–47 frame attack-input cadence from 60 FPS footage is the whole N1C
-// press interval, including hitlag, so it is not this cancel.
-// The two Joy modifiers are
+// Two ExtraAttack hits. Spacing is unverified. The default CA→N1 cancel
+// stays at 36. The optional cadence profile changes that cancel only so
+// the combined N1C loop matches experimentalN1C. The two Joy modifiers are
 // different names, so both hits add Joy even inside 0.1s.
 // The ICD tag is normal attack, not extra attack: both hits share 洛恩战技
 // with the normal string.
 var (
-	chargeFrames   []int
-	chargeHitmarks = []int{18, 28}
+	chargeFrames        []int
+	chargeFramesCadence []int
+	chargeHitmarks      = []int{18, 28}
 )
 
 func init() {
@@ -28,6 +28,29 @@ func init() {
 	chargeFrames[action.ActionBurst] = 36
 	chargeFrames[action.ActionDash] = 28
 	chargeFrames[action.ActionSwap] = 34
+	buildCadenceFrames()
+}
+
+// buildCadenceFrames keeps every placeholder hitmark and shortens only the
+// N1→CA and CA→N1 recovery. The footage fixes their sum, not each one.
+func buildCadenceFrames() {
+	lastCA := chargeHitmarks[len(chargeHitmarks)-1]
+	remain := experimentalN1C - attackHitmarks[0][0] - lastCA
+	if remain < 0 || remain%2 != 0 {
+		panic("experimental N1C sum does not fit the placeholder hitmarks")
+	}
+	tail := remain / 2
+	experimentalN1ToCA = attackHitmarks[0][0] + tail
+	experimentalCAToN1 = lastCA + tail
+
+	attackFramesCadence = make([][]int, len(attackFrames))
+	for i := range attackFrames {
+		attackFramesCadence[i] = append([]int(nil), attackFrames[i]...)
+	}
+	attackFramesCadence[0][action.ActionCharge] = experimentalN1ToCA
+
+	chargeFramesCadence = append([]int(nil), chargeFrames...)
+	chargeFramesCadence[action.ActionAttack] = experimentalCAToN1
 }
 
 func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
@@ -63,9 +86,13 @@ func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 			c.Core.QueueAttack(ai, ap, 0, 0, c.hitCB(joy, true))
 		}, delay)
 	}
+	slice := chargeFrames
+	if c.n1cCadence {
+		slice = chargeFramesCadence
+	}
 	return action.Info{
-		Frames:          frames.NewAbilFunc(chargeFrames),
-		AnimationLength: chargeFrames[action.InvalidAction],
+		Frames:          frames.NewAbilFunc(slice),
+		AnimationLength: slice[action.InvalidAction],
 		CanQueueAfter:   chargeHitmarks[0],
 		State:           action.ChargeAttackState,
 	}, nil

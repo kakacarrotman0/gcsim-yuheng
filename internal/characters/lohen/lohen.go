@@ -68,6 +68,9 @@ type char struct {
 	c4RefundUntil   int
 	spiritsICDUntil int
 	particleUntil   int
+	// n1cCadence selects the optional combined-loop profile. The default
+	// keeps the 58-frame placeholder. See experimentalN1C.
+	n1cCadence bool
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, p info.CharacterProfile) error {
@@ -80,6 +83,11 @@ func NewChar(s *core.Core, w *character.CharWrapper, p info.CharacterProfile) er
 	// Witch's Homework is a quest. Unlike Fischl, leave Hexerei off unless set.
 	if p.Params["hexerei"] == 1 {
 		c.IsHexerei = true
+	}
+	// Optional. 1 selects the video-cadence N1C loop. Any other value,
+	// including omitting the param, keeps the 58-frame baseline.
+	if p.Params["n1c_cadence"] == 1 {
+		c.n1cCadence = true
 	}
 	w.Character = &c
 	return nil

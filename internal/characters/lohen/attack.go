@@ -12,17 +12,31 @@ import (
 )
 
 // Hitmarks are an unverified polearm spacing. They are not a frame sheet.
-// N1→CA stays at the 22-frame recovery. BowTae's 60 FPS footage repeats attack
-// inputs every 46–47 wall frames; that interval includes hitlag and input
-// delay, so it is not this cancel and it does not locate the hitmark.
+// The default N1→CA cancel stays at the 22-frame recovery.
 // N3's three hits are 8 frames apart so they sit outside the 0.1s unique Joy modifier.
 //
 // NA and CA share BWiki group 洛恩战技: ICD tag normal attack, 5s reset,
 // sequence 1,0 repeated, and at most 6 applications before the reset.
 // The same group covers the physical string and Masterstroke.
 var (
-	attackFrames   [][]int
-	attackHitmarks = [][]int{{12}, {9}, {12, 20, 28}, {16}, {22, 34}}
+	attackFrames        [][]int
+	attackFramesCadence [][]int
+	attackHitmarks      = [][]int{{12}, {9}, {12, 20, 28}, {16}, {22, 34}}
+)
+
+// experimentalN1C is the optional n1c_cadence=1 loop, N1→CA plus CA→N1.
+// 46 is the median repeated attack-trigger interval in BowTae's 60 FPS
+// footage (mode 46, typical range 46–48 after the opening gap). That
+// interval is one full cycle between presses at the same point in the
+// animation. It still contains hitlag and whatever input delay is common
+// to both presses. It is not a measured N1 cancel or a measured CA cancel.
+const experimentalN1C = 46
+
+// Filled in once both placeholder tables exist. The split is the frames
+// left after the placeholder hitmarks, divided evenly. It is not measured.
+var (
+	experimentalN1ToCA int
+	experimentalCAToN1 int
 )
 
 const normalHitNum = 5
@@ -99,9 +113,13 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 		}, attackHitmarks[counter][hit])
 	}
 	defer c.AdvanceNormalIndex()
+	slice := attackFrames
+	if c.n1cCadence {
+		slice = attackFramesCadence
+	}
 	return action.Info{
-		Frames:          frames.NewAttackFunc(c.Character, attackFrames),
-		AnimationLength: attackFrames[counter][action.InvalidAction],
+		Frames:          frames.NewAttackFunc(c.Character, slice),
+		AnimationLength: slice[counter][action.InvalidAction],
 		CanQueueAfter:   attackHitmarks[counter][0],
 		State:           action.NormalAttackState,
 	}, nil

@@ -43,7 +43,7 @@ That run's Lohen damage log, from the gcsim result JSON:
 
 The printed summary was average 265553.09 damage over 20.00 seconds (13278 dps, min 11816.84, max 14058.35, std 592.64). That number is the output of this one config. It is not a claimed team DPS.
 
-Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, Masterstroke ending on swap, the 5s/2-hit application sequence and its reset, a normal and a charged attack sharing that sequence, the placeholder N1C count of 13, and a 58-frame N1C spacing that stays 58 with hitlag and defense halt enabled.
+Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a teammate hit including the A1 extra, Will at ascension 0 without that extra, High Spirits at ascension 0, Will consumption on Etched, the `1 + Will×0.004` ratio at 50 Will, C6 keeping Will and refilling Joy, C3's skill index, the A4 ATK buff on Melt, six burst hits, Physical normals and charged attacks outside Masterstroke (including a Pyro infusion), Cryo normals, charged attacks, and plunges inside Masterstroke with infusion blocked, Cryo application, a Melt, the one-particle / 2s particle ICD, Masterstroke ending on swap, the 5s/2-hit application sequence and its reset, a normal and a charged attack sharing that sequence, the placeholder N1C count of 13, a 58-frame baseline spacing with hitlag on, and the optional `n1c_cadence=1` profile.
 
 ## Timing
 
@@ -56,18 +56,18 @@ Unit tests in `lohen_test.go` check identity, Joy on a normal hit, Will from a t
 | Etched hit order 0.086, 0.2095, 0.4074, 0.5316 of the raid state, played as frames 5, 13, 24, 32 | Normalized times are from the graph. The 60-frame clip length is not in the JSON. Absolute frames are unverified |
 | Burst hits at frames 12, 36, 42, 48, 54, 78 | Gadget think of 0.1s, assuming the first increment is immediate. Six hits match the talent's ×6. The blank step is not a hit |
 | Burst extends Masterstroke by 1.65s. The next Etched after a C6 mark extends it by 1.25s, and remaining duration is capped at 20s | Ability graph |
-| Normal, charged, skill-cancel, burst-cancel, and plunge frames | Unverified polearm spacing. Reviewed against public combo counts and left unchanged. See Frame review |
+| Normal, charged, skill-cancel, burst-cancel, and plunge frames | Unverified polearm spacing. The default N1C loop stays 58. An optional profile sets the combined loop to the recorded 46-frame input cadence. See Frame review |
 | Particles | One Cryo particle (`baseEnergy` 3, config 2022) when an Ice hit with a normal, charged, plunge, or elemental-art tag lands. Unique modifier 2.0s |
 
 ## Frame review
 
 No measured Lohen frame sheet is public. The KQM library page for Lohen still says its findings have not been added. `gensri.wiki` has no Lohen frame page. The ability JSON has Joy modifiers of 0.1s and raid-bullet durations, and it does not give attack-state lengths that convert into hitmarks. Combo counts were not turned into hitmarks.
 
-BowTae's 60 FPS recording (`Day 1 Lohen Combos 60fps`) has a gamepad overlay. On the final `E 17N1C N1 E` segment the attack-trigger onsets are 46–47 frames apart after the first transition (median 46, mean 46.47, range 46–48). The same cadence shows up on the earlier 14, 15, and 13 N1C runs. The split clip reproduces that interval sequence. The on-screen ping in the clip is 24 ms. The overlay can shift the represented input by a few frames. A press start is not the animation start, the hitmark, or the earliest legal cancel, and the recorded frames include hitlag.
+BowTae's 60 FPS recording (`Day 1 Lohen Combos 60fps`) has a gamepad overlay. On the final `E 17N1C N1 E` segment the attack-trigger onsets are 46–47 frames apart after the first transition (median 46, mean 46.47, range 46–48). The same cadence shows up on the earlier 14, 15, and 13 N1C runs. The split clip reproduces that interval sequence. The on-screen ping in the clip is 24 ms. The overlay can shift the represented input by a few frames. The recorded frames include hitlag. The onset is the attack-button press, not the damage hitmark.
 
 KQM's quickguide (Version 7.1) lists `E 15–17[N1C] (N1 E)`. Average play completes 15–16 N1C loops during Masterstroke. 17 needs near-frame-perfect input and a favorable enemy. The count also depends on ping and frame rate. Charged-attack input cannot be buffered. That row is a combo count, not a frame sheet. The footage is one optimized 17-loop example of that count.
 
-The placeholders, unchanged:
+The default placeholders:
 
 | Window | Frames |
 | --- | --- |
@@ -80,11 +80,20 @@ The placeholders, unchanged:
 | Etched delays | 5, 13, 24, 32 |
 | Plunge | Standard polearm template. Low and high impact hitmarks 45 and 46 |
 
-`TestPlaceholderN1CCount` starts Masterstroke with skill, then queues N1 and CA as soon as the engine allows, and stops when the 13s (780-frame) mode ends. The result is 13 completed N1C strings. Skill cancels into attack at frame 24, and `(780 − 24) / 58` is about 13.03, which matches that count.
+On the 17 N1C segment the overlay shows one attack-trigger rising edge per cycle. The repeated holds last 19–24 frames (the opening hold is 28). The extra N1 after the 17th string is the same kind of rising edge, 46 frames later, held for 6 frames. So each onset is the start of the attack, and the longer hold is the N1C gesture. The presses are not a mix of N1 inputs and charged-attack inputs. The interval between those starts is the combined cycle.
 
-gcsim's default config enables hitlag, and defense halt adds frames when an attack asks for it. Lohen's normals and charged attacks set no halt and no defense halt, so enabling that clock does not grow the action. `TestN1CSpacingStaysPlaceholderWithHitlag` runs the earliest-legal N1C loop with both switches on. Every attack-to-attack gap is 58 engine frames. A guessed halt on top of these windows would make the simulated loop slower than 58, farther from the recorded 46–47.
+`n1c_cadence=1` on the character (`+params=[n1c_cadence=1]`) is an optional profile. It sets that combined cycle to 46, the median of the repeated intervals. Omitting the param keeps the 58-frame baseline. The 46 still includes hitlag and any delay shared by both presses. The profile does not move a hitmark. The 12 frames between 58 and 46 are taken from the recovery after the existing last hitmarks (N1 at 12, second charged hit at 28), and the 6 frames that remain are split evenly, leaving a 3-frame tail on each. That is N1→CA 15 and CA→N1 31. Those two numbers are a partition of 46, not a counted cancel pair.
 
-The recorded interval sits above the two cancel windows by the hitlag and the input delay, and this footage does not isolate either one. More than one split of 46 frames between N1→CA and CA→N1 is possible. None of them was measured. The N1 hitmark, the two charged hitmarks, the skill and burst windows, the Etched delays, and the plunge template stay as they were. A 12-frame N1→CA cancel would make a 48-frame loop before hitlag and was not implemented.
+`TestN1CProfilesAgainstVideoCadence` runs both profiles with hitlag and defense halt enabled, queueing the next attack at the first legal frame. Lohen still sets no halt, so the clock does not grow.
+
+| Profile | Attack-to-attack gap | N1C strings started in 13s | Charged hits that land inside Masterstroke |
+| --- | --- | --- | --- |
+| Baseline, no param | 58 | 13 | 13 strings, both hits |
+| `n1c_cadence=1` | 46 | 17 | 16 strings, both hits. The 17th normal hit lands inside the mode. Its two charged hits land after the unextended 13s |
+
+The baseline 13 is below KQM's 15–17 band. The cadence profile's 17 started strings match the frame-perfect end of that band and the 17 in the video. Sixteen of them finish both charged hits before frame 780. Average play at 15–16 is this cadence plus a frame or two of lateness per loop, which is what the 47- and 48-frame gaps in the video are. The skill cancel into the first normal stays the unverified 24. That 24 is why the 17th charged hits miss the 13s. The footage did not isolate the skill press, so the skill window was not changed.
+
+Hitmarks on the first cadence cycle are still 12, 18, and 28. The damage config is unchanged and stays on the baseline. The cadence profile is not a damage benchmark.
 
 ## Elemental application
 
@@ -110,8 +119,9 @@ N1C is three hits. The sequence applies on hits 1 and 3 of the first string, the
 - A4 listens for Melt, Freeze, Superconduct, Cryo Swirl, and Cryo Crystallize from another member during Masterstroke, then gives that member and Lohen 15% ATK for 8s. Stellar Swirl and Stellar Superconductor are in the ability list and are not wired.
 - High Spirits adds 1 skill level for 9s, plus 6s when another member's normal, skill, or burst level is at least Lohen's skill level, ICD 18s. Proud skill 12923 has no promote level on skill depot 12901. Proud skills 12921 and 12922 are promote levels 1 and 4. An omitted level is 0, so High Spirits is available at ascension 0.
 - Hexerei is off unless the character param `hexerei=1` is set. With at least two Hexerei characters and Will at least half of its cap when Etched's last hit lands or Burst is cast, normal and charged attacks gain 40% DMG for 6s.
+- `n1c_cadence=1` selects the optional 46-frame N1C loop. The default is the 58-frame placeholder. Hitmarks do not change with the param.
 - The quest sneak bullet is not implemented.
 
 ## Not claimed
 
-One 20-iteration config does not prove every team or constellation. The 46–47 frame figure is a measured attack-input cadence, not a cancel window or a hitmark. Every attack, charged, skill, burst, plunge, and Etched window above stays approximate. The 13 N1C count and the 58-frame engine spacing are the result of those placeholders. The 0.1s Joy and Will gates are not simulated; the placeholder normal spacing is already outside 0.1s, and the two charged hits use separate Joy modifiers in the graph. The 40m Will distance check and the per-character 0.1s Will ICD are not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.
+One 20-iteration config does not prove every team or constellation. The 46-frame cadence profile matches a measured input interval. It is not a measured cancel pair, not a hitmark sheet, and not a damage number. The 15 and 31 frame cancels are only how that sum was partitioned around the old hitmarks. Hitlag halt was not visible as a stable freeze in the clip, so none is applied. A real halt would make a 46-frame animation loop slower than the video, because the 46 already includes the freeze. A constant input delay drops out of the interval between two presses. The overlay can still shift that interval by a few frames, and the opening gap in the video is 51 rather than 46. The skill, burst, plunge, and Etched windows stay approximate. The 0.1s Joy and Will gates are not simulated. The 40m Will distance check and the per-character 0.1s Will ICD are not simulated. ProudSkill numeric rows for the constellations and passives were not in the readable talent config, so those magnitudes follow the talent text. Stellar Swirl and Stellar Superconductor stay unwired.
