@@ -26,10 +26,12 @@ var (
 
 // experimentalN1C is the optional n1c_cadence=1 loop, N1→CA plus CA→N1.
 // 46 is the median repeated attack-trigger interval in BowTae's 60 FPS
-// footage (mode 46, typical range 46–48 after the opening gap). That
-// interval is one full cycle between presses at the same point in the
-// animation. It still contains hitlag and whatever input delay is common
-// to both presses. It is not a measured N1 cancel or a measured CA cancel.
+// footage (mode 46, typical range 46–48 after the opening gap). A separate
+// 60 FPS mouse-overlay recording on 2026-10-14 shows the same combined
+// interval. That interval is one full cycle between presses at the same
+// point in the gesture. It still contains hitlag and whatever input delay
+// is common to both presses. It is not a measured N1 cancel or a measured
+// CA cancel. Hold-start to a later tap is not CA→N1.
 const experimentalN1C = 46
 
 // Filled in once both placeholder tables exist. The split is the frames

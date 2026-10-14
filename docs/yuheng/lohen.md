@@ -85,6 +85,21 @@ On the 17 N1C segment the overlay shows one attack-trigger rising edge per cycle
 
 `n1c_cadence=1` on the character (`+params=[n1c_cadence=1]`) is an optional profile. It sets that combined cycle to 46 only when the normal or the charged attack starts during Masterstroke. The footage is Masterstroke gameplay. Outside the mode the placeholder cancels stay in place. Omitting the param keeps the 58-frame baseline in both states. The 46 still includes hitlag and any delay shared by both presses. The profile does not move a hitmark. The 12 frames between 58 and 46 are taken from the recovery after the existing last hitmarks (N1 at 12, second charged hit at 28), and the 6 frames that remain are split evenly, leaving a 3-frame tail on each. That is N1→CA 15 and CA→N1 31. Those two numbers are a partition of 46, not a counted cancel pair. Every hitmark and cancel window in both profiles is approximate.
 
+A second recording, 1080p at 60 FPS with an OBS mouse overlay (`2026-10-14 09-38-51`, enemy present), agrees on the combined interval. No-enemy recordings from the same session show the same input cadence, about 46–48 frames. The CSV for the enemy clip is an early-click trial. Each long press is the N1C gesture. The gaps are from that press to a later tap. They are not the start of the charged-attack animation, so they are not a CA→N1 cancel and they are not an N1→CA cancel.
+
+| Hold start (frame) | Hold length | Later taps, frames after the hold |
+| --- | --- | --- |
+| 48 | 28 | 44, 69 |
+| 358 | 30 | 45, 68 |
+| 657 | 31 | 52 |
+| 1118 | 32 | 52 |
+| 1399 | 31 | 51 |
+| 1668 | 29 | 56 |
+
+Taps at 44 and 45 may have been early. That is not established. An earlier clip the same morning (`09-26-18`) had taps at 49–51 that appeared to connect. Taps at 51–56 in this clip have a clearer following attack. The first two trials also have a second tap, so the accepted press cannot be picked out of the pair. None of these gaps is a proven earliest input. The optional loop stays at 46. It does not move to 44, 45, or 51.
+
+Still unmeasured after both recordings: the N1→CA cancel, the CA→N1 cancel, skill, burst, Etched, plunge, every hitmark, and hitlag. The 15/31 pair stays an even partition around the old hitmarks.
+
 `TestN1CProfilesAgainstVideoCadence` runs both profiles with hitlag and defense halt enabled, queueing the next attack at the first legal frame. Lohen still sets no halt, so the clock does not grow.
 
 | Profile | Attack-to-attack gap | N1C strings started in 13s | Charged hits that land inside Masterstroke |
@@ -141,7 +156,7 @@ N1C is three hits. The sequence applies on hits 1 and 3 of the first string, the
 | Hexerei 40% for 6s, two Hexerei members, Will at half the cap, fifth-normal second hit excluded | IMPLEMENTED AND TESTED | `UNIQUE_Lohen_Hexenzirkel_Buff`. `TestStellarA4AndHexerei`. Config pair below |
 | Energy, particles, swap | IMPLEMENTED AND TESTED | `TestPhysicalOutsideMasterstroke`, `TestMasterstrokeCryoConversion`, `TestMasterstrokeEndsOnSwap` |
 | `n1c_cadence=1` changes only N1→CA and CA→N1, and only when that attack starts during Masterstroke | IMPLEMENTED AND TESTED | `TestCadenceOnlyInMasterstroke`. Outside the mode, and for N2, dash, and skill cancels, the placeholder slices stay. The 15 and 31 frame numbers are an approximate partition |
-| N1C hitmarks, skill, burst, plunge, and Etched windows | IMPLEMENTED BUT APPROXIMATE | No public frame sheet. Hitmarks are the previous placeholders. The 46-frame profile is a measured input interval, and 15/31 is a partition of that interval |
+| N1C hitmarks, N1→CA, CA→N1, skill, burst, plunge, and Etched windows | IMPLEMENTED BUT APPROXIMATE | No frame sheet. The Oct 14 mouse gaps are hold-start to a later tap, not those cancels. 15/31 remains a partition of the 46-frame combined interval |
 | C2 vertical hitbox extent 2.5 | NOT IMPLEMENTED | The combat space is flat. The ground box is 5.5 by 5.5 |
 | ProudSkill numeric rows for C1, C2, C4, C6, A1, A4, and Hexerei | BLOCKED BY MISSING EVIDENCE | `ConfigTalent` binds `%n` and does not carry the numbers. Magnitudes follow the released talent text |
 
@@ -165,4 +180,4 @@ Each file was re-run after the Masterstroke-only cadence gate, 20 iterations, fa
 
 Stellar Swirl and Stellar Conduct replace Cryo Swirl and Superconduct only while `stellar-swirl-enabled` and `stellar-conduct-enabled` are set. Cryo Traveler and Odette set both flags. Lohen does not. A team that lacks one of those characters still procs A4 through the plain reactions. The validation teams above do not include a Radiance character, so their logs show Melt and Freeze rather than the Stellar names. `TestA4StellarFromReactions` is the gauge-level check.
 
-The 46-frame cadence matches a measured Masterstroke input interval. It is not a measured cancel pair and not a hitmark sheet. It is not applied to attacks that start outside Masterstroke. Every hitmark and cancel window remains approximate. The 15 and 31 frame cancels are only how that sum was partitioned around the old hitmarks. Hitlag halt was not visible as a stable freeze in the clip, so none is applied. A real halt would make a 46-frame animation loop slower than the video, because the 46 already includes the freeze. A constant input delay drops out of the interval between two presses. The overlay can still shift that interval by a few frames, and the opening gap in the video is 51 rather than 46.
+The 46-frame cadence matches the repeated Masterstroke input interval in BowTae's gamepad clip and in the 2026-10-14 mouse-overlay recordings. It is not a measured cancel pair and not a hitmark sheet. The Oct 14 taps at 44–45 and 51–56 are hold-start gaps, not N1→CA or CA→N1. It is not applied to attacks that start outside Masterstroke. Every hitmark and cancel window remains approximate. The 15 and 31 frame cancels are only how that sum was partitioned around the old hitmarks. Hitlag halt was not visible as a stable freeze in the clip, so none is applied. A real halt would make a 46-frame animation loop slower than the video, because the 46 already includes the freeze. A constant input delay drops out of the interval between two presses. The overlay can still shift that interval by a few frames, and the opening gap in the video is 51 rather than 46.

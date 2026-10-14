@@ -849,6 +849,10 @@ func TestN1CProfilesAgainstVideoCadence(t *testing.T) {
 	}
 	// The split is the placeholder hitmarks plus an even share of whatever
 	// is left. 12 and 28 are the old hitmarks, not new measurements.
+	// The 2026-10-14 mouse trial does not replace this. Its taps are timed
+	// from the initial held press, not from the charged-attack animation.
+	// Gaps of 44–45 are inconclusive, and 51–56 are later follow-ups.
+	// None of those is N1→CA or CA→N1, so the loop stays 46.
 	if experimentalN1ToCA != attackHitmarks[0][0]+3 || experimentalCAToN1 != chargeHitmarks[1]+3 {
 		t.Fatalf("split %d/%d drifted from hitmarks %d and %d", experimentalN1ToCA, experimentalCAToN1, attackHitmarks[0][0], chargeHitmarks[1])
 	}
