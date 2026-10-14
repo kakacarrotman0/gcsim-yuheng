@@ -1,0 +1,36 @@
+use: pipeline
+kind: character
+name: lohen
+
+talents:
+  - attack:
+    - attack1(1-Hit DMG)
+    - attack2(2-Hit DMG)
+    - attack3(3-Hit DMG)
+    - attack4(4-Hit DMG)
+    - attack5(5-Hit DMG)
+    - attack6(5-Hit DMG|1)
+  - attack7: attack(Charged Attack DMG)
+  - collision: attack(Plunge DMG)
+  - lowPlunge: attack(Low/High Plunge DMG)
+  - highPlunge: attack(Low/High Plunge DMG|1)
+
+  - enhanced1: skill(1-Hit DMG)
+  - enhanced2: skill(2-Hit DMG)
+  - enhanced3: skill(3-Hit DMG)
+  - enhanced4: skill(4-Hit DMG)
+  - enhanced5: skill(5-Hit DMG)
+  - enhanced6: skill(5-Hit DMG|1)
+  - enhanced7: skill(Charged Attack DMG)
+  - raid: skill(Etched Into Bone and Soul DMG)
+
+  - burstDMG: burst(Skill DMG)
+
+docs:
+  frames:
+    - note: Normal, charged, skill, burst, and plunge hitmarks are not from a measured sheet. Burst hit order follows the gadget think grid. Raid hit order follows normalized times on an unverified 60-frame clip.
+
+abilities:
+  - name: skill
+    params:
+      etched: 1 to use Etched Into Bone and Soul while Masterstroke is active, Joy is full, and uses remain.
