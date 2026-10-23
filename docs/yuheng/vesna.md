@@ -114,9 +114,9 @@ The Lv3 checker attached to animator state `Vesna_ElementalArt_C` lasts 1.5s. Th
 
 ## Validation
 
-`vesna-natural.txt` was run with `go run ./cmd/gcsim`, 20 iterations, 20 seconds. Failed actions were 0 and the warning list was empty. Vesna's action counts were 4 skills and 6 normals.
+`vesna-natural.txt` was run with `go run ./cmd/gcsim`, 20 iterations, 20 seconds, after the entry hit moved to the 2.5s/3-hit counter. The config sets no seed. Failed actions were 0 and the warning list was empty. Vesna's action counts were 4 skills and 6 normals.
 
-The printed summary was average 167872.87 damage over 20.00 seconds (8393.64 dps, min 7626.15, max 8853.88, std 348.34). That number is the output of this one config after the pinion and ICD correction. It is not a claimed team DPS. Placeholder frames were not changed.
+This sample printed average 167162.68 damage over 20.00 seconds (8358 dps, min 7316.38, max 8791.99, std 473.63), sample seed 15919604484852173366. It is not a claimed team DPS. Placeholder frames were not changed. The damage-source counts below did not move.
 
 Damage-source means were The Art of Victory 1, Windborne Sword Lv1 1, Windborne Sword Lv2 1, Spirit Blade Lv2 1, Spirit Blade Lv3 4, Spirit Blade Lv3 Final 1, Wind Pinion Stellar Swirl 6, Armed Normal 0 through 5 (the third normal is two hits), Stellar Swirl 4, and Stellar Swirl Detonation 2. Kaeya Frostgnaw was 1. There was no ordinary Wind Pinion, no Physical normal, no ordinary Swirl, and no Burst.
 
