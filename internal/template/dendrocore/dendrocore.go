@@ -23,6 +23,7 @@ type Gadget struct {
 	*gadget.Gadget
 	srcFrame  int
 	CharIndex int
+	Deceit    bool
 }
 
 func New(c *core.Core, shp info.Shape, a *info.AttackEvent) *Gadget {
@@ -45,6 +46,9 @@ func New(c *core.Core, shp info.Shape, a *info.AttackEvent) *Gadget {
 
 	explode := func(reason string) func() {
 		return func() {
+			if s.Deceit {
+				return
+			}
 			s.Core.Tasks.Add(func() {
 				ai, snap := NewBloomAttack(char, s, nil)
 				ap := combat.NewCircleHitOnTarget(s, nil, 5)
@@ -83,8 +87,18 @@ func (s *Gadget) HandleAttack(atk *info.AttackEvent) float64 {
 	return 0
 }
 
+func (s *Gadget) MakeDeceit() { s.Deceit = true }
+
+func (s *Gadget) IsDeceit() bool { return s.Deceit }
+
+func (s *Gadget) Absorb() {
+	s.OnKill = nil
+	s.OnExpiry = nil
+	s.Kill()
+}
+
 func (s *Gadget) Attack(atk *info.AttackEvent, evt glog.Event) (float64, bool) {
-	if atk.Info.Durability < info.ZeroDur {
+	if s.Deceit || atk.Info.Durability < info.ZeroDur {
 		return 0, false
 	}
 

@@ -26,10 +26,19 @@ func (h *Handler) verdantDewGen() {
 	}
 
 	h.partialDewCount++
-	if h.partialDewCount >= maxPartialDew {
+	need := maxPartialDew
+	if h.verdantDewHaste {
+		// 25% faster than the 146-frame counter. 80% of 146 rounds to 117.
+		need = (maxPartialDew*4 + 2) / 5
+	}
+	if h.partialDewCount >= need {
 		h.AddVerdantDew()
 		h.partialDewCount = 0
 	}
+}
+
+func (h *Handler) SetVerdantDewHaste(on bool) {
+	h.verdantDewHaste = on
 }
 
 func (h *Handler) OnLunarBloom() {
