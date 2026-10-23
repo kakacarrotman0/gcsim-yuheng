@@ -15,6 +15,19 @@ override:
       # actual data: [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
       # however there seems to be no limit to the amount of burning dmg a target can take
       damage: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # Vesna is not in excel-hk4e, so these rows are fully specified and do not
+    # look up AttackAttenuation. VesnaSkillStart mirrors group "default".
+    # VesnaSkill is the wiki type "2s"; Vesna_MagicSword has no excel row here.
+    VesnaSkillStart:
+      name: default
+      timer: 2.5
+      durability: [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0]
+      damage: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    VesnaSkill:
+      name: Vesna_MagicSword
+      timer: 2
+      durability: [1, 0]
+      damage: [1]
 
 combat:
   icd_tags:
@@ -53,3 +66,5 @@ combat:
     - ReactionA
     - ReactionB
     - Burning
+    - VesnaSkillStart
+    - VesnaSkill

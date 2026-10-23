@@ -924,8 +924,8 @@ func TestPlungeAndCharge(t *testing.T) {
 }
 
 // TestWindborneICD is a mechanics check. Lv3's five blades are queued together.
-// The released type is 2s, first hit only, shared by Windborne and the ordinary
-// pinion. The entry hit has its own tag and still applies inside that window.
+// Windborne and the ordinary pinion share a 2s counter, first hit only.
+// The entry hit has its own counter and still applies inside that window.
 func TestWindborneICD(t *testing.T) {
 	c, _ := makeCore(1)
 	ch := addProfileAt(t, c, keys.Vesna, 1, 1, 1, 20)
@@ -1028,6 +1028,161 @@ func TestWindborneICD(t *testing.T) {
 	}
 	if len(swirls) != 2 || swirls[0] != "Windborne Sword Lv1" || swirls[1] != "The Art of Victory" {
 		t.Fatalf("cryo applications %v", swirls)
+	}
+}
+
+// TestEntryICD checks the entry hit's own counter: attenuation group "default",
+// 2.5s/3-hit, independent of Windborne's 2s counter and of Transpose's standard group.
+func TestEntryICD(t *testing.T) {
+	if attacks.ICDGroupResetTimer[attacks.ICDGroupVesnaSkillStart] != attacks.ICDGroupResetTimer[attacks.ICDGroupDefault] {
+		t.Fatalf("entry reset %d", attacks.ICDGroupResetTimer[attacks.ICDGroupVesnaSkillStart])
+	}
+	startSeq := attacks.ICDGroupEleApplicationSequence[attacks.ICDGroupVesnaSkillStart]
+	defSeq := attacks.ICDGroupEleApplicationSequence[attacks.ICDGroupDefault]
+	if len(startSeq) != len(defSeq) {
+		t.Fatalf("entry sequence length %d", len(startSeq))
+	}
+	for i, v := range defSeq {
+		if startSeq[i] != v {
+			t.Fatalf("entry sequence %v", startSeq)
+		}
+	}
+	if len(attacks.ICDGroupDamageSequence[attacks.ICDGroupVesnaSkillStart]) != len(attacks.ICDGroupDamageSequence[attacks.ICDGroupDefault]) {
+		t.Fatal("entry damage sequence length")
+	}
+	if attacks.ICDGroupResetTimer[attacks.ICDGroupVesnaSkill] != 120 || attacks.ICDGroupEleApplicationSequence[attacks.ICDGroupVesnaSkill][0] != 1 || attacks.ICDGroupEleApplicationSequence[attacks.ICDGroupVesnaSkill][1] != 0 {
+		t.Fatal("windborne row changed")
+	}
+
+	c, trg := makeCore(1)
+	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 1, 20)
+	addProfile(t, c, keys.Kaeya, 0, 1)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	type landed struct {
+		frame int
+		dur   info.Durability
+		group attacks.ICDGroup
+	}
+	var hits []landed
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		switch ai.Abil {
+		case "The Art of Victory", "windborne-probe", "transpose-probe":
+			hits = append(hits, landed{c.F, ai.Durability, ai.ICDGroup})
+		}
+	}, "entry-icd")
+
+	reenter := func() {
+		t.Helper()
+		if condNum(t, ch, "armed") == 1 {
+			mustExec(t, c, action.ActionSwap, keys.Kaeya)
+			advance(c, 2)
+			if condNum(t, ch, "armed") != 0 {
+				t.Fatal("swap did not clear armed")
+			}
+		}
+		ch.ResetActionCooldown(action.ActionSkill)
+		if c.Player.Active() != ch.Index() {
+			mustExec(t, c, action.ActionSwap, keys.Vesna)
+			advance(c, 2)
+		}
+		mustExec(t, c, action.ActionSkill, keys.Vesna)
+		advance(c, skillHitmark+2)
+	}
+	reenter()
+	if len(hits) != 1 || hits[0].dur <= 0 || hits[0].group != attacks.ICDGroupVesnaSkillStart {
+		t.Fatalf("first entry %+v", hits)
+	}
+	// Same frame as the entry application is already past. These two probes use
+	// the other counters and must still apply. OnEnemyDamage is a same-frame
+	// task, so it is not visible until the next tick.
+	c.QueueAttack(info.AttackInfo{
+		ActorIndex: ch.Index(),
+		Abil:       "windborne-probe",
+		AttackTag:  attacks.AttackTagElementalArt,
+		ICDTag:     attacks.ICDTagElementalArt,
+		ICDGroup:   attacks.ICDGroupVesnaSkill,
+		Element:    attributes.Anemo,
+		Durability: 25,
+	}, combat.NewSingleTargetHit(trg[0].Key()), 0, 0)
+	c.QueueAttack(info.AttackInfo{
+		ActorIndex: ch.Index(),
+		Abil:       "transpose-probe",
+		AttackTag:  attacks.AttackTagElementalArt,
+		ICDTag:     attacks.ICDTagElementalArt,
+		ICDGroup:   attacks.ICDGroupDefault,
+		Element:    attributes.Anemo,
+		Durability: 25,
+	}, combat.NewSingleTargetHit(trg[0].Key()), 0, 0)
+	advance(c, 1)
+	if len(hits) != 3 || hits[1].dur <= 0 || hits[1].group != attacks.ICDGroupVesnaSkill || hits[2].dur <= 0 || hits[2].group != attacks.ICDGroupDefault {
+		t.Fatalf("counters not independent %+v", hits)
+	}
+
+	for range 3 {
+		reenter()
+	}
+	entry := make([]landed, 0, 4)
+	for _, h := range hits {
+		if h.group == attacks.ICDGroupVesnaSkillStart {
+			entry = append(entry, h)
+		}
+	}
+	if len(entry) != 4 || entry[0].dur <= 0 || entry[1].dur != 0 || entry[2].dur != 0 || entry[3].dur <= 0 {
+		t.Fatalf("3-hit sequence %+v", entry)
+	}
+
+	first := entry[0].frame
+	reset25 := first + attacks.ICDGroupResetTimer[attacks.ICDGroupVesnaSkillStart] - 1
+	reset2 := first + attacks.ICDGroupResetTimer[attacks.ICDGroupVesnaSkill] - 1
+	// A 2s reset would already have fired. The 2.5s counter must still be closed.
+	target := reset2 + 10
+	if target >= reset25 {
+		t.Fatalf("no gap between 2s reset %d and 2.5s reset %d", reset2, reset25)
+	}
+	if condNum(t, ch, "armed") == 1 {
+		mustExec(t, c, action.ActionSwap, keys.Kaeya)
+		advance(c, 2)
+	}
+	ch.ResetActionCooldown(action.ActionSkill)
+	if c.Player.Active() != ch.Index() {
+		mustExec(t, c, action.ActionSwap, keys.Vesna)
+		advance(c, 2)
+	}
+	wantCast := target - skillHitmark
+	if c.F > wantCast {
+		t.Fatalf("cast frame %d is past %d", c.F, wantCast)
+	}
+	advance(c, wantCast-c.F)
+	mustExec(t, c, action.ActionSkill, keys.Vesna)
+	advance(c, skillHitmark+2)
+	mid := hits[len(hits)-1]
+	if mid.frame != target || mid.dur != 0 || mid.group != attacks.ICDGroupVesnaSkillStart {
+		t.Fatalf("hit inside 2.5s %+v target %d reset %d", mid, target, reset25)
+	}
+
+	if condNum(t, ch, "armed") == 1 {
+		mustExec(t, c, action.ActionSwap, keys.Kaeya)
+		advance(c, 2)
+	}
+	ch.ResetActionCooldown(action.ActionSkill)
+	if c.Player.Active() != ch.Index() {
+		mustExec(t, c, action.ActionSwap, keys.Vesna)
+		advance(c, 2)
+	}
+	wantCast = reset25 + 1 - skillHitmark
+	if c.F > wantCast {
+		t.Fatalf("reset cast frame %d is past %d", c.F, wantCast)
+	}
+	advance(c, wantCast-c.F)
+	mustExec(t, c, action.ActionSkill, keys.Vesna)
+	advance(c, skillHitmark+2)
+	after := hits[len(hits)-1]
+	if after.frame != reset25+1 || after.dur <= 0 {
+		t.Fatalf("hit after 2.5s reset %+v reset %d", after, reset25)
 	}
 }
 

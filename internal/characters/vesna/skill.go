@@ -58,7 +58,8 @@ func (c *char) Skill(p map[string]int) (action.Info, error) {
 		return c.notReady("the art of victory is on cooldown")
 	}
 	c.enterArmed()
-	// Tag "Vesna Elemental Skill Start". It does not share Windborne's counter.
+	// Tag "Vesna Elemental Skill Start" on attenuation group "default":
+	// 2.5s/3-hit, and not Windborne's 2s counter.
 	c.artHit("The Art of Victory", skillDMG[c.TalentLvlSkill()], skillHitmark, skillRadius, attacks.StrikeTypeSlash, attacks.ICDGroupVesnaSkillStart)
 	c.SetCD(action.ActionSkill, skillCD)
 	return c.skillInfo(), nil
