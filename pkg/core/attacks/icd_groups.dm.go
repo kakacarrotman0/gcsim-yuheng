@@ -71,6 +71,11 @@ const (
 	ICDGroupYelanBurst
 	ICDGroupAlyoshaElementalBurst
 	ICDGroupLohenSkill
+	// Entry hit uses attenuationGroup "default": same 2.5s/3-hit row as
+	// ICDGroupDefault, on its own counter. Windborne stays a separate 2s
+	// counter. See pipeline/config.yml.
+	ICDGroupVesnaSkillStart
+	ICDGroupVesnaSkill
 )
 
 var ICDGroupResetTimer = []int{
@@ -140,6 +145,8 @@ var ICDGroupResetTimer = []int{
 	ICDGroupYelanBurst:                120,  // 2s
 	ICDGroupAlyoshaElementalBurst:     96,   // 1.6s
 	ICDGroupLohenSkill:                300,  // 5s
+	ICDGroupVesnaSkillStart:           150,  // 2.5s
+	ICDGroupVesnaSkill:                120,  // 2s
 }
 
 var ICDGroupEleApplicationSequence = [][]float64{
@@ -209,6 +216,8 @@ var ICDGroupEleApplicationSequence = [][]float64{
 	ICDGroupYelanBurst:                {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
 	ICDGroupAlyoshaElementalBurst:     {1.0, 0.0},
 	ICDGroupLohenSkill:                {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0},
+	ICDGroupVesnaSkillStart:           {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
+	ICDGroupVesnaSkill:                {1.0, 0.0},
 }
 
 var ICDGroupDamageSequence = [][]float64{
@@ -278,4 +287,6 @@ var ICDGroupDamageSequence = [][]float64{
 	ICDGroupYelanBurst:                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
 	ICDGroupAlyoshaElementalBurst:     {1.0, 1.0, 1.0, 1.0},
 	ICDGroupLohenSkill:                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+	ICDGroupVesnaSkillStart:           {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+	ICDGroupVesnaSkill:                {1.0},
 }
