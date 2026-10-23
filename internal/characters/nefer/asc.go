@@ -49,24 +49,20 @@ func (c *char) a1Init() {
 }
 
 func (c *char) buffInit() {
+	// Burst's consumed-veil row is named "DMG Bonus" on the talent table.
+	// It stays in the ordinary DMG Bonus bucket. Phantasm's 8% per stack does not:
+	// that one is a Base DMG Multiplier, applied on the attack itself.
 	c.AddAttackMod(character.AttackMod{
-		Base: modifier.NewBase("nefer-phantasm-veil", -1),
+		Base: modifier.NewBase("nefer-burst-veil", -1),
 		Amount: func(atk *info.AttackEvent, _ info.Target) []float64 {
-			if atk.Info.ActorIndex != c.Index() {
+			if atk.Info.ActorIndex != c.Index() || c.burstBonus == 0 {
 				return nil
 			}
-			bonus := 0.0
-			if strings.HasPrefix(atk.Info.Abil, "Phantasm Performance") {
-				bonus += 0.08 * float64(c.veilCount())
-			}
-			if strings.HasPrefix(atk.Info.Abil, "Sacred Vow") {
-				bonus += c.burstBonus
-			}
-			if bonus == 0 {
+			if !strings.HasPrefix(atk.Info.Abil, "Sacred Vow") {
 				return nil
 			}
 			m := make([]float64, attributes.EndStatType)
-			m[attributes.DmgP] = bonus
+			m[attributes.DmgP] = c.burstBonus
 			return m
 		},
 	})

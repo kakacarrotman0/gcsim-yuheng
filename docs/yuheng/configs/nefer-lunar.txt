@@ -1,6 +1,7 @@
 # Yuheng validation config
-# Nefer with Lauma, so Bloom is Lunar-Bloom and Ascendant Gleam is armed.
-# set_starting_verdant_dew gives the party resource the engine already tracks.
+# Mechanics check only. set_starting_verdant_dew skips the counter that normally
+# mints Verdant Dew, so this file does not show that a team can sustain it.
+# Nefer with Lauma arms Lunar-Bloom and Ascendant Gleam.
 # Frames in the Nefer package are placeholders. This is not a damage benchmark.
 
 options iteration=20 duration=20 swap_delay=12;

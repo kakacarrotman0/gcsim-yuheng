@@ -50,12 +50,12 @@ func (c *char) phantasm() action.Info {
 	c.absorbSeeds()
 	c.ppCount++
 	lvl := c.TalentLvlSkill()
-	c.queueCircle(c.hybrid("Phantasm Performance (Nefer 1)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, 25, ppN1ATK[lvl], ppN1EM[lvl]), ppN1Frame)
+	c.queueCircle(c.withVeil(c.hybrid("Phantasm Performance (Nefer 1)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, 25, ppN1ATK[lvl], ppN1EM[lvl])), ppN1Frame)
 	if c.Base.Cons >= 6 {
 		c.queueLunar("Phantasm Performance C6 (Nefer 2)", 0.85, ppN2Frame)
 		c.queueLunar("Phantasm Performance C6 (Extra)", 1.2, ppExtra)
 	} else {
-		c.queueCircle(c.hybrid("Phantasm Performance (Nefer 2)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, 25, ppN2ATK[lvl], ppN2EM[lvl]), ppN2Frame)
+		c.queueCircle(c.withVeil(c.hybrid("Phantasm Performance (Nefer 2)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, 25, ppN2ATK[lvl], ppN2EM[lvl])), ppN2Frame)
 	}
 	c.queueLunar("Phantasm Performance (Shade 1)", shade1[lvl], shade1Frame)
 	c.queueLunar("Phantasm Performance (Shade 2)", shade2[lvl], shade2Frame)
@@ -112,5 +112,21 @@ func (c *char) queueLunar(name string, ratio float64, delay int) {
 	if c.Base.Cons >= 6 && c.gleam {
 		ai.Elevation = 0.15
 	}
-	c.queueCircle(ai, delay)
+	c.queueCircle(c.withVeil(ai), delay)
+}
+
+// withVeil applies Veil of Falsehood as a Base DMG Multiplier on Phantasm Performance.
+// Direct Lunar-Bloom multiplies Mult*EM by (1+BaseDmgBonus) and ignores DMG Bonus.
+// An ordinary hit adds FlatDmg after that product, so the EM flat is scaled here
+// and the 8% is not also written into DMG Bonus.
+func (c *char) withVeil(ai info.AttackInfo) info.AttackInfo {
+	bonus := 0.08 * float64(c.veilCount())
+	if bonus == 0 {
+		return ai
+	}
+	ai.BaseDmgBonus += bonus
+	if ai.FlatDmg != 0 {
+		ai.FlatDmg *= 1 + bonus
+	}
+	return ai
 }

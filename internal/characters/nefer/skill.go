@@ -4,6 +4,15 @@ import (
 	"github.com/genshinsim/gcsim/internal/frames"
 	"github.com/genshinsim/gcsim/pkg/core/action"
 	"github.com/genshinsim/gcsim/pkg/core/attacks"
+	"github.com/genshinsim/gcsim/pkg/core/attributes"
+	"github.com/genshinsim/gcsim/pkg/core/info"
+)
+
+const (
+	particleICDKey = "nefer-particle-icd"
+	// One Skill hit can strike several enemies. The wiki generates particles
+	// once, when Skill DMG hits at least one enemy, so the rolls share this window.
+	particleICD = 18
 )
 
 var skillFrames []int
@@ -21,7 +30,7 @@ func init() {
 
 func (c *char) Skill(_ map[string]int) (action.Info, error) {
 	lvl := c.TalentLvlSkill()
-	c.queueCircle(c.hybrid("Senet Strategy: Dance of a Thousand Nights", attacks.AttackTagElementalArt, attacks.ICDTagElementalArt, 25, skillATK[lvl], skillEM[lvl]), skillHit)
+	c.queueCircle(c.hybrid("Senet Strategy: Dance of a Thousand Nights", attacks.AttackTagElementalArt, attacks.ICDTagElementalArt, 25, skillATK[lvl], skillEM[lvl]), skillHit, c.particleCB)
 	c.SetCDWithDelay(action.ActionSkill, skillCD, skillHit)
 	c.enterDance()
 	if c.Base.Cons >= 2 && c.Base.Ascension >= 1 {
@@ -38,6 +47,23 @@ func (c *char) Skill(_ map[string]int) (action.Info, error) {
 		CanQueueAfter:   skillHit,
 		State:           action.SkillState,
 	}, nil
+}
+
+// The wiki gameplay note is "When Skill DMG hits at least one enemy, it generates 2.6667 Elemental Particles."
+// 2.6667 is 8/3, the usual 2 particles plus a 2/3 chance of a third.
+func (c *char) particleCB(a info.AttackCB) {
+	if a.Target.Type() != info.TargettableEnemy {
+		return
+	}
+	if c.StatusIsActive(particleICDKey) {
+		return
+	}
+	c.AddStatus(particleICDKey, particleICD, true)
+	count := 2.0
+	if c.Core.Rand.Float64() < 2.0/3.0 {
+		count = 3
+	}
+	c.Core.QueueParticle(c.Base.Key.String(), count, attributes.Dendro, c.ParticleDelay)
 }
 
 func (c *char) enterDance() {

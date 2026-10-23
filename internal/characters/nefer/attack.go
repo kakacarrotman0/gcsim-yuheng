@@ -59,7 +59,7 @@ func (c *char) Attack(_ map[string]int) (action.Info, error) {
 	}, nil
 }
 
-func (c *char) queueCircle(ai info.AttackInfo, delay int) {
+func (c *char) queueCircle(ai info.AttackInfo, delay int, cb ...info.AttackCBFunc) {
 	ap := combat.NewCircleHitOnTarget(c.Core.Combat.PrimaryTarget(), nil, hitRadius)
-	c.Core.QueueAttack(ai, ap, delay, delay)
+	c.Core.QueueAttack(ai, ap, delay, delay, cb...)
 }
