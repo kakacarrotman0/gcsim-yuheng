@@ -5,10 +5,11 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/action"
 )
 
-// The burst gadget thinks once at 0.55s and then removes itself. That is one
-// spirit blade. Burst_MagicSword_Duration 6 and Burst_MagicSword_Interval 0.5
-// are declared specials and are not referenced by the ability or gadget file,
-// so they are not a 12-hit loop.
+// SkillObj_Vesna_MagicSword_Big_03 thinks once at 0.55s, deals one hit, and
+// removes the modifier. Burst_MagicSword_Duration 6 and Burst_MagicSword_Interval
+// 0.5 are declared specials with no other reference, so they are not a 12-hit
+// loop. The talent table is one Spirit Blade percentage, not ×N. The description
+// "multiple Spirit Blades" uses the same glossary as Lv2, Lv3, and Transpose.
 var burstFrames []int
 
 const (

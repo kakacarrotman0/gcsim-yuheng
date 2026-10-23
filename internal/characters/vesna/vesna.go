@@ -9,6 +9,7 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/event"
 	"github.com/genshinsim/gcsim/pkg/core/info"
 	"github.com/genshinsim/gcsim/pkg/core/player/character"
+	"github.com/genshinsim/gcsim/pkg/core/stacks"
 )
 
 const (
@@ -64,7 +65,7 @@ type char struct {
 	e3Limit        int
 	c1Free         bool
 	closing        bool
-	discUntil      []int
+	discs          *stacks.MultipleRefreshNoRemove
 	transposeUntil int
 	particleUntil  int
 }
@@ -81,6 +82,9 @@ func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) er
 }
 
 func (c *char) Init() error {
+	// PermanentSkill_1 uses stacking MultipleRefreshNoRemove, max 6.
+	// At the cap a new stack replaces the oldest. It does not get dropped.
+	c.discs = stacks.NewMultipleRefreshNoRemove(discMax, c.QueueCharTask, &c.Core.F)
 	c.stellarInit()
 	c.a4Init()
 	c.c1Init()
@@ -245,34 +249,23 @@ func (c *char) scheduleArmedExit(delay int) {
 
 func (c *char) addDisc() {
 	// Rite of Spring's Procession is promote level 1.
-	if c.Base.Ascension < 1 {
+	if c.Base.Ascension < 1 || c.discs == nil {
 		return
 	}
-	c.pruneDisc()
-	if len(c.discUntil) >= discMax {
-		return
-	}
-	c.discUntil = append(c.discUntil, c.Core.F+discDuration)
-}
-
-func (c *char) pruneDisc() {
-	now := c.Core.F
-	kept := c.discUntil[:0]
-	for _, exp := range c.discUntil {
-		if now < exp {
-			kept = append(kept, exp)
-		}
-	}
-	c.discUntil = kept
+	c.discs.Add(discDuration)
 }
 
 func (c *char) discCount() int {
-	c.pruneDisc()
-	return len(c.discUntil)
+	if c.discs == nil {
+		return 0
+	}
+	return c.discs.Count()
 }
 
 func (c *char) clearDisc() {
-	c.discUntil = nil
+	// Replacing the tracker drops the old expiries with it. Entering Armed
+	// and swapping both clear every stack.
+	c.discs = stacks.NewMultipleRefreshNoRemove(discMax, c.QueueCharTask, &c.Core.F)
 }
 
 func (c *char) discFactor() float64 {

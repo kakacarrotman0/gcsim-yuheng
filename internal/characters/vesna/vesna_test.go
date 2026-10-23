@@ -923,6 +923,273 @@ func TestPlungeAndCharge(t *testing.T) {
 	}
 }
 
+// TestWindborneICD is a mechanics check. Lv3's five blades are queued together.
+// The released type is 2s, first hit only, shared by Windborne and the ordinary
+// pinion. The entry hit has its own tag and still applies inside that window.
+func TestWindborneICD(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfileAt(t, c, keys.Vesna, 1, 1, 1, 20)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	type landed struct {
+		abil string
+		dur  info.Durability
+		tag  attacks.AttackTag
+	}
+	var hits []landed
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.ActorIndex != ch.Index() {
+			return
+		}
+		hits = append(hits, landed{ai.Abil, ai.Durability, ai.AttackTag})
+	}, "icd")
+
+	// C1 reaches Lv3 with no pinion, so the skill counter is only Windborne hits.
+	for range 4 {
+		mustExec(t, c, action.ActionSkill, keys.Vesna)
+	}
+	advance(c, lv3Hitmarks[len(lv3Hitmarks)-1]+2)
+
+	var entry, lv1 bool
+	var lv3 int
+	for _, h := range hits {
+		switch h.abil {
+		case "The Art of Victory":
+			entry = h.dur > 0 && h.tag == attacks.AttackTagElementalArt
+		case "Windborne Sword Lv1":
+			lv1 = h.dur > 0 && h.tag == attacks.AttackTagElementalArt
+		case "Windborne Sword Lv2", "Spirit Blade Lv2":
+			if h.dur > 0 || h.tag != attacks.AttackTagElementalArt {
+				t.Fatalf("shared hit applied %+v", h)
+			}
+		case "Spirit Blade Lv3", "Spirit Blade Lv3 Final":
+			lv3++
+			if h.dur > 0 || h.tag != attacks.AttackTagElementalArt {
+				t.Fatalf("lv3 applied %+v", h)
+			}
+		}
+	}
+	if !entry || !lv1 || lv3 != 5 {
+		t.Fatalf("entry %v lv1 %v lv3 %d hits %+v", entry, lv1, lv3, hits)
+	}
+
+	// The 2s counter armed on Lv1. The reset is timer-1, same as every group.
+	resetAt := lv1Hitmark + attacks.ICDGroupResetTimer[attacks.ICDGroupVesnaSkill] - 1
+	for c.F < resetAt-pinionHitmark {
+		advance(c, 1)
+	}
+	mustExec(t, c, action.ActionAttack, keys.Vesna)
+	advance(c, pinionHitmark+2)
+	var pinion bool
+	for _, h := range hits {
+		if h.abil == "Wind Pinion" {
+			pinion = h.dur > 0 && h.tag == attacks.AttackTagElementalArt
+		}
+	}
+	if !pinion {
+		t.Fatalf("no application after reset at %d, frame %d", resetAt, c.F)
+	}
+
+	cryo, trg := makeCore(1)
+	cryoCh := addProfileAt(t, cryo, keys.Vesna, 1, 1, 1, 20)
+	if err := cryo.Init(); err != nil {
+		t.Fatal(err)
+	}
+	cryo.Player.SetActive(cryoCh.Index())
+	trg[0].AttachOrRefill(&info.AttackEvent{Info: info.AttackInfo{Element: attributes.Cryo, Durability: 200}})
+	var swirls []string
+	var blades int
+	cryo.Events.Subscribe(event.OnStellarSwirl, func(args ...any) {
+		swirls = append(swirls, args[1].(*info.AttackEvent).Info.Abil)
+	}, "swirl")
+	cryo.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.Abil == "Spirit Blade Lv3" || ai.Abil == "Spirit Blade Lv3 Final" {
+			blades++
+			if ai.AttackTag != attacks.AttackTagDirectStellarSwirl || ai.Durability != 0 {
+				t.Fatalf("radiance blade %+v", ai)
+			}
+		}
+	}, "blades")
+	for range 4 {
+		mustExec(t, cryo, action.ActionSkill, keys.Vesna)
+	}
+	advance(cryo, lv3Hitmarks[len(lv3Hitmarks)-1]+2)
+	if blades != 5 {
+		t.Fatalf("lv3 blades %d", blades)
+	}
+	for _, name := range swirls {
+		if name == "Spirit Blade Lv3" || name == "Spirit Blade Lv3 Final" {
+			t.Fatalf("lv3 swirled %v", swirls)
+		}
+	}
+	if len(swirls) != 2 || swirls[0] != "Windborne Sword Lv1" || swirls[1] != "The Art of Victory" {
+		t.Fatalf("cryo applications %v", swirls)
+	}
+}
+
+func TestPinionOrdinaryAndRadiance(t *testing.T) {
+	c, trg := makeCore(1)
+	ch := addProfile(t, c, keys.Vesna, 6, 1)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	var hits []info.AttackInfo
+	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
+		hits = append(hits, args[1].(*info.AttackEvent).Info)
+	}, "pinion")
+	mustExec(t, c, action.ActionSkill, keys.Vesna)
+	mustExec(t, c, action.ActionSkill, keys.Vesna)
+	mustExec(t, c, action.ActionAttack, keys.Vesna)
+	advance(c, pinionHitmark+2)
+	ratio := pinion[ch.TalentLvlSkill()]
+	var ordinary info.AttackInfo
+	for _, ai := range hits {
+		if ai.Abil == "Wind Pinion" {
+			ordinary = ai
+		}
+	}
+	if ordinary.AttackTag != attacks.AttackTagElementalArt || ordinary.Durability != 25 || ordinary.ICDGroup != attacks.ICDGroupVesnaSkill || !near(ordinary.Mult, ratio) || ordinary.Elevation != 0 {
+		t.Fatalf("ordinary pinion %+v ratio %v", ordinary, ratio)
+	}
+
+	trg[0].AttachOrRefill(&info.AttackEvent{Info: info.AttackInfo{Element: attributes.Cryo, Durability: 50}})
+	advance(c, 1)
+	c.QueueAttack(info.AttackInfo{
+		ActorIndex: ch.Index(),
+		Abil:       "anemo-gauge",
+		AttackTag:  attacks.AttackTagElementalArt,
+		ICDTag:     attacks.ICDTagNone,
+		ICDGroup:   attacks.ICDGroupDefault,
+		Element:    attributes.Anemo,
+		Durability: 25,
+	}, combat.NewSingleTargetHit(trg[0].Key()), 0, 0)
+	if condNum(t, ch, "radiance") != 1 {
+		t.Fatal("radiance did not start")
+	}
+	hits = nil
+	mustExec(t, c, action.ActionAttack, keys.Vesna)
+	advance(c, pinionHitmark+2)
+	var star info.AttackInfo
+	for _, ai := range hits {
+		if ai.Abil == "Wind Pinion Stellar Swirl" {
+			star = ai
+		}
+	}
+	// C2, which C6 includes, grants six stacks on entry. Lv1 refreshes one.
+	// The star mixin includes them. The ordinary row does not.
+	want := ratio * (1 + discPerStack*float64(discMax))
+	if star.AttackTag != attacks.AttackTagDirectStellarSwirl || star.Durability != 0 || star.IgnoreDefPercent != 1 || star.Elevation != c6Elevation || !near(star.Mult, want) {
+		t.Fatalf("star pinion %+v want %v", star, want)
+	}
+}
+
+func TestDiscCapRefreshesOldest(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfile(t, c, keys.Vesna, 2, 1)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	mustExec(t, c, action.ActionSkill, keys.Vesna)
+	if condNum(t, ch, "discipline") != discMax {
+		t.Fatalf("c2 discs %v", condNum(t, ch, "discipline"))
+	}
+	advance(c, 100)
+	mustExec(t, c, action.ActionSkill, keys.Vesna)
+	if condNum(t, ch, "discipline") != discMax {
+		t.Fatalf("refresh kept %v", condNum(t, ch, "discipline"))
+	}
+	advance(c, discDuration-100)
+	// Five untouched stacks have expired. C2's 40% ATK requires all six.
+	if condNum(t, ch, "discipline") != 1 || math.Abs(ch.Stat(attributes.ATKP)) > 1e-9 {
+		t.Fatalf("oldest refreshed disc %v atk %v", condNum(t, ch, "discipline"), ch.Stat(attributes.ATKP))
+	}
+	advance(c, 100)
+	if condNum(t, ch, "discipline") != 0 {
+		t.Fatalf("refreshed stack remained %v", condNum(t, ch, "discipline"))
+	}
+}
+
+// TestBurstNoICD grants energy and resets the cooldown. It is not a natural rotation.
+// The released burst row is 1U with no ICD, and each cast is one damage event.
+func TestBurstNoICD(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 1, 20)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(ch.Index())
+	var durs []info.Durability
+	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
+		ai := args[1].(*info.AttackEvent).Info
+		if ai.Abil == "For the Tsaritsa!" {
+			durs = append(durs, ai.Durability)
+		}
+	}, "burst-icd")
+	for range 2 {
+		ch.AddEnergy("test", ch.EnergyMax)
+		ch.ResetActionCooldown(action.ActionBurst)
+		mustExec(t, c, action.ActionBurst, keys.Vesna)
+		advance(c, 40)
+	}
+	advance(c, burstBladeDelay)
+	if len(durs) != 2 || durs[0] <= 0 || durs[1] <= 0 {
+		t.Fatalf("burst applications %v", durs)
+	}
+}
+
+// TestBurstFromParticles earns the 60 cost from Vesna's own Anemo particles.
+// It is a mechanics check, not a damage benchmark.
+func TestBurstFromParticles(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 1, 20)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	ch.ParticleDelay = 0
+	// AddChar fills the burst bar. Empty it so only particles count.
+	ch.Energy = 0
+	c.Player.SetActive(ch.Index())
+	mustExec(t, c, action.ActionSkill, keys.Vesna)
+	advance(c, skillHitmark+2)
+	if ch.Energy <= 0 || ch.Energy >= ch.EnergyMax {
+		t.Fatalf("one particle energy %v max %v", ch.Energy, ch.EnergyMax)
+	}
+	ready, _ := ch.ActionReady(action.ActionBurst, nil)
+	if ready {
+		t.Fatal("burst ready after one particle")
+	}
+	for c.F < 90*60 && ch.Energy < ch.EnergyMax {
+		if condNum(t, ch, "armed") == 1 {
+			if err := c.Player.ReadyCheck(action.ActionAttack, keys.Vesna, nil); err == nil {
+				mustExec(t, c, action.ActionAttack, keys.Vesna)
+			}
+		} else if err := c.Player.ReadyCheck(action.ActionSkill, keys.Vesna, nil); err == nil {
+			mustExec(t, c, action.ActionSkill, keys.Vesna)
+		}
+		advance(c, 1)
+	}
+	if ch.Energy < ch.EnergyMax {
+		t.Fatalf("natural energy %v after frame %d", ch.Energy, c.F)
+	}
+	var blades int
+	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
+		if args[1].(*info.AttackEvent).Info.Abil == "For the Tsaritsa!" {
+			blades++
+		}
+	}, "burst")
+	mustExec(t, c, action.ActionBurst, keys.Vesna)
+	advance(c, burstBladeDelay+2)
+	if blades != 1 || ch.Energy > 1e-6 {
+		t.Fatalf("blades %d energy left %v", blades, ch.Energy)
+	}
+}
+
 func talentDamage(atk *info.AttackEvent, enemyLvl int) float64 {
 	a := atk.Snapshot.Stats.TotalATK()
 	dmgP := atk.Snapshot.Stats[attributes.DmgP]

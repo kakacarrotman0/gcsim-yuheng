@@ -35,7 +35,7 @@ C1's 20% reaction bonus, C2's 40% ATK, C4's 3× passive, C6's 20% elevation, and
 
 Armed for Action, Sword Essence, Windborne Sword levels 1–3, spirit blades, the burst's one spirit blade, wind pinions, and C1–C6 where the released text and the graph agree. While Armed is active, Normal, Charged, and Plunging attacks are Anemo and ignore weapon infusion. Outside Armed those attacks stay Physical and can be infused.
 
-Direct Stellar Swirl is used for spirit blades only during Radiance. The same talent percentage is kept. The hit ignores DEF, has no gauge, takes the EM reaction bonus, can crit, and does not take a DMG% bonus. It is not an ordinary Swirl and it is not the transformative Stellar Swirl reaction, which stays on the level-base formula in `pkg/reactable`.
+Direct Stellar Swirl is used for spirit blades and for the wind pinion during Radiance. The same talent percentage is kept. The hit ignores DEF, has no gauge, takes the EM reaction bonus, can crit, and does not take a DMG% bonus. It is not an ordinary Swirl and it is not the transformative Stellar Swirl reaction, which stays on the level-base formula in `pkg/reactable`. The ordinary pinion does not take the Disciplinary factor. The Radiance pinion does.
 
 `docs/yuheng/configs/vesna-natural.txt` is a mechanics smoke test: Vesna / Kaeya / Bennett / Xiangling, 20 iterations, 20 seconds. Essence is earned from the skill and from pinions. Burst is not cast. Kaeya applies Cryo before Vesna enters Armed, because a swap during Armed would end it. Bennett and Xiangling do not take the field. It is not a damage benchmark.
 
@@ -76,13 +76,14 @@ The Lv3 checker attached to animator state `Vesna_ElementalArt_C` lasts 1.5s. Th
 - C1's first level-3 cast in that entry does not spend essence. A and B still spend 30.
 - Windborne does not restart the 18s skill cooldown.
 - Spirit blades outside Radiance are ordinary Anemo talent hits with 1U, DEF, and DMG%. During Radiance they are Direct Stellar Swirl: no gauge, DEF ignored, EM reaction bonus, no DMG%. C1's 20% is a reaction bonus on Vesna's stellar tags and only while Armed. C6's 20% is elevation on her stellar reaction damage at all times. Elevation is applied once. The queued Stellar Swirl attack does not also carry it.
+- Windborne Lv1, Lv2, Lv3, the Lv3 final hit, and the ordinary wind pinion share one ICD counter: tag "Vesna Elemental Skill", type 2s. That is one application until the 2s reset. It is not the standard 2.5s/3-hit sequence. The entry hit uses tag "Vesna Elemental Skill Start" and its own 2s counter. The attack event names that entry group `default`, while the released type cell says 2s. A single entry every 18s does not show a 2s versus 2.5s difference. Stellar rows are 0U and No ICD, and those hits do not advance the counter. The burst row is 1U and No ICD. Transpose has no released gauge row, so its slash stays on the standard group.
 - Jubilee is available at ascension 0. It sets `stellar-swirl-enabled` and adds `min(ATK/100×0.007, 0.14)` base damage to party Direct Stellar Swirl and to reaction Stellar Swirl. It does not set `stellar-conduct-enabled`. Pyro, Hydro, and Electro Swirl stay ordinary. Superconduct stays Superconduct.
-- Truth Prevails is active only during Radiance. Each Cryo or Anemo member, including Vesna, gives 6% ATK. Each other element gives 25 EM. C4 makes both 3× and requires the passive, so it does nothing below ascension 4. `OnStellarSwirl` runs before that reaction is snapshotted, so the buff is included in the swirl that enters Radiance.
-- The burst adds 30 essence even while Armed is down, grants one Disciplinary stack, and fires one spirit blade. Declared specials of 6s and 0.5s are not referenced by the ability or gadget file and are not implemented as extra hits.
-- A pinion is one ordinary 1U Anemo hit per Normal, Charged, Plunging, or armed Transpose action, plus 5 essence. The graph swaps the bullet id during Radiance and the particle list names `SmallSword_Star`, but the extracted small-sword hit is the 1U art hit. That star bullet is not given a Direct Stellar Swirl formula.
+- Truth Prevails is active only during Radiance. Each Cryo or Anemo member, including Vesna, gives 6% ATK. Each other element gives 25 EM. C4 makes both 3× and requires the passive, so it does nothing below ascension 4. `PermanentSkill_2` attaches when star mode becomes 2 and thinks on add. `OnStellarSwirl` runs before that reaction is snapshotted, so the buff is included in the swirl that enters Radiance.
+- The burst adds 30 essence even while Armed is down, grants one Disciplinary stack, and fires one spirit blade. `SkillObj_Vesna_MagicSword_Big_03` thinks once at 0.55s and then removes itself. Declared specials `Burst_MagicSword_Duration` 6 and `Burst_MagicSword_Interval` 0.5 have no other reference and are not a 12-hit loop. The scaling table is one percentage. The words "multiple Spirit Blades" are the shared Spirit Blade glossary, also used for Lv2, Lv3, and Transpose.
+- A pinion is one hit per Normal, Charged, Plunging, or armed Transpose action, plus 5 essence. Outside Radiance it is 1U Anemo on the shared 2s skill counter, with no Disciplinary factor. During Radiance the graph fires bullet 41143002. The released row is "Wind Pinion Stellar Swirl DMG", 0U, No ICD, and the damage handler's `SmallSword_Star` mixin is ATK times the pinion ratio times the Disciplinary factor. That hit is Direct Stellar Swirl. The star bullet's own `TriggerAttackEvent` was not in the extracted ability file.
 - Transpose is one 150% Anemo art hit plus one spirit blade at 200%, with the Disciplinary factor on the blade only. It does not cost essence, raise Windborne's level, spend a level-3 use, or add a stack. It adds a pinion only while Armed. The extra `D_Sword_2` tag is not a second blade. The talent text says one additional instance.
-- At six Disciplinary stacks, C2 gives 40% ATK. A new stack at the cap of six is rejected and does not refresh the older timers.
-- ICD group `Vesna_MagicSword` has no extracted reset or sequence. Hits use `ICDGroupDefault`. That can mis-count gauge.
+- At six Disciplinary stacks, C2 gives 40% ATK. `PermanentSkill_1` uses stacking `MultipleRefreshNoRemove`. A new stack at the cap replaces the oldest timer. The other five keep their own expiries. Hitlag extends these timers through the character task queue, the same way as the other stacks of this type.
+- ICD group `Vesna_MagicSword` has no extracted durability sequence. The released type is 2s, so the counter is one application until reset. Damage is not gated.
 - Coursing, the quest-modified skill, and the 0.5 interruption resistance are not implemented. The 40m "nearby" check cannot fail: gcsim has one player position.
 
 ## Completion
@@ -104,26 +105,19 @@ The Lv3 checker attached to animator state `Vesna_ElementalArt_C` lasts 1.5s. Th
 | One Anemo particle and a 2.5s ICD | IMPLEMENTED AND TESTED | `TestArmedInfusionAndParticles` |
 | Plunge and charged Anemo while Armed, one pinion each | IMPLEMENTED AND TESTED | `TestPlungeAndCharge` |
 | Hitmarks and cancel windows | IMPLEMENTED BUT APPROXIMATE | No frame sheet |
-| `Vesna_MagicSword` ICD sequence | NOT IMPLEMENTED | No coefficient row was extracted. Default 2.5s / 3-hit is used |
-| Star-mode pinion as Direct Stellar Swirl | NOT IMPLEMENTED | Bullet id changes. The extracted hit is 1U Anemo |
-| Burst 6s / 0.5s specials as extra blades | NOT IMPLEMENTED | Specials are unreferenced. The gadget fires once |
+| Windborne and ordinary pinion ICD, separate from the entry hit | IMPLEMENTED AND TESTED | Released type 2s, tags "Vesna Elemental Skill" and "Vesna Elemental Skill Start". `TestWindborneICD` |
+| Star-mode pinion as Direct Stellar Swirl | IMPLEMENTED AND TESTED | Wiki row 0U No ICD, bullet 41143002, `SmallSword_Star` mixin. `TestPinionOrdinaryAndRadiance` |
+| Burst one hit, 1U, no ICD | IMPLEMENTED AND TESTED | Gadget thinks once. Specials 6 and 0.5 are unreferenced. `TestBurstNoICD`, `TestBurstFromParticles` |
+| Disciplinary cap refreshes the oldest stack | IMPLEMENTED AND TESTED | Stacking `MultipleRefreshNoRemove`. `TestDiscCapRefreshesOldest` |
 | Coursing, quest skill, interruption resistance | NOT IMPLEMENTED | Not combat, or not a damage event |
 | 40m party distance | NOT IMPLEMENTED | One player position |
 
 ## Validation
 
-`vesna-natural.txt` was run with `go run ./cmd/gcsim`, 20 iterations, 20 seconds. Failed actions were 0 and the warning list was empty.
+`vesna-natural.txt` was run with `go run ./cmd/gcsim`, 20 iterations, 20 seconds. Failed actions were 0 and the warning list was empty. Vesna's action counts were 4 skills and 6 normals.
 
-Vesna's action counts were 4 skills and 6 normals. Damage-source means:
+The printed summary was average 167872.87 damage over 20.00 seconds (8393.64 dps, min 7626.15, max 8853.88, std 348.34). That number is the output of this one config after the pinion and ICD correction. It is not a claimed team DPS. Placeholder frames were not changed.
 
-- The Art of Victory 1, Windborne Sword Lv1 1, Windborne Sword Lv2 1
-- Spirit Blade Lv2 1, Spirit Blade Lv3 4, Spirit Blade Lv3 Final 1
-- Wind Pinion 6
-- Armed Normal 0 through 5 (the third normal is two hits)
-- Stellar Swirl 4, Stellar Swirl Detonation 2
-- Kaeya Frostgnaw 1
-- No Physical normal, no ordinary Swirl, no Burst
+Damage-source means were The Art of Victory 1, Windborne Sword Lv1 1, Windborne Sword Lv2 1, Spirit Blade Lv2 1, Spirit Blade Lv3 4, Spirit Blade Lv3 Final 1, Wind Pinion Stellar Swirl 6, Armed Normal 0 through 5 (the third normal is two hits), Stellar Swirl 4, and Stellar Swirl Detonation 2. Kaeya Frostgnaw was 1. There was no ordinary Wind Pinion, no Physical normal, no ordinary Swirl, and no Burst.
 
-The printed summary was average 156698.00 damage over 20.00 seconds (7834.90 dps, min 6970.73, max 8255.13, std 448.39). That number is the output of this one config. It is not a claimed team DPS.
-
-Unit tests in `vesna_test.go` are the mechanics checks. `go test` on `internal/characters/lohen`, `internal/characters/linnea`, `internal/characters/vodyanitsa`, and `internal/tests/reactable` passed. Ordinary Pyro Swirl and Superconduct are the `TestSwirlSplit` cases. This config does not swap in Bennett, so it does not show that Pyro Swirl.
+`TestBurstFromParticles` starts from an empty bar and casts Burst once the real Anemo particles fill 60 energy. `TestEssenceCapAndBurst` and `TestBurstNoICD` still grant energy on purpose and say so. Unit tests in `vesna_test.go` are the mechanics checks. `go test` on `internal/characters/lohen`, `internal/characters/linnea`, `internal/characters/vodyanitsa`, and `internal/tests/reactable` passed. Ordinary Pyro Swirl and Superconduct are the `TestSwirlSplit` cases. This config does not swap in Bennett, so it does not show that Pyro Swirl.

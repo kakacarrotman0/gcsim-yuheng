@@ -45,6 +45,7 @@ func (c *char) stellarInit() {
 		if _, ok := args[0].(*enemy.Enemy); !ok {
 			return
 		}
+		// PermanentSkill_2 attaches when star mode becomes 2 and thinks on add.
 		// OnStellarSwirl is emitted before the reaction damage is snapshotted,
 		// so Truth Prevails is already active for that same reaction.
 		c.AddStatus(radianceKey, reactable.RadianceSwirlDuration(c.Core, c.StatusIsActive(radianceKey)), false)

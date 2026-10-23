@@ -59,6 +59,8 @@ func (c *char) transpose() {
 	if armed {
 		c.summonPinion()
 	}
-	c.artHit("Windborne Sword: Transpose", transposeTalent, transposeSlash, skillRadius, attacks.StrikeTypeSlash)
+	// The constellation block has no gauge row. This slash stays on the standard
+	// group rather than being folded into Vesna_MagicSword without a tag.
+	c.artHit("Windborne Sword: Transpose", transposeTalent, transposeSlash, skillRadius, attacks.StrikeTypeSlash, attacks.ICDGroupDefault)
 	c.queueSpirit("Transpose Spirit Blade", transposeBlade, transposeBladeDelay, false, bladeRadius)
 }

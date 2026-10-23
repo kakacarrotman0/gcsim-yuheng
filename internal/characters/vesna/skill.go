@@ -58,7 +58,8 @@ func (c *char) Skill(p map[string]int) (action.Info, error) {
 		return c.notReady("the art of victory is on cooldown")
 	}
 	c.enterArmed()
-	c.artHit("The Art of Victory", skillDMG[c.TalentLvlSkill()], skillHitmark, skillRadius, attacks.StrikeTypeSlash)
+	// Tag "Vesna Elemental Skill Start". It does not share Windborne's counter.
+	c.artHit("The Art of Victory", skillDMG[c.TalentLvlSkill()], skillHitmark, skillRadius, attacks.StrikeTypeSlash, attacks.ICDGroupVesnaSkillStart)
 	c.SetCD(action.ActionSkill, skillCD)
 	return c.skillInfo(), nil
 }
@@ -93,9 +94,9 @@ func (c *char) windborne() {
 
 	switch cast {
 	case 1:
-		c.artHit("Windborne Sword Lv1", skillDMG[lvl], lv1Hitmark, skillRadius, attacks.StrikeTypePierce)
+		c.artHit("Windborne Sword Lv1", skillDMG[lvl], lv1Hitmark, skillRadius, attacks.StrikeTypePierce, attacks.ICDGroupVesnaSkill)
 	case 2:
-		c.artHit("Windborne Sword Lv2", wbLv2[lvl], lv2Slash, skillRadius, attacks.StrikeTypeSlash)
+		c.artHit("Windborne Sword Lv2", wbLv2[lvl], lv2Slash, skillRadius, attacks.StrikeTypeSlash, attacks.ICDGroupVesnaSkill)
 		c.queueSpirit("Spirit Blade Lv2", wbLv2Blade[lvl], lv2Blade, false, bladeRadius)
 	default:
 		for i := range 4 {
@@ -105,13 +106,13 @@ func (c *char) windborne() {
 	}
 }
 
-func (c *char) artHit(name string, mult float64, delay int, radius float64, strike attacks.StrikeType) {
+func (c *char) artHit(name string, mult float64, delay int, radius float64, strike attacks.StrikeType, grp attacks.ICDGroup) {
 	ai := info.AttackInfo{
 		ActorIndex: c.Index(),
 		Abil:       name,
 		AttackTag:  attacks.AttackTagElementalArt,
 		ICDTag:     attacks.ICDTagElementalArt,
-		ICDGroup:   attacks.ICDGroupDefault,
+		ICDGroup:   grp,
 		StrikeType: strike,
 		Element:    attributes.Anemo,
 		Durability: 25,
@@ -156,22 +157,27 @@ func (c *char) spiritInfo(name string, ratio float64, burst bool) info.AttackInf
 		return ai
 	}
 	ai.Durability = 25
-	ai.ICDGroup = attacks.ICDGroupDefault
 	if burst {
+		// Released row "Spirit Blade DMG" is 1U and No ICD. The gadget's
+		// attenuation tag is empty, so this hit does not share Vesna_MagicSword.
 		ai.AttackTag = attacks.AttackTagElementalBurst
-		ai.ICDTag = attacks.ICDTagElementalBurst
+		ai.ICDTag = attacks.ICDTagNone
+		ai.ICDGroup = attacks.ICDGroupDefault
 		return ai
 	}
+	// Windborne Lv1/Lv2/Lv3/final share tag "Vesna Elemental Skill", type 2s.
 	ai.AttackTag = attacks.AttackTagElementalArt
 	ai.ICDTag = attacks.ICDTagElementalArt
+	ai.ICDGroup = attacks.ICDGroupVesnaSkill
 	return ai
 }
 
 // summonPinion fires one small-sword bullet and adds 5 essence.
-// The extracted small-sword hit is 1U Anemo. A star-mode bullet id exists, and
-// the particle handler lists SmallSword_Star, but that bullet's attack event
-// was not in the extracted handler. The pinion stays an ordinary Anemo hit
-// in both states so an unverified tag is not turned into Direct Stellar Swirl.
+// Bullet 41143001 is the ordinary 1U hit on Vesna_MagicSword. Bullet 41143002
+// (Vesna_MagicSword_Small_Star) is selected only when star mode is 2. That
+// bullet's TriggerAttackEvent is not in the extracted ability file. The damage
+// handler still has a SmallSword_Star mixin of ATK * ratio * (1 + Disciplinary
+// stacks), and the released row "Wind Pinion Stellar Swirl DMG" is 0U, No ICD.
 func (c *char) summonPinion() {
 	if !c.armed() {
 		return
@@ -184,11 +190,23 @@ func (c *char) summonPinion() {
 			Abil:       "Wind Pinion",
 			AttackTag:  attacks.AttackTagElementalArt,
 			ICDTag:     attacks.ICDTagElementalArt,
-			ICDGroup:   attacks.ICDGroupDefault,
+			ICDGroup:   attacks.ICDGroupVesnaSkill,
 			StrikeType: attacks.StrikeTypePierce,
 			Element:    attributes.Anemo,
 			Durability: 25,
 			Mult:       pinion[lvl],
+		}
+		if c.inRadiance() {
+			ai.Abil = "Wind Pinion Stellar Swirl"
+			ai.AttackTag = attacks.AttackTagDirectStellarSwirl
+			ai.ICDTag = attacks.ICDTagNone
+			ai.ICDGroup = attacks.ICDGroupDefault
+			ai.Durability = 0
+			ai.IgnoreDefPercent = 1
+			ai.Mult = pinion[lvl] * c.discFactor()
+			if c.Base.Cons >= 6 {
+				ai.Elevation = c6Elevation
+			}
 		}
 		ap := combat.NewCircleHitOnTarget(c.Core.Combat.Player(), nil, pinionRadius)
 		c.Core.QueueAttack(ai, ap, 0, 0, c.tryParticle)
