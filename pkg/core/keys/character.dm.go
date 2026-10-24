@@ -173,6 +173,7 @@ const (
 	YumemizukiMizuki              // yumemizukimizuki
 	YunJin                        // yunjin
 	Zhongli                       // zhongli
+	Sandrone                      // sandrone
 	InvalidChar                   // invalidchar
 )
 
@@ -308,6 +309,7 @@ var _CharNames = [...]string{
 	"yumemizukimizuki",
 	"yunjin",
 	"zhongli",
+	"sandrone",
 	"invalidchar",
 }
 
@@ -443,5 +445,6 @@ var _CharValues = [...]Char{
 	YumemizukiMizuki,
 	YunJin,
 	Zhongli,
+	Sandrone,
 	InvalidChar,
 }

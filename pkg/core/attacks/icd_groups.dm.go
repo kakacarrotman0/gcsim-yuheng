@@ -71,6 +71,9 @@ const (
 	ICDGroupYelanBurst
 	ICDGroupAlyoshaElementalBurst
 	ICDGroupLohenSkill
+	// Hand-appended. Avatar_Marionette_MachineGun has no excel row on this branch.
+	// Provisional copy of the default 2.5s / 1,0,0 pattern. Do not regenerate this file.
+	ICDGroupSandroneMachineGun
 )
 
 var ICDGroupResetTimer = []int{
@@ -140,6 +143,7 @@ var ICDGroupResetTimer = []int{
 	ICDGroupYelanBurst:                120,  // 2s
 	ICDGroupAlyoshaElementalBurst:     96,   // 1.6s
 	ICDGroupLohenSkill:                300,  // 5s
+	ICDGroupSandroneMachineGun:        150,  // 2.5s, provisional
 }
 
 var ICDGroupEleApplicationSequence = [][]float64{
@@ -209,6 +213,7 @@ var ICDGroupEleApplicationSequence = [][]float64{
 	ICDGroupYelanBurst:                {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
 	ICDGroupAlyoshaElementalBurst:     {1.0, 0.0},
 	ICDGroupLohenSkill:                {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0},
+	ICDGroupSandroneMachineGun:        {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
 }
 
 var ICDGroupDamageSequence = [][]float64{
@@ -278,4 +283,5 @@ var ICDGroupDamageSequence = [][]float64{
 	ICDGroupYelanBurst:                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
 	ICDGroupAlyoshaElementalBurst:     {1.0, 1.0, 1.0, 1.0},
 	ICDGroupLohenSkill:                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+	ICDGroupSandroneMachineGun:        {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
 }
