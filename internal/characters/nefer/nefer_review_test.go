@@ -414,6 +414,41 @@ func TestOrdinaryBloomWithoutNefer(t *testing.T) {
 	}
 }
 
+func eventCount(c *core.Core, ev event.Event, key string) *int {
+	n := 0
+	c.Events.Subscribe(ev, func(args ...any) { n++ }, key)
+	return &n
+}
+
+// Lunar-Bloom replaces the Bloom reaction event and still spawns a Dendro Core.
+// The core's later explosion is damage labeled "bloom"; it is not a second reaction.
+func TestLunarBloomEventIsDistinctFromCoreExplosion(t *testing.T) {
+	c, _ := makeCore(1)
+	col := addChar(t, c, keys.Collei, 0, 1)
+	start(t, c, col.Index())
+	onBloom := eventCount(c, event.OnBloom, "ordinary-bloom")
+	onLunar := eventCount(c, event.OnLunarBloom, "ordinary-lunar")
+	explosion := reactionCount(c, "bloom")
+	spawnOwnedCore(c, col.Index())
+	advance(c, 400)
+	if *onBloom == 0 || *onLunar != 0 || *explosion == 0 {
+		t.Fatalf("ordinary bloom: reaction %d lunar %d explosion %d", *onBloom, *onLunar, *explosion)
+	}
+
+	c, _ = makeCore(1)
+	col = addChar(t, c, keys.Collei, 0, 1)
+	addChar(t, c, keys.Nefer, 0, 1)
+	start(t, c, col.Index())
+	onBloom = eventCount(c, event.OnBloom, "nefer-bloom")
+	onLunar = eventCount(c, event.OnLunarBloom, "nefer-lunar")
+	explosion = reactionCount(c, "bloom")
+	spawnOwnedCore(c, col.Index())
+	advance(c, 400)
+	if *onBloom != 0 || *onLunar == 0 || *explosion == 0 {
+		t.Fatalf("lunar bloom: reaction %d lunar %d explosion %d", *onBloom, *onLunar, *explosion)
+	}
+}
+
 func TestOrdinaryHyperbloomAndBurgeon(t *testing.T) {
 	c, trg := makeCore(1)
 	col := addChar(t, c, keys.Collei, 0, 1)

@@ -2,6 +2,11 @@ version: '3'
 
 tasks:
   build:
+    desc: Compile cmd/gcsim from checked-in generated data
+    cmds:
+      - go build -o {{.OUT | default "gcsim"}} ./cmd/gcsim
+  build-generated:
+    desc: Regenerates protobufs, pipeline tables, and editor keys. Not a supported build.
     cmds:
       - task: protos
       - task: pipeline
@@ -38,9 +43,9 @@ tasks:
       - git add -v 'ui/packages/docs/docs/reference/*/*.md' > /dev/null
       - git add -v '*.dm.*'
   pipeline-clean:
+    desc: Refuses to delete generated files. Deletion before validation is disabled.
     cmds:
-      - git rm -f --ignore-unmatch 'ui/packages/docs/docs/reference/*/*.md' > /dev/null
-      - git rm -f --ignore-unmatch '*.dm.*'
+      - sh scripts/pipeline-clean.sh
 
   enumer:
     cmds:

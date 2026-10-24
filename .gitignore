@@ -21,6 +21,7 @@ internal/characters/replace.txt
 ./cmd/gcsim/*.gz
 ./cmd/gcsim/*.json
 cmd/gcsim/gcsim
+/gcsim
 !release-notes.txt
 .env
 .envrc

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"maps"
+	"os"
 	"slices"
 
 	"github.com/shizukayuki/excel-hk4e"
@@ -116,6 +118,16 @@ func validateHandICDSequences(groups map[string]AttackAttenuation) error {
 		}
 	}
 	return nil
+}
+
+// fullRegenGate keeps unattended regeneration off until released character
+// data and a stable generated-table strategy exist. It does not replace the
+// character or ICD guards below.
+func fullRegenGate() error {
+	if os.Getenv("GCSIM_ALLOW_FULL_REGEN") == "1" {
+		return nil
+	}
+	return errors.New("refusing full pipeline regeneration: set GCSIM_ALLOW_FULL_REGEN=1 only when released character data and a stable generated-table strategy exist; checked-in generated files were not modified")
 }
 
 // assertHandMaintainedRegen refuses a pipeline run whose character or ICD
