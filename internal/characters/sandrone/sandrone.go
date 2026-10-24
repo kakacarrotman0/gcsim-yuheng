@@ -11,7 +11,8 @@ import (
 
 const (
 	powerCap = 100.0
-	// Overload removes itself at FrostValue <= 50.
+	// Marionette_FrostValue_Overload removes itself with compareType LessAndEqual 50.
+	// The talent sentence says "under 50". The graph wins: 50 itself exits.
 	overdriveExit = 50.0
 
 	// MarionetteTickAddFrostValue, think 0.2s, +3.2 * FrostValueAddRatio.
@@ -44,8 +45,9 @@ const (
 	hoverFrames   = 360
 	skillDash     = 12
 	skillEarly    = 36
-	prismFirst    = 15 // FunnelShooterReal think 0.25s
-	prismSecond   = 30
+	prismFirst    = 15 // FunnelShooterReal think 0.25s, then the modifier removes itself
+	prismStarSnap = 18 // FunnelEff think 0.3s writes FunnelStar before the second bullet
+	prismSecond   = 33 // 0.3s + FunnelShooterRealEnhanced think 0.25s
 	tacticsWindow = 60 * 60
 	a1Threshold   = 50.0
 	// Talent text is 400% of the original shot. The graph multiplies 1+P1AttackUpRatio, and that special is 0 in the dump.
@@ -247,6 +249,12 @@ func (c *char) notePowerLoss(chunk float64) {
 	if c.frostReduce > powerCap {
 		c.frostReduce = powerCap
 	}
+}
+
+// refreshTactics restarts the 60s unique timer.
+// Skill does this once, from FrostValue_Driver opt type 1. The 0.1s repair ticks do not.
+// Each decay think that is allowed to run applies the timer again.
+func (c *char) refreshTactics() {
 	c.tacticsUntil = c.Core.F + tacticsWindow
 }
 

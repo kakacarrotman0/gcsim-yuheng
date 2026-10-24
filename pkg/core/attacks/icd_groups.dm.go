@@ -71,8 +71,10 @@ const (
 	ICDGroupYelanBurst
 	ICDGroupAlyoshaElementalBurst
 	ICDGroupLohenSkill
-	// Hand-appended. Avatar_Marionette_MachineGun has no excel row on this branch.
-	// Provisional copy of the default 2.5s / 1,0,0 pattern. Do not regenerate this file.
+	// Hand-appended after Lohen. Provisional 2.5s / 1,0,0 pattern.
+	// Vesna PR #5 appends ICDGroupVesnaSkillStart and ICDGroupVesnaSkill in this same slot.
+	// Reconcile those two groups and this one together before combining the drafts.
+	// Do not insert any of them above ICDGroupLohenSkill, and do not regenerate this file.
 	ICDGroupSandroneMachineGun
 )
 

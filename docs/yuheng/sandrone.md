@@ -10,7 +10,7 @@ Yuheng-maintained gcsim character. Upstream `genshinsim/gcsim` and the productio
 | Internal name | MarionetteNew |
 | Key | `sandrone` |
 | Avatar ID | 10000133 |
-| Skill depot | Not in the Yatta release dump. Catalog `SubId` 13301 is the conventional `(id % 1000) * 100 + 1` guess and is not a confirmed depot id |
+| Skill depot | Not in the Yatta release dump or the gachabase release page. Catalog `SubId` 13301 is the conventional `(id % 1000) * 100 + 1` guess. Combat does not read `SubId`; only a future pipeline depot lookup would. It is not a runtime integration risk |
 | Element | Cryo |
 | Weapon | Claymore |
 | Rarity | 5 |
@@ -68,7 +68,7 @@ Gameplay cross-check: KQM Sandrone Quick Guide updated for Version 7.1, `https:/
 | C1–C6 combat effects | Implemented. C6 cluster spacing is approximate |
 | Hover steering, sprint stamina, 6s hover as movement | Unsupported. The skill state can last up to 360 frames if it is not cancelled |
 | Claymore charged-attack stamina | Left at the template value of 0. The ability special is also 0 |
-| Continuous sweeping-fire ticks inside bullet 41133002 | Unsupported. One attach hit stands in for the bullet |
+| Continuous sweeping-fire ticks inside bullet 41133002 | Unsupported. The avatar file spawns the bullet once. The bullet asset was not in the public dumps checked for commit `792978e`. One attach hit stands in for it |
 | Hitlag on her own hits | Omitted, so the Core task clock stays aligned with the ability thinks |
 | Commission snack utility | Unsupported |
 
@@ -84,9 +84,13 @@ Sweeping Fire is one Cryo hit on the machine-gun attach (frame 12), talent param
 
 Condensed beams use param 5 when ordinary, param 6 for direct Stellar-Conduct, and param 11 (the same curve as param 5) for direct Stellar Swirl. Ordinary condensed beams are 1U Cryo with `ICDGroupDefault`. Direct stellar hits are 0 gauge, no ICD, and ignore DEF. C2's CRIT DMG snapshot is taken on the beam, and C6 cluster subhits share it.
 
-Decay runs every 30 frames whenever she is not Decoding and not in her on-field Skill state: −2.5 on-field, −7.5 off-field. The graph's driver also skips some animator states. The talent and KQM both say power decreases whenever she is not in Decoding, including Overdrive, at 300% off-field. The sim follows the talent. Overdrive ends at 50 or below, which clears the beam generation so the 0.4s shots stop.
+Decay runs every 30 frames whenever she is not Decoding and not in her on-field Skill state: −2.5 on-field, −7.5 off-field. The graph's driver also skips the animator states ExtraAttack, ExtraAttack1, and ExtraAttack1Weak. The talent and KQM say power decreases whenever she is not in Decoding, including Overdrive, at 300% off-field. The overload modifier removes itself when power changes to 50 or below, which only happens if decay runs during Overdrive. The sim follows that pair of facts. A value that is written onto 50 without going through the change does not exit until the next decrease. Landing on 50 exits. The next 0.4s Overdrive shot after that tick does not fire.
 
-Skill immediately removes 70, then 10 every 6 frames while she stays in the Skill state on-field. Both the "at least the chunk" and "at most the chunk" frost-reduce actions run, matching the graph, so an exact boundary counts twice and the recorded loss is clamped at 100. Refined Tactics is `floor(loss / 10)`, max 10, for 60s from the last positive loss. Empty ticks do not refresh the timer. A dash at the placeholder frame 12 leaves power at 10 from a full bar. An attack cancel at the placeholder frame 36 drains a full bar to 0 and records 10 tactics. Those cancel frames are labels for the ability repair clock, not a measured EN0 or ED window.
+The same decay think records Refined Tactics. Both frost-reduce predicates run, so a loss that exactly equals the remaining power is recorded twice and then clamped at 100. Each such think refreshes the 60s timer. The talent sentence describes the 10-point rule without saying that passive decay counts. The graph's decay think does add `_ABILITY_Marionette_FrostReduce`.
+
+Skill immediately removes 70, then 10 every 6 frames while she stays in the Skill state on-field. `ReduceFrost` is attached to the hover animator states, so a cancel stops later repair ticks. The 0.1s ticks do not refresh the 60s timer. The skill cast does, because it triggers `FrostValue_Driver` with opt type 1, including when the bar is already empty. Both the "at least the chunk" and "at most the chunk" frost-reduce actions run, matching the graph, so an exact boundary counts twice and the recorded loss is clamped at 100. Refined Tactics is `floor(loss / 10)`, maximum 10. A dash at the placeholder frame 12 leaves power at 10 from a full bar. An attack cancel at the placeholder frame 36 drains a full bar to 0 and records 10 tactics. Those cancel frames are labels for the ability repair clock, not a measured EN0 or ED window.
+
+The Prism cannon is gadget `41133006`, created with `lifeByOwnerV2`. `FunnelEff` lasts 1.45s on that gadget. `ElementalArt_Cancel` does not kill it, and the bullet actions are `doOffStage`. The first shot is `FunnelShooterReal` at 0.25s (frame 15), which then removes itself. `FunnelEff`'s 0.3s think (frame 18) snapshots `FunnelStar` and attaches the enhanced shooter. That shooter fires at 0.55s (frame 33). A dash at frame 12 does not suppress either shot. Radiance gained after frame 18 does not change the second shot.
 
 ## Stellar reactions and Radiance
 
@@ -102,7 +106,7 @@ The skill records the A1 mark when ascension is at least 1 and Decoding Power is
 
 The 400% multiplier is applied only when the second Prism Shot is a direct stellar hit. `Funnel_Bullet_Enhanced` multiplies `P1_UpRatio` on the stellar factors. The ordinary Elemental Art shot uses `DamageRatio` alone, and the talent sentence is under the Radiance prefix. `P1AttackUpRatio` is 0 in the dump, so 400% is the talent wording (`1 + 3` in the graph's `1 + P1AttackUpRatio` shape, implemented as a ×4 on the chosen stellar ratio).
 
-Refined Tactics are cleared on every Burst once A1 is unlocked. `BurstP1RatioUp` is `1 + 0.10 * stacks` and is multiplied into both the Stellar-Conduct ray and the Stellar Swirl ray. The talent sentence names only Stellar-Conduct. The burst attacker multiplies the same global into both moon factors, and KQM describes the burst bonus under both radiance states. The ordinary ray does not receive it. The `MarionetteBurstSC` damage-extra mixin is not paired with a burst attack tag in the attacker, so it is not a second hit.
+Refined Tactics are cleared on every Burst once A1 is unlocked, including a Burst outside Radiance. `ElementalBurstEnhance` is triggered with only the A1 talent predicate, and its modifier zeros `FrostReduce` and removes the 60s timer on cast. The talent sentence says the clear happens while in Radiance: Stellar Glimmer. The clear is at cast, not at the 0.28s ray snapshot. `BurstP1RatioUp` is `1 + 0.10 * stacks` and is multiplied into both the Stellar-Conduct ray and the Stellar Swirl ray when that snapshot is stellar. A Polestar Field that appears after cast and before frame 17 still boosts the ray. One that disappears before frame 17 leaves an ordinary ray, and the stacks are already gone. The talent sentence names only Stellar-Conduct for the bonus. The burst attacker multiplies the same global into both moon factors. The ordinary ray does not receive it. The `MarionetteBurstSC` damage-extra mixin is not paired with a burst attack tag in the attacker, so it is not a second hit.
 
 The ray's element is the `MarionetteBurstStarmode` value written by `SetStarModeDelay` at 0.28s (frame 17), not radiance at the 0.85s ray.
 
@@ -126,7 +130,7 @@ C6, from the third condensed beam onward, keeps the original beam and adds four 
 
 | Timing | Class |
 | --- | --- |
-| Gain 0.2s, condensed beam 1.0s, Overdrive 0.4s, decay 0.5s, force-100 0.25s, skill repair 0.1s and the instant 70, prism shots at 0.25s and 0.5s, particle ICD 2.5s, bombardment 0 / 0.2 / 0.4s, starmode snapshot 0.28s, ray 0.85s, C1 2s refreshed every 1.5s, C4 ICD 4s and delay 0.5s, tactics 60s | Ability-graph intervals |
+| Gain 0.2s, condensed beam 1.0s, Overdrive 0.4s, decay 0.5s, force-100 0.25s, skill repair 0.1s and the instant 70, prism shots at 0.25s and 0.55s with the radiance snapshot at 0.3s, particle ICD 2.5s, bombardment 0 / 0.2 / 0.4s, starmode snapshot 0.28s, ray 0.85s, C1 2s refreshed every 1.5s, C4 ICD 4s and delay 0.5s, tactics 60s | Ability-graph intervals |
 | Charge lock until power would hit 100 (192 frames from 0 at C0, 372 at C1) | Derived from those intervals. Not a measured animation |
 | Skill dash/jump at frame 12, attack/charge/burst/swap at frame 36, hover length 360 | Placeholder windows on the repair clock. Not an EN0 or ED sheet |
 | Normal hitmarks 16 / 14 / 28, plunge collision 36, low 42, high 44, burst cancel slice | Placeholder. Not a frame sheet |
@@ -137,4 +141,4 @@ No Sandrone DPS figure in this document is frame-validated.
 
 ## Pipeline
 
-`ICDGroupSandroneMachineGun` is appended after `ICDGroupLohenSkill` in `pkg/core/attacks/icd_groups.dm.go`. `keys.Sandrone` is inserted immediately before `InvalidChar`, so existing key numbers stay put. Talent curves live in `internal/characters/sandrone/zz_sandrone.dm.go` and are hand-maintained. Do not run `go run ./pipeline` to refresh her.
+`ICDGroupSandroneMachineGun` is appended after `ICDGroupLohenSkill` in `pkg/core/attacks/icd_groups.dm.go`. Vesna PR #5, on `cursor/vesna-gcsim-5552` at `df1d88356`, appends `ICDGroupVesnaSkillStart` and `ICDGroupVesnaSkill` in that same position. Combining the drafts has to keep every group through Lohen at its current number, then place Vesna's two groups and Sandrone's group after them. `keys.Sandrone` is inserted immediately before `InvalidChar`, so existing key numbers stay put. Talent curves live in `internal/characters/sandrone/zz_sandrone.dm.go` and are hand-maintained. Do not run `go run ./pipeline` to refresh her. Catalog `SubId` 13301 remains unverified. The simulator's combat path does not read it.

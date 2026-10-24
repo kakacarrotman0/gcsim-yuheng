@@ -77,6 +77,9 @@ func (c *char) sweeping(gen int) {
 	if c.beamGen != gen || c.mode != modeDecoding {
 		return
 	}
+	// Bullet 41133002 is triggered once on machine-gun attach and killed on remove.
+	// Its internal hit loop is not in the avatar ability file, and the bullet asset
+	// was not in the public dumps checked for this pass. One hit stands in for it.
 	ai := c.cryoInfo("Sweeping Fire", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupSandroneMachineGun, sweeping[c.TalentLvlAttack()], 25)
 	c.queue(ai, 3.5, 0, false)
 }
@@ -212,6 +215,10 @@ func (c *char) decayTick() {
 	if !c.onField() {
 		loss = decayOffField
 	}
+	// The same think adds FrostReduce, subtracts FrostValue, and reapplies the 60s timer.
+	// Both frost-reduce predicates run, so an exact boundary is recorded twice.
+	c.notePowerLoss(loss)
+	c.refreshTactics()
 	c.addPower(-loss)
 }
 

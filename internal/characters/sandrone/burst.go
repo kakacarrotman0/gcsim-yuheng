@@ -27,6 +27,10 @@ func (c *char) Burst(_ map[string]int) (action.Info, error) {
 	c.ConsumeEnergy(0)
 	stacks := 0
 	if c.Base.Ascension >= 1 {
+		// ElementalBurstEnhance is triggered with only the A1 talent predicate.
+		// It zeros FrostReduce and removes the 60s timer on cast, including outside Radiance.
+		// The talent sentence names Radiance: Stellar Glimmer. The stored ratio is still
+		// applied only when the 0.28s ray snapshot is a stellar ray.
 		stacks = c.tactics()
 		c.frostReduce = 0
 		c.tacticsUntil = c.Core.F

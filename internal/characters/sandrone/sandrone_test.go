@@ -194,7 +194,7 @@ func TestDecodingOverdriveAndRecovery(t *testing.T) {
 	s.power = 52.5
 	s.mode = modeOverdrive
 	advance(c, 30)
-	if s.mode != modeIdle || s.power > overdriveExit {
+	if s.mode != modeIdle || math.Abs(s.power-overdriveExit) > 1e-9 {
 		t.Fatalf("exit mode %v power %v", s.mode, s.power)
 	}
 }
@@ -270,6 +270,11 @@ func TestEarlySkillCancelLeavesPower(t *testing.T) {
 	// Initial 70 plus the 0.1s ticks on frames 6 and 12. Frame 12's tick runs before the dash.
 	if math.Abs(asSandrone(ch).power-10) > 1e-9 {
 		t.Fatalf("early cancel power %v", asSandrone(ch).power)
+	}
+	// Repair is state-attached. The next decay is frame 30, so frame 29 still shows the cancelled bar.
+	advance(c, 17)
+	if c.F != 29 || math.Abs(asSandrone(ch).power-10) > 1e-9 {
+		t.Fatalf("repair continued after dash: f %d power %v", c.F, asSandrone(ch).power)
 	}
 	// 10 remaining still reaches the third beam. 30 is the bar after the instant 70 and before any 0.1s tick.
 	// That bar caps during the second second, so the third condensed beam does not fire.
@@ -712,6 +717,236 @@ func TestTeammateCompatibility(t *testing.T) {
 	want := min(sand.TotalAtk()/100*jubileePer100, jubileeCap) + min(od.TotalAtk()/100*0.007, 0.14)
 	if math.Abs(atk.Info.BaseDmgBonus-want) > 1e-9 {
 		t.Fatalf("jubilee bonus %v want %v", atk.Info.BaseDmgBonus, want)
+	}
+}
+
+func TestOverdriveExitSchedule(t *testing.T) {
+	exitAt := func(t *testing.T, start float64, wantPower float64, wantIdle bool) {
+		t.Helper()
+		c, _ := makeCore(1)
+		ch := addProfile(t, c, keys.Sandrone, 0, 1)
+		mustInit(t, c)
+		s := asSandrone(ch)
+		var book logbook
+		book.watch(c)
+		s.enterOverdrive()
+		s.power = start
+		advance(c, overdriveInterval)
+		if s.mode != modeOverdrive || book.count("Overdrive") != 2 {
+			t.Fatalf("start %v before exit mode %v hits %v", start, s.mode, book.names)
+		}
+		advance(c, decayInterval-overdriveInterval)
+		if wantIdle {
+			if s.mode != modeIdle || math.Abs(s.power-wantPower) > 1e-9 {
+				t.Fatalf("start %v exit mode %v power %v", start, s.mode, s.power)
+			}
+			advance(c, overdriveInterval)
+			if book.count("Overdrive") != 2 {
+				t.Fatalf("start %v shot after exit %v", start, book.names)
+			}
+			return
+		}
+		if s.mode != modeOverdrive || math.Abs(s.power-wantPower) > 1e-9 {
+			t.Fatalf("start %v still overdrive mode %v power %v", start, s.mode, s.power)
+		}
+		advance(c, overdriveInterval)
+		if book.count("Overdrive") != 3 {
+			t.Fatalf("start %v missing follow-up shot %v", start, book.names)
+		}
+	}
+	// 52.5 - 2.5 lands on 50. LessAndEqual exits, and the next 0.4s shot does not fire.
+	exitAt(t, 52.5, 50, true)
+	// 52 - 2.5 lands at 49.5 and exits on that same tick.
+	exitAt(t, 52, 49.5, true)
+	// 55 - 2.5 stays above 50, so the following Overdrive shot still fires.
+	exitAt(t, 55, 52.5, false)
+}
+
+func TestTacticsDecayBoundaryAndRefresh(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfile(t, c, keys.Sandrone, 0, 1)
+	mustInit(t, c)
+	s := asSandrone(ch)
+	s.power = 70
+	s.notePowerLoss(70)
+	if s.frostReduce != 100 {
+		t.Fatalf("boundary reduce %v", s.frostReduce)
+	}
+
+	s.frostReduce = 0
+	s.power = 2.5
+	s.mode = modeIdle
+	advance(c, decayInterval)
+	if s.frostReduce != 5 || s.power != 0 || s.tacticsUntil != decayInterval+tacticsWindow {
+		t.Fatalf("decay boundary reduce %v power %v until %d", s.frostReduce, s.power, s.tacticsUntil)
+	}
+
+	c2, _ := makeCore(1)
+	ch2 := addProfile(t, c2, keys.Sandrone, 0, 1)
+	mustInit(t, c2)
+	s2 := asSandrone(ch2)
+	s2.power = 100
+	if err := c2.Player.Exec(action.ActionSkill, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	if s2.tacticsUntil != tacticsWindow {
+		t.Fatalf("skill timer %d", s2.tacticsUntil)
+	}
+	hold(c2, action.ActionAttack)
+	if s2.tacticsUntil != tacticsWindow {
+		t.Fatalf("repair ticks refreshed the timer to %d", s2.tacticsUntil)
+	}
+	if s2.tactics() != 10 {
+		t.Fatalf("tactics %d", s2.tactics())
+	}
+	advance(c2, s2.tacticsUntil-c2.F)
+	if s2.tactics() != 0 {
+		t.Fatalf("timer expiry tactics %d", s2.tactics())
+	}
+
+	c3, _ := makeCore(1)
+	ch3 := addProfile(t, c3, keys.Sandrone, 0, 1)
+	mustInit(t, c3)
+	s3 := asSandrone(ch3)
+	s3.power = 0
+	s3.frostReduce = 20
+	s3.tacticsUntil = 10
+	if err := c3.Player.Exec(action.ActionSkill, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	if s3.tactics() != 2 || s3.tacticsUntil != tacticsWindow {
+		t.Fatalf("empty skill tactics %d until %d", s3.tactics(), s3.tacticsUntil)
+	}
+}
+
+func TestBurstClearsTacticsInsideAndOutsideRadiance(t *testing.T) {
+	outside, _ := makeCore(1)
+	ch := addProfile(t, outside, keys.Sandrone, 0, 1)
+	mustInit(t, outside)
+	s := asSandrone(ch)
+	s.frostReduce = 100
+	s.tacticsUntil = outside.F + 100
+	var book logbook
+	book.watch(outside)
+	if err := outside.Player.Exec(action.ActionBurst, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	if s.tactics() != 0 {
+		t.Fatalf("outside radiance kept tactics %d", s.tactics())
+	}
+	advance(outside, burstRayAt)
+	if book.count("Convective Inhibition Ray") != 1 || book.count("Convective Inhibition Ray"+stellarConductText) != 0 {
+		t.Fatalf("outside ray %v", book.names)
+	}
+	if math.Abs(book.mult[len(book.mult)-1]-burstRayOrdinary[0]) > 1e-9 {
+		t.Fatalf("outside mult %v", book.mult[len(book.mult)-1])
+	}
+
+	late, _ := makeCore(1)
+	lateCh := addProfile(t, late, keys.Sandrone, 0, 1)
+	mustInit(t, late)
+	lateS := asSandrone(lateCh)
+	lateS.frostReduce = 100
+	lateS.tacticsUntil = 100
+	var lateBook logbook
+	lateBook.watch(late)
+	if err := late.Player.Exec(action.ActionBurst, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(late, 10)
+	lateCh.AddStatus(reactable.PolestarFieldKey, 300, true)
+	advance(late, burstRayAt-10)
+	want := burstRayConduct[0] * (1 + a1RayPer*10)
+	if lateBook.count("Convective Inhibition Ray"+stellarConductText) != 1 {
+		t.Fatalf("late radiance ray %v", lateBook.names)
+	}
+	if math.Abs(lateBook.mult[len(lateBook.mult)-1]-want) > 1e-6 {
+		t.Fatalf("late mult %v want %v", lateBook.mult[len(lateBook.mult)-1], want)
+	}
+
+	drop, _ := makeCore(1)
+	dropCh := addProfile(t, drop, keys.Sandrone, 0, 1)
+	mustInit(t, drop)
+	dropS := asSandrone(dropCh)
+	dropS.frostReduce = 100
+	dropS.tacticsUntil = 100
+	dropCh.AddStatus(reactable.PolestarFieldKey, 300, true)
+	var dropBook logbook
+	dropBook.watch(drop)
+	if err := drop.Player.Exec(action.ActionBurst, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	if dropS.tactics() != 0 {
+		t.Fatal("cast did not clear stacks")
+	}
+	advance(drop, 10)
+	dropCh.DeleteStatus(reactable.PolestarFieldKey)
+	advance(drop, burstRayAt-10)
+	if dropBook.count("Convective Inhibition Ray") != 1 || dropBook.count("Convective Inhibition Ray"+stellarConductText) != 0 {
+		t.Fatalf("dropped radiance ray %v", dropBook.names)
+	}
+}
+
+func TestPrismSurvivesSkillCancel(t *testing.T) {
+	c, _ := makeCore(1)
+	ch := addProfile(t, c, keys.Sandrone, 0, 1)
+	mustInit(t, c)
+	asSandrone(ch).power = 100
+	ch.AddStatus(reactable.PolestarFieldKey, 600, true)
+	particles := 0
+	c.Events.Subscribe(event.OnParticleReceived, func(...any) { particles++ }, "p")
+	var book logbook
+	book.watch(c)
+	if err := c.Player.Exec(action.ActionSkill, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	hold(c, action.ActionDash)
+	if err := c.Player.Exec(action.ActionDash, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, prismSecond-c.F)
+	if book.count("Prism Shot") != 1 || book.count("Prism Shot"+stellarConductText) != 1 {
+		t.Fatalf("cancelled skill prisms %v", book.names)
+	}
+	if math.Abs(book.mult[1]-skillConduct[0]*a1PrismMult) > 1e-9 {
+		t.Fatalf("cancelled boost %v", book.mult[1])
+	}
+	if particles != 1 {
+		t.Fatalf("prism particles %d", particles)
+	}
+
+	plain, _ := makeCore(1)
+	plainCh := addProfile(t, plain, keys.Sandrone, 0, 1)
+	mustInit(t, plain)
+	asSandrone(plainCh).power = 100
+	var plainBook logbook
+	plainBook.watch(plain)
+	if err := plain.Player.Exec(action.ActionSkill, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(plain, prismStarSnap)
+	plainCh.AddStatus(reactable.PolestarFieldKey, 600, true)
+	advance(plain, prismSecond-prismStarSnap)
+	if plainBook.count("Prism Shot 2") != 1 || plainBook.count("Prism Shot"+stellarConductText) != 0 {
+		t.Fatalf("late polestar changed the snapped shot %v", plainBook.names)
+	}
+
+	full, _ := makeCore(1)
+	fullCh := addProfile(t, full, keys.Sandrone, 0, 1)
+	mustInit(t, full)
+	asSandrone(fullCh).power = 100
+	fullCh.AddStatus(reactable.PolestarFieldKey, 600, true)
+	var fullBook logbook
+	fullBook.watch(full)
+	if err := full.Player.Exec(action.ActionSkill, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	hold(full, action.ActionAttack)
+	if err := full.Player.Exec(action.ActionAttack, keys.Sandrone, nil); err != nil {
+		t.Fatal(err)
+	}
+	if fullBook.count("Prism Shot") != 1 || fullBook.count("Prism Shot"+stellarConductText) != 1 {
+		t.Fatalf("attack cancel prisms %v", fullBook.names)
 	}
 }
 
