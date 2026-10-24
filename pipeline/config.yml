@@ -28,6 +28,26 @@ override:
       timer: 2
       durability: [1, 0]
       damage: [1]
+    # Alyosha and Lohen were hand-appended after the generated block. The rows
+    # are fully specified so a later generate does not look them up in excel
+    # and does not drop them. SandroneMachineGun is the same provisional
+    # 2.5s / 1,0,0 copy as ICDGroupDefault. Bullet 41133002's hit loop is not
+    # in the released avatar file, so this row is not a validated beam.
+    AlyoshaElementalBurst:
+      name: Alyosha_ElementalBurst
+      timer: 1.6
+      durability: [1, 0]
+      damage: [1, 1, 1, 1]
+    LohenSkill:
+      name: Lohen_Skill
+      timer: 5
+      durability: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+      damage: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    SandroneMachineGun:
+      name: Sandrone_MachineGun
+      timer: 2.5
+      durability: [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0]
+      damage: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
 combat:
   icd_tags:
@@ -66,5 +86,8 @@ combat:
     - ReactionA
     - ReactionB
     - Burning
+    - AlyoshaElementalBurst
+    - LohenSkill
     - VesnaSkillStart
     - VesnaSkill
+    - SandroneMachineGun

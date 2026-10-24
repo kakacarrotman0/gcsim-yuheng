@@ -1,6 +1,6 @@
 # Sandrone
 
-Yuheng-maintained gcsim character. Upstream `genshinsim/gcsim` and the production engine pin do not contain her. `excel-hk4e` on this branch predates her, so `go run ./pipeline` was not run and she has no `pipeline/config.yml` entry. A full regenerate would drop the hand-appended ICD groups and would not emit Sandrone.
+Yuheng-maintained gcsim character. Upstream `genshinsim/gcsim` and the production engine pin do not contain her. `excel-hk4e` on this branch predates her, so `go run ./pipeline` was not run and she has no character `config.yml`. Her machine-gun ICD row lives in `pipeline/config.yml` with the other hand-maintained groups. `pipeline run` refuses to write when that regeneration would drop her or renumber production IDs.
 
 ## Identity
 
@@ -80,7 +80,7 @@ Charged Attack from idle or Decoding enters Decoding. Charged Attack during Over
 
 While Decoding, every 12 frames adds `3.2 * ratio`. Every 60 frames fires a condensed beam and then adds `17 * ratio`. C1 sets `ratio` to 0.5. From empty, C0 ends frame 180 at 99 with three beams and frame 192 at 100. C1 ends frame 360 at 99 with six beams and frame 372 at 100. `UNIQUE_MarionetteForceSet100` is the 0.25s backup that forces 100 when the beam count is exactly 3, or exactly 6 at C1. Natural gain reaches 100 first when the bar starts empty, so the backup does not change that path. A bar left at 30 by an instant 70-point repair reaches the cap on the second beam.
 
-Sweeping Fire is one Cryo hit on the machine-gun attach (frame 12), talent param 4, `ICDGroupSandroneMachineGun`. That ICD group is a provisional copy of the default 2.5s / 1-0-0 pattern, appended after `ICDGroupLohenSkill`. Do not regenerate `icd_groups.dm.go`. Overdrive uses the same curve (param 7) and the same ICD group: one hit on attach, then every 24 frames, and it does not drop particles.
+Sweeping Fire is one Cryo hit on the machine-gun attach (frame 12), talent param 4, `ICDGroupSandroneMachineGun`. That ICD group is a provisional copy of the default 2.5s / 1-0-0 pattern. On the integrated branch it follows `ICDGroupVesnaSkill`, which follows `ICDGroupVesnaSkillStart`, which follows `ICDGroupLohenSkill`. Do not regenerate `icd_groups.dm.go`. Overdrive uses the same curve (param 7) and the same ICD group: one hit on attach, then every 24 frames, and it does not drop particles.
 
 Condensed beams use param 5 when ordinary, param 6 for direct Stellar-Conduct, and param 11 (the same curve as param 5) for direct Stellar Swirl. Ordinary condensed beams are 1U Cryo with `ICDGroupDefault`. Direct stellar hits are 0 gauge, no ICD, and ignore DEF. C2's CRIT DMG snapshot is taken on the beam, and C6 cluster subhits share it.
 
@@ -141,4 +141,4 @@ No Sandrone DPS figure in this document is frame-validated.
 
 ## Pipeline
 
-`ICDGroupSandroneMachineGun` is appended after `ICDGroupLohenSkill` in `pkg/core/attacks/icd_groups.dm.go`. Vesna PR #5, on `cursor/vesna-gcsim-5552` at `df1d88356`, appends `ICDGroupVesnaSkillStart` and `ICDGroupVesnaSkill` in that same position. Combining the drafts has to keep every group through Lohen at its current number, then place Vesna's two groups and Sandrone's group after them. `keys.Sandrone` is inserted immediately before `InvalidChar`, so existing key numbers stay put. Talent curves live in `internal/characters/sandrone/zz_sandrone.dm.go` and are hand-maintained. Do not run `go run ./pipeline` to refresh her. Catalog `SubId` 13301 remains unverified. The simulator's combat path does not read it.
+`ICDGroupSandroneMachineGun` follows `ICDGroupVesnaSkill` and `ICDGroupVesnaSkillStart`, which follow `ICDGroupLohenSkill`. Every production ICD index through Lohen is unchanged. `keys.Nefer`, `keys.Vesna`, and `keys.Sandrone` are appended after `Zhongli`, so existing character numbers stay put. Talent curves live in `internal/characters/sandrone/zz_sandrone.dm.go` and are hand-maintained. `go run ./pipeline run` refuses to overwrite those tables while the three kits are outside excel. Catalog `SubId` 13301 remains unverified. The simulator's combat path does not read it.

@@ -270,6 +270,16 @@ func buildCharacterSpec(cfg *Config) (*CharacterSpec, error) {
 func (c *Compiled) GenerateCharacters() error {
 	kind := KindCharacter
 	inputs := excel.Filter(c.Configuration, func(v *Config) bool { return v.Kind == kind })
+	names := make([]string, 0, len(inputs))
+	for _, config := range inputs {
+		if config.Character == nil {
+			return fmt.Errorf("refusing to regenerate characters: %s has no spec", config.Path)
+		}
+		names = append(names, config.Character.Name)
+	}
+	if err := validateCharacterKeyNames(names); err != nil {
+		return fmt.Errorf("refusing to regenerate characters: %w", err)
+	}
 
 	imports := ImportTmpl{Kind: kind}
 	keys := KeysTmpl{Kind: kind}

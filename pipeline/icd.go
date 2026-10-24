@@ -57,8 +57,10 @@ func compareICDGroup(a, b string) int {
 			return +1
 		}
 	}
-	// Latest name first, so the listed order is the generated order.
+	// Latest name first, so the listed order is the generated order:
+	// Alyosha, Lohen, VesnaSkillStart, VesnaSkill, SandroneMachineGun.
 	for _, s := range []string{
+		"SandroneMachineGun",
 		"VesnaSkill",
 		"VesnaSkillStart",
 		"LohenSkill",
@@ -76,6 +78,12 @@ func compareICDGroup(a, b string) int {
 
 func (c *Compiled) GenerateICDGroup() error {
 	sorted := slices.SortedFunc(maps.Keys(c.ICDGroup), compareICDGroup)
+	if err := validateICDOrder(sorted); err != nil {
+		return fmt.Errorf("refusing to regenerate ICD groups: %w", err)
+	}
+	if err := validateHandICDSequences(c.ICDGroup); err != nil {
+		return fmt.Errorf("refusing to regenerate ICD groups: %w", err)
+	}
 	typ := "ICDGroup"
 	consts := make(map[string]string)
 

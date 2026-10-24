@@ -1,0 +1,41 @@
+# Batch 4 engine integration
+
+Integration branch `cursor/batch4-engine-integration`, cut from `yuheng-production` at `7b58cbadbaa32086e5cc7a5ea1b01969f6e98d69`.
+
+The three source drafts were merged with `--no-ff` and were not modified:
+
+| PR | Branch | HEAD | Merge |
+| --- | --- | --- | --- |
+| #4 Nefer | `cursor/nefer-gcsim-5552` | `cc298e5e23a44a0502d6839ab3395fde924927fd` | `merge(nefer)` |
+| #5 Vesna | `cursor/vesna-gcsim-5552` | `df1d88356a3821fb3b958d09456c54247b50ba65` | `merge(vesna)` |
+| #6 Sandrone | `cursor/sandrone-gcsim-batch4` | `a7b76c665a789edfb6787401b268f99a9f967bd8` | `merge(sandrone)` |
+
+## Key order
+
+Nefer's branch inserts `keys.Nefer` between Navia and Neuvillette. Vesna's branch inserts `keys.Vesna` between Venti and Vodyanitsa. Both shifts would renumber every later production character. The merges move those consts, with Sandrone, to the tail:
+
+`Zhongli`, `Nefer`, `Vesna`, `Sandrone`, `InvalidChar`.
+
+Zhongli stays 130. Neuvillette stays 88. Vodyanitsa stays 114. Nilou stays 90. `InvalidChar` moves from 131 to 134 because it is the sentinel after the new keys.
+
+Shortcut, import, asset, and catalog entries stay in alphabetical map order. That does not change iota values.
+
+## ICD order
+
+Vesna and Sandrone both appended after `ICDGroupLohenSkill`. The resolved tail is:
+
+1. `ICDGroupVesnaSkillStart` — 150 frames, element `1,0,0` repeated, damage all 1. Vesna's entry counter. Same shape as `default`, separate counter.
+2. `ICDGroupVesnaSkill` — 120 frames, element `1,0`, damage `1`. Vesna's Windborne/Pinion counter.
+3. `ICDGroupSandroneMachineGun` — 150 frames, element `1,0,0` repeated, damage all 1. Provisional. Bullet `41133002` is still one attach hit.
+
+`ICDGroupLohenSkill` stays 65. `ICDGroupAlyoshaElementalBurst` stays 64. Every production group before that tail keeps its index, timer, and sequence length.
+
+## Pipeline
+
+`pipeline/config.yml` now fully specifies Alyosha, Lohen, both Vesna groups, and Sandrone's machine-gun group, so those rows are not looked up in excel. `compareICDGroup` forces that tail after the alphabetical block.
+
+`pipeline run` calls `assertHandMaintainedRegen` before it writes. `GenerateCharacters` and `GenerateICDGroup` repeat the check. A character list or ICD order that drops a pinned name, inserts a name in the middle, or shortens a hand-maintained sequence returns an error and does not write the tables.
+
+Nefer, Vesna, and Sandrone have no excel avatar in this module, so a full `pipeline run` cannot satisfy the character pin. That refusal is intentional. Unattended full regeneration remains a release blocker: there is no path that refreshes official generated characters while leaving these three kits untouched, because generation rewrites the shared tables in one pass.
+
+`go run ./pipeline` was not executed for this integration.

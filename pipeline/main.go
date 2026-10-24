@@ -468,6 +468,9 @@ func run(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	c.ClearRef()
+	if err := c.assertHandMaintainedRegen(); err != nil {
+		return err
+	}
 
 	for _, fn := range []func() error{
 		c.GenerateArtifacts,
