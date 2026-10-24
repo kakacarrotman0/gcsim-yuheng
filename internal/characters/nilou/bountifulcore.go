@@ -13,6 +13,7 @@ import (
 
 type BountifulCore struct {
 	srcFrame int
+	Deceit   bool
 	*gadget.Gadget
 }
 
@@ -26,6 +27,9 @@ func newBountifulCore(c *core.Core, p info.Point, a *info.AttackEvent) *Bountifu
 
 	char := b.Core.Player.ByIndex(a.Info.ActorIndex)
 	explode := func() {
+		if b.Deceit {
+			return
+		}
 		c.Tasks.Add(func() {
 			ai, snap := dendrocore.NewBloomAttack(char, b, func(atk *info.AttackInfo) {
 				// atk.Abil += " (bountiful core)"
@@ -49,6 +53,16 @@ func newBountifulCore(c *core.Core, p info.Point, a *info.AttackEvent) *Bountifu
 	b.OnKill = explode
 
 	return b
+}
+
+func (b *BountifulCore) MakeDeceit() { b.Deceit = true }
+
+func (b *BountifulCore) IsDeceit() bool { return b.Deceit }
+
+func (b *BountifulCore) Absorb() {
+	b.OnKill = nil
+	b.OnExpiry = nil
+	b.Kill()
 }
 
 func (b *BountifulCore) Tick() {

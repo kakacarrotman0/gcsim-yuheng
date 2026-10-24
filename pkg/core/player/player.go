@@ -68,6 +68,7 @@ type Handler struct {
 	verdantDewExpiryFrame int
 	verdantDew            int
 	partialDewCount       int
+	verdantDewHaste       bool
 
 	moonridgeDew int
 }
