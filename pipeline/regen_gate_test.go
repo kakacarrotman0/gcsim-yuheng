@@ -160,12 +160,10 @@ func TestTaskPipelineRefusesWithoutChangingEnum(t *testing.T) {
 
 func TestPipelineTaskChecksGateBeforeAnyGenerate(t *testing.T) {
 	text := taskfile(t)
-	start := strings.Index(text, "\n  pipeline:\n")
-	end := strings.Index(text, "\n  pipeline-enumer:\n")
-	if start < 0 || end < 0 || end < start {
-		t.Fatal("pipeline tasks missing")
+	section, ok := taskSection(text, "pipeline")
+	if !ok {
+		t.Fatal("pipeline task missing")
 	}
-	section := text[start:end]
 	if strings.Contains(section, "go generate") {
 		t.Fatalf("normal pipeline task still generates:\n%s", section)
 	}
@@ -177,12 +175,10 @@ func TestPipelineTaskChecksGateBeforeAnyGenerate(t *testing.T) {
 	if strings.Count(text, "go generate ./pipeline") != 1 {
 		t.Fatalf("go generate ./pipeline count = %d", strings.Count(text, "go generate ./pipeline"))
 	}
-	enumer := text[end:]
-	next := strings.Index(enumer[1:], "\n  ")
-	if next < 0 {
-		t.Fatal("pipeline-enumer section missing")
+	enumer, ok := taskSection(text, "pipeline-enumer")
+	if !ok {
+		t.Fatal("pipeline-enumer task missing")
 	}
-	enumer = enumer[:next+1]
 	if !strings.Contains(enumer, "Unsupported maintenance") || !strings.Contains(enumer, "go generate ./pipeline") {
 		t.Fatalf("enum regeneration is not an explicit maintenance task:\n%s", enumer)
 	}
@@ -225,6 +221,29 @@ func TestBuildTaskCompilesCheckedInData(t *testing.T) {
 	if !strings.Contains(section, "go build -o {{.OUT | default \"gcsim\"}} ./cmd/gcsim") {
 		t.Fatalf("supported build command missing:\n%s", section)
 	}
+}
+
+func taskSection(text, name string) (string, bool) {
+	lines := strings.Split(text, "\n")
+	start := -1
+	for i, line := range lines {
+		if line == "  "+name+":" {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return "", false
+	}
+	end := len(lines)
+	for i := start + 1; i < len(lines); i++ {
+		line := lines[i]
+		if strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "   ") && strings.HasSuffix(line, ":") && !strings.HasPrefix(line, "  #") {
+			end = i
+			break
+		}
+	}
+	return strings.Join(lines[start:end], "\n"), true
 }
 
 func taskfile(t *testing.T) string {
