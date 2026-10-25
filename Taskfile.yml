@@ -29,12 +29,20 @@ tasks:
     cmd: go generate ./pkg/stats
 
   pipeline:
-    desc: Run pipeline
+    desc: Run pipeline after the regeneration gate. Uses checked-in pipeline/kind_enumer.go.
     vars:
       CLI_ARGS: '{{.CLI_ARGS | default "run"}}'
     cmds:
-      - go generate ./pipeline
+      - sh scripts/pipeline-preflight.sh
       - go run ./pipeline {{.CLI_ARGS}}
+  # Unsupported maintenance. Rewrites pipeline/kind_enumer.go from the
+  # go:generate directive on pipeline/spec.go. Not used by task pipeline
+  # or task build. The preflight still refuses unless GCSIM_ALLOW_FULL_REGEN=1.
+  pipeline-enumer:
+    desc: Unsupported maintenance. Regenerates pipeline/kind_enumer.go. Not a normal pipeline run.
+    cmds:
+      - sh scripts/pipeline-preflight.sh
+      - go generate ./pipeline
   editor-keys:
     desc: Generate the config editor's keyword tables from pkg/gcs/ast
     cmd: go run ./cmd/editorkeys

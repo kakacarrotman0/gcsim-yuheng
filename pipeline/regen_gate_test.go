@@ -125,6 +125,87 @@ func TestWorkflowDoesNotCleanBeforeValidation(t *testing.T) {
 	}
 }
 
+func TestTaskPipelineRefusesWithoutChangingEnum(t *testing.T) {
+	root := repoRoot(t)
+	enumerPath := filepath.Join(root, "pipeline", "kind_enumer.go")
+	beforeEnumer, err := os.ReadFile(enumerPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := gitPorcelain(t, root)
+
+	task := taskBin(t)
+	cmd := exec.Command(task, "pipeline")
+	cmd.Dir = root
+	cmd.Env = envWithout("GCSIM_ALLOW_FULL_REGEN")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("task pipeline succeeded:\n%s", out)
+	}
+	if !bytes.Contains(out, []byte("refusing full pipeline regeneration")) {
+		t.Fatalf("output:\n%s", out)
+	}
+	afterEnumer, err := os.ReadFile(enumerPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(beforeEnumer, afterEnumer) {
+		t.Fatal("pipeline/kind_enumer.go changed")
+	}
+	after := gitPorcelain(t, root)
+	if before != after {
+		t.Fatalf("worktree changed\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+}
+
+func TestPipelineTaskChecksGateBeforeAnyGenerate(t *testing.T) {
+	text := taskfile(t)
+	start := strings.Index(text, "\n  pipeline:\n")
+	end := strings.Index(text, "\n  pipeline-enumer:\n")
+	if start < 0 || end < 0 || end < start {
+		t.Fatal("pipeline tasks missing")
+	}
+	section := text[start:end]
+	if strings.Contains(section, "go generate") {
+		t.Fatalf("normal pipeline task still generates:\n%s", section)
+	}
+	preflight := strings.Index(section, "sh scripts/pipeline-preflight.sh")
+	run := strings.Index(section, "go run ./pipeline")
+	if preflight < 0 || run < 0 || preflight > run {
+		t.Fatalf("preflight must precede go run:\n%s", section)
+	}
+	if strings.Count(text, "go generate ./pipeline") != 1 {
+		t.Fatalf("go generate ./pipeline count = %d", strings.Count(text, "go generate ./pipeline"))
+	}
+	enumer := text[end:]
+	next := strings.Index(enumer[1:], "\n  ")
+	if next < 0 {
+		t.Fatal("pipeline-enumer section missing")
+	}
+	enumer = enumer[:next+1]
+	if !strings.Contains(enumer, "Unsupported maintenance") || !strings.Contains(enumer, "go generate ./pipeline") {
+		t.Fatalf("enum regeneration is not an explicit maintenance task:\n%s", enumer)
+	}
+	if !strings.Contains(enumer, "sh scripts/pipeline-preflight.sh") {
+		t.Fatal("pipeline-enumer skipped the regeneration gate")
+	}
+}
+
+func TestTaskBuildSucceedsWithoutRegeneration(t *testing.T) {
+	root := repoRoot(t)
+	before := gitPorcelain(t, root)
+	cmd := exec.Command(taskBin(t), "build")
+	cmd.Dir = root
+	cmd.Env = envWithout("GCSIM_ALLOW_FULL_REGEN")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("task build: %v\n%s", err, out)
+	}
+	if gitPorcelain(t, root) != before {
+		t.Fatalf("task build changed the worktree:\n%s", gitPorcelain(t, root))
+	}
+}
+
 func TestBuildTaskCompilesCheckedInData(t *testing.T) {
 	root := repoRoot(t)
 	b, err := os.ReadFile(filepath.Join(root, "Taskfile.yml"))
@@ -144,6 +225,24 @@ func TestBuildTaskCompilesCheckedInData(t *testing.T) {
 	if !strings.Contains(section, "go build -o {{.OUT | default \"gcsim\"}} ./cmd/gcsim") {
 		t.Fatalf("supported build command missing:\n%s", section)
 	}
+}
+
+func taskfile(t *testing.T) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(repoRoot(t), "Taskfile.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+func taskBin(t *testing.T) string {
+	t.Helper()
+	p, err := exec.LookPath("task")
+	if err != nil {
+		t.Fatal("task is not on PATH")
+	}
+	return p
 }
 
 func repoRoot(t *testing.T) string {

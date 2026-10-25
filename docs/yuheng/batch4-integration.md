@@ -34,7 +34,9 @@ Vesna and Sandrone both appended after `ICDGroupLohenSkill`. The resolved tail i
 
 `pipeline/config.yml` now fully specifies Alyosha, Lohen, both Vesna groups, and Sandrone's machine-gun group, so those rows are not looked up in excel. `compareICDGroup` forces that tail after the alphabetical block.
 
-`pipeline run` returns at `fullRegenGate` unless `GCSIM_ALLOW_FULL_REGEN=1`. That check happens before fetch and compile. When the gate is open, `assertHandMaintainedRegen` still runs before any generator writes. `GenerateCharacters` and `GenerateICDGroup` repeat the character and ICD checks. A character list or ICD order that drops a pinned name, inserts a name in the middle, or shortens a hand-maintained sequence returns an error and does not write the tables.
+`task pipeline` runs `scripts/pipeline-preflight.sh` before `go run ./pipeline`. The preflight returns unless `GCSIM_ALLOW_FULL_REGEN=1`, so a closed gate never reaches `go generate` or `go run`. `pipeline/kind_enumer.go` stays the checked-in enumer output. `task pipeline-enumer` is an unsupported maintenance command that rewrites that file, and only after the same preflight. It is not part of `task pipeline` or `task build`.
+
+`pipeline run` also returns at `fullRegenGate` unless `GCSIM_ALLOW_FULL_REGEN=1`. That check happens before fetch and compile. When the gate is open, `assertHandMaintainedRegen` still runs before any generator writes. `GenerateCharacters` and `GenerateICDGroup` repeat the character and ICD checks. A character list or ICD order that drops a pinned name, inserts a name in the middle, or shortens a hand-maintained sequence returns an error and does not write the tables.
 
 `scripts/pipeline-clean.sh` always refuses. It does not `git rm` generated files, including when `GCSIM_ALLOW_FULL_REGEN=1`. `.github/workflows/ci-pipeline.yml` does not call `pipeline-clean`. A manual dispatch with `allow_full_regen` left false exits 1 after checking that the worktree is clean. Opting in runs `task pipeline` without a preceding delete. The in-process character and ICD guards still fail closed.
 
