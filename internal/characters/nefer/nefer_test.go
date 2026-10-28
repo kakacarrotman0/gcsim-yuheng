@@ -211,6 +211,17 @@ func TestThreePhantasmsEndDance(t *testing.T) {
 	if c.Player.Dew() != 0 {
 		t.Fatalf("dew %v", c.Player.Dew())
 	}
+	hits := collect(c)
+	if err := c.Player.Exec(action.ActionCharge, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, caHit+1)
+	if len(*hits) != 1 || (*hits)[0].Abil != "Charged Attack" {
+		t.Fatalf("charge after three phantasms %v", names(*hits))
+	}
+	if c.Player.Dew() != 0 {
+		t.Fatalf("ordinary charge spent dew %v", c.Player.Dew())
+	}
 }
 
 func TestGleamSeedsBecomeDeceit(t *testing.T) {
@@ -350,6 +361,154 @@ func TestTalentCons(t *testing.T) {
 	if ch.TalentLvlBurst() != 3 {
 		t.Fatalf("c5 burst index %d", ch.TalentLvlBurst())
 	}
+}
+
+func TestShadowDanceEndsOnSwap(t *testing.T) {
+	c, _ := makeCore(1)
+	nef := addChar(t, c, keys.Nefer, 0, 1)
+	col := addChar(t, c, keys.Columbina, 0, 1)
+	start(t, c, nef.Index())
+	c.Player.SetVerdantDew(2)
+	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, skillHit+1)
+	if !nef.StatusIsActive(shadowKey) {
+		t.Fatal("shadow dance did not start")
+	}
+	c.Events.Emit(event.OnCharacterSwap, col.Index(), nef.Index())
+	if !nef.StatusIsActive(shadowKey) || c.Player.Active() != nef.Index() {
+		t.Fatal("another character's swap cleared shadow dance")
+	}
+
+	if err := c.Player.Exec(action.ActionSwap, keys.Columbina, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, 1)
+	if c.Player.Active() != col.Index() {
+		t.Fatalf("active %d", c.Player.Active())
+	}
+	if nef.StatusIsActive(shadowKey) {
+		t.Fatal("shadow dance stayed up after nefer left")
+	}
+	if c.Player.Dew() != 2 {
+		t.Fatalf("swap spent dew %v", c.Player.Dew())
+	}
+
+	advance(c, 61)
+	if err := c.Player.Exec(action.ActionSwap, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, 1)
+	if c.Player.Active() != nef.Index() {
+		t.Fatalf("active %d", c.Player.Active())
+	}
+	if nef.StatusIsActive(shadowKey) {
+		t.Fatal("returning to the field restored shadow dance")
+	}
+
+	hits := collect(c)
+	if err := c.Player.Exec(action.ActionCharge, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, caHit+1)
+	if len(*hits) != 1 || (*hits)[0].Abil != "Charged Attack" || (*hits)[0].AttackTag == attacks.AttackTagDirectLunarBloom {
+		t.Fatalf("charge without shadow dance %+v", *hits)
+	}
+	if c.Player.Dew() != 2 {
+		t.Fatalf("ordinary charge spent dew %v", c.Player.Dew())
+	}
+
+	for c.F < skillCD+skillHit+5 && !readySkill(nef) {
+		advance(c, 1)
+	}
+	if !readySkill(nef) {
+		t.Fatal("skill did not come off cooldown")
+	}
+	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !nef.StatusIsActive(shadowKey) {
+		t.Fatal("skill did not reopen shadow dance")
+	}
+	advance(c, skillHit+1)
+	*hits = nil
+	if err := c.Player.Exec(action.ActionCharge, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, ppAnim+1)
+	if len(*hits) == 0 || (*hits)[0].Abil != "Phantasm Performance (Nefer 1)" {
+		t.Fatalf("re-entered charge %v", names(*hits))
+	}
+	if c.Player.Dew() != 1 {
+		t.Fatalf("phantasm dew %v", c.Player.Dew())
+	}
+}
+
+func TestShadowDanceExpires(t *testing.T) {
+	c, _ := makeCore(1)
+	nef := addChar(t, c, keys.Nefer, 0, 1)
+	start(t, c, nef.Index())
+	c.Player.SetVerdantDew(1)
+	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, shadowDur+1)
+	if nef.StatusIsActive(shadowKey) {
+		t.Fatal("shadow dance outlasted its duration")
+	}
+	hits := collect(c)
+	if err := c.Player.Exec(action.ActionCharge, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, caHit+1)
+	if len(*hits) != 1 || (*hits)[0].Abil != "Charged Attack" {
+		t.Fatalf("charge after expiry %v", names(*hits))
+	}
+	if c.Player.Dew() != 1 {
+		t.Fatalf("expired charge spent dew %v", c.Player.Dew())
+	}
+}
+
+func TestQueuedPhantasmStillLandsAfterSwap(t *testing.T) {
+	c, _ := makeCore(1)
+	nef := addChar(t, c, keys.Nefer, 0, 1)
+	addChar(t, c, keys.Columbina, 0, 1)
+	start(t, c, nef.Index())
+	c.Player.SetVerdantDew(1)
+	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, skillHit+1)
+	hits := collect(c)
+	if err := c.Player.Exec(action.ActionCharge, keys.Nefer, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Player.Exec(action.ActionSwap, keys.Columbina, nil); err != nil {
+		t.Fatal(err)
+	}
+	advance(c, 1)
+	if nef.StatusIsActive(shadowKey) {
+		t.Fatal("swap left shadow dance active")
+	}
+	advance(c, ppAnim)
+	found := false
+	for _, hit := range *hits {
+		if hit.Abil == "Phantasm Performance (Shade 1)" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("queued shade did not land: %v", names(*hits))
+	}
+	if c.Player.Dew() != 0 {
+		t.Fatalf("queued dew spend %v", c.Player.Dew())
+	}
+}
+
+func readySkill(ch *character.CharWrapper) bool {
+	ok, reason := ch.ActionReady(action.ActionSkill, nil)
+	return ok && reason == action.NoFailure
 }
 
 func names(hits []info.AttackInfo) []string {

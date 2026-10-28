@@ -39,6 +39,8 @@ Radiance is never assigned by a test. It comes from the 6-frame ticker, Normal A
 
 `docs/yuheng/configs/zibai-c0.txt` parses and runs skill, Normal, Charged, and Burst. It does not cast Stride, because that cast is illegal before 70 radiance.
 
+`docs/yuheng/configs/zibai-stride.txt` is a separate solo config. It casts Skill, waits 500 frames, and casts Skill again. Radiance is not seeded. The second cast is one Spirit Steed's Stride, the debug log records `Consumed 70 radiance`, and the second hit is Direct Lunar-Crystallize. It is not a team DPS result.
+
 ## Not re-measured
 
 Frame data in `config.yml` is credited to mikeskies (sheet `1aHOBC33Q8ML4GTMPlgcmqc5TdkbZJk8pBtK3kgr_ALk`, videos `29WWu2pYiRs`, `SyLeTDRbR0w`, `0wGPOVGF2xw`). This assignment did not re-time those animations.

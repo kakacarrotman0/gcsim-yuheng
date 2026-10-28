@@ -634,6 +634,9 @@ func TestC4HasteEndsOnSwap(t *testing.T) {
 	if got := dewFrame(t, c); got != 147 {
 		t.Fatalf("dew after swap in %d frames", got)
 	}
+	if nef.StatusIsActive(shadowKey) {
+		t.Fatal("shadow dance survived the swap")
+	}
 	if !trg[0].ResistModIsActive("nefer-c4") {
 		t.Fatal("c4 shred did not linger after the swap")
 	}

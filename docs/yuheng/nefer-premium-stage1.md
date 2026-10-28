@@ -136,15 +136,15 @@ Opening Nefer's Skill does not itself start Lunar-Bloom. The first Verdant Dew i
 - Second-cycle Lauma Burst waits on energy in both sustain configs. Deepwood also waits on Columbina energy and skill CD. Sucrose's skill CD is 900 frames, and Sacrificial Fragments' reset is random, so the Deepwood skill-CD wait varies by iteration.
 - The action lists finish inside the chosen durations only because gcsim waits and then performs the cast. That is not the same as a tight repeated rotation.
 - Cycle 1 starts from full energy. It is the optimistic case.
-- Shadow Dance does not end on swap. `OnCharacterSwap` in `internal/characters/nefer/cons.go` only calls `syncC4`. The KQM Nefer guide says the state ends on swap. The ordinary Charged Attack above is not this bug: Dew was empty while the dance was still the active branch.
+- Shadow Dance now ends when Nefer is the character leaving the field. `OnCharacterSwap` in `internal/characters/nefer/cons.go` calls `exitDance` for that previous index, then `syncC4`. Another character's swap does not clear it. The ordinary Charged Attack above is still the empty-Dew branch: these windows re-open the dance with Skill before the charges, and the pinned Phantasm counts did not move.
 - Dash cancel still emits `Phantasm Performance (Nefer 2)`. The KQM guide says a dash cancel skips that hit. The frame constants are explicitly unmeasured, so this is not a validated timing bug and the frames were not changed.
 - Slither movement and A4's extra Dew from Slither are not implemented. See `docs/yuheng/nefer.md`.
 - Field time after the last action is idle.
 
-## Proposed fixes, not applied
+## Proposed fixes
 
-1. End Shadow Dance on swap. Call the existing `exitDance` from Nefer's swap hook in `internal/characters/nefer/cons.go`, and add a unit test that the next charge after a swap is an ordinary Charged Attack until Skill is used again. Do not change coefficients.
-2. Leave the dash-cancel frame alone until a frame sheet exists. A later change would put the dash queue point before `ppN2Frame` if the KQM cancel rule is adopted. Files: `internal/characters/nefer/nefer.go`, `internal/characters/nefer/charge.go`.
+1. End Shadow Dance on swap. Applied. `exitDance` runs from the swap hook when Nefer is the previous active character. The next charge is an ordinary Charged Attack until Skill is used again. Coefficients were not changed. A Phantasm queued before the swap still lands, including its Dew spend.
+2. Leave the dash-cancel frame alone until a frame sheet exists. Still open. A later change would put the dash queue point before `ppN2Frame` if the KQM cancel rule is adopted. Files: `internal/characters/nefer/nefer.go`, `internal/characters/nefer/charge.go`.
 
 ## Regression
 

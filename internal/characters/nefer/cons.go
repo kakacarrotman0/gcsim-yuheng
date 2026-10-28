@@ -10,6 +10,13 @@ import (
 
 func (c *char) c4Init() {
 	c.Core.Events.Subscribe(event.OnCharacterSwap, func(args ...any) {
+		// KQM: Shadow Dance ends when Nefer leaves the field. The previous
+		// index is the character who is leaving. Another character's swap
+		// must not clear her state. exitDance already calls syncC4, and the
+		// call below refreshes C4 when she was not the one leaving.
+		if prev := args[0].(int); prev == c.Index() {
+			c.exitDance()
+		}
 		c.syncC4()
 	}, "nefer-c4-swap")
 }
