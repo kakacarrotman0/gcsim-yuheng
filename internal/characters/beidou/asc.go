@@ -8,8 +8,10 @@ import (
 	"github.com/genshinsim/gcsim/pkg/modifier"
 )
 
-// A1 is not implemented:
-// TODO: Counterattacking with Tidecaller at the precise moment when the character is hit grants the maximum DMG Bonus.
+// A1, Retribution: countering on the frame a hit lands grants Tidecaller's maximum DMG bonus.
+// That bonus is the skill's own 2-stack value, not a second multiplier. Incoming hits are not
+// simulated, so skill[counter=2] is the perfect counter: base + 2*bonus, 4 particles, poise 300.
+// KQM lists 2 stacks and a perfect parry on the same row (750.72% at talent 9).
 
 // Gain the following effects for 10s after unleashing Tidecaller with its maximum DMG Bonus:
 // - DMG dealt by Normal and Charged Attacks is increased by 15%. ATK SPD of Normal and Charged Attacks is increased by 15%.

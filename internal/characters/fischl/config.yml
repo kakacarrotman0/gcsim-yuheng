@@ -90,8 +90,9 @@ abilities:
   - name: aim
     params:
       hold: 0 for Physical Aimed Shot, 1 for Fully-Charged Aimed Shot (default).
+      oz: 1 to aim this fully-charged shot at Oz. Oz must already be active and Fischl must be ascended. The arrow does not hit the enemy. Oz fires Thundering Retribution after the arrow's travel, and that bolt uses oz_travel.
       travel: Projectile travel time. Default 10 frames.
-      weakspot: Hit weakspot with aimed shot. Default 0 (false), 1 for true.
+      weakspot: Hit weakspot with aimed shot. Default 0 (false), 1 for true. On an Oz shot, this applies to Thundering Retribution.
     hitbox:
       - name: Aim
         shape: Box

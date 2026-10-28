@@ -16,7 +16,7 @@ func init() {
 	core.RegisterCharFunc(keys.Fischl, NewChar)
 	paramsFor := map[action.Action][]string{
 		action.ActionAttack: {"travel"},
-		action.ActionAim:    {"hold", "travel", "weakspot"},
+		action.ActionAim:    {"hold", "oz", "travel", "weakspot"},
 		action.ActionSkill:  {"recast"},
 	}
 	validation.RegisterCharParamValidationFunc(keys.Fischl, func(a action.Action, keys []string) error {
