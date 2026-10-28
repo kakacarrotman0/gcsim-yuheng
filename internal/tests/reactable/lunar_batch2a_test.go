@@ -310,21 +310,19 @@ func TestFrozenRejectsLunarCharged(t *testing.T) {
 	}
 }
 
-// LcExtraHitOverride and LcrExtraHitOverride are the same map key. Columbina's
-// A4 writes 0.33 through either name and delete of either name clears both.
-// This pins the current collision so a split has to be an intentional change.
-func TestLunarExtraHitOverridesShareOneFlag(t *testing.T) {
+func TestLunarExtraHitOverrideKeysDiffer(t *testing.T) {
 	c, _ := lunarCore(t)
-	if reactable.LcExtraHitOverride != reactable.LcrExtraHitOverride {
-		t.Fatal("override names differ; review Columbina A4 before treating them as independent")
+	if reactable.LcExtraHitOverride == reactable.LcrExtraHitOverride {
+		t.Fatal("lunar-charged and lunar-crystallize extra-hit keys are still the same string")
 	}
 	c.Flags.Custom[reactable.LcExtraHitOverride] = 0.33
-	if c.Flags.Custom[reactable.LcrExtraHitOverride] != 0.33 {
-		t.Fatal("setting the lunar-charged override did not set the lunar-crystallize override")
+	if _, ok := c.Flags.Custom[reactable.LcrExtraHitOverride]; ok {
+		t.Fatal("setting the lunar-charged chance also set the lunar-crystallize chance")
 	}
-	delete(c.Flags.Custom, reactable.LcrExtraHitOverride)
-	if _, ok := c.Flags.Custom[reactable.LcExtraHitOverride]; ok {
-		t.Fatal("deleting one override left the other set")
+	c.Flags.Custom[reactable.LcrExtraHitOverride] = 0.33
+	delete(c.Flags.Custom, reactable.LcExtraHitOverride)
+	if c.Flags.Custom[reactable.LcrExtraHitOverride] != 0.33 {
+		t.Fatal("clearing the lunar-charged chance cleared the lunar-crystallize chance")
 	}
 }
 

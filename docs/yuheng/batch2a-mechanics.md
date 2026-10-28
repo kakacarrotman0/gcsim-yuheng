@@ -42,7 +42,7 @@ Xingqiu plus Kaeya, with no Ineffa, Flins, or Columbina, does not set the enable
 
 The checked-in Lunar-Charged multiplier is 3. It was not re-derived.
 
-`LcExtraHitOverride` and `LcrExtraHitOverride` are both the string `lunarcrystallize-bonus-hit-chance`. Columbina's A4 writes 0.33 through either name, and deleting either name clears both. A Lunar-Charged extra-hit chance and a Lunar-Crystallize extra-hit chance cannot be set separately. That is a shared-mechanics defect. The key was not renamed.
+At the end of batch 2A, `LcExtraHitOverride` and `LcrExtraHitOverride` were both the string `lunarcrystallize-bonus-hit-chance`. Batch 2B gives them distinct keys. See `docs/yuheng/batch2b-mechanics.md`.
 
 Other checked-in assumptions left as written:
 

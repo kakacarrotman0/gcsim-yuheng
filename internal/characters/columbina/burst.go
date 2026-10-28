@@ -103,4 +103,5 @@ func (c *char) applyBurstBuff() {
 			},
 		})
 	}
+	c.scheduleA4ExtraHitExpiry()
 }

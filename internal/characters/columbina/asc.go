@@ -89,6 +89,20 @@ func (c *char) a4Init() {
 	c.Core.Events.Subscribe(event.OnLunarCrystallize, c.a4OnLunarCrystallize, "columbina-a4-lcr")
 }
 
+// The extra-hit chances are armed only while the Lunar Domain buff is active.
+// Each buff application schedules its own cleanup one frame after that
+// application would expire. A refresh leaves the buff active, so the older
+// task does not clear the flags. Hitlag extends the char task with the buff.
+func (c *char) scheduleA4ExtraHitExpiry() {
+	c.QueueCharTask(func() {
+		if c.StatusIsActive(burstBuffKey) {
+			return
+		}
+		delete(c.Core.Flags.Custom, reactable.LcExtraHitOverride)
+		delete(c.Core.Flags.Custom, reactable.LcrExtraHitOverride)
+	}, withinTimer+1)
+}
+
 func (c *char) a4OnLunarCharge(args ...any) {
 	if _, ok := args[0].(*enemy.Enemy); !ok {
 		return
