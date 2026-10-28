@@ -71,6 +71,17 @@ func TestRegenGuardsRejectIDShifts(t *testing.T) {
 	if err := validateCharacterKeyNames(alpha); err == nil {
 		t.Fatal("alphabetical Nefer insert was accepted")
 	}
+	if pinnedCharacterSlugs[len(pinnedCharacterSlugs)-1] != "Zibai" {
+		t.Fatal("zibai must stay at the character-key tail")
+	}
+	without := pinnedCharacterSlugs[:len(pinnedCharacterSlugs)-1]
+	zhong := slices.Index(without, "Zhongli")
+	zibaiAlpha := append([]string{}, without[:zhong]...)
+	zibaiAlpha = append(zibaiAlpha, "Zibai")
+	zibaiAlpha = append(zibaiAlpha, without[zhong:]...)
+	if err := validateCharacterKeyNames(zibaiAlpha); err == nil {
+		t.Fatal("alphabetical Zibai insert was accepted")
+	}
 	shortSeq := map[string]AttackAttenuation{
 		"AlyoshaElementalBurst": {Timer: 1.6, Durability: []float64{1, 0}, Damage: []float64{1, 1, 1, 1}},
 		"LohenSkill":            {Timer: 5, Durability: []float64{1}, Damage: []float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},

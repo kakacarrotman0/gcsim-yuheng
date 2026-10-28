@@ -176,6 +176,7 @@ const (
 	Nefer                         // nefer
 	Vesna                         // vesna
 	Sandrone                      // sandrone
+	Zibai                         // zibai
 	InvalidChar                   // invalidchar
 )
 
@@ -314,6 +315,7 @@ var _CharNames = [...]string{
 	"nefer",
 	"vesna",
 	"sandrone",
+	"zibai",
 	"invalidchar",
 }
 
@@ -452,5 +454,6 @@ var _CharValues = [...]Char{
 	Nefer,
 	Vesna,
 	Sandrone,
+	Zibai,
 	InvalidChar,
 }

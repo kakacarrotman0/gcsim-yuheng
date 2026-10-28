@@ -2,6 +2,8 @@ package assets
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/genshinsim/gcsim/pkg/catalog"
@@ -53,6 +55,7 @@ func TestBatch4CatalogAndAssets(t *testing.T) {
 		{keys.Nefer, "nefer", model.ElementType_Grass, model.WeaponType_WEAPON_CATALYST, "UI_AvatarIcon_Nefer", 11221, 11222, 11225},
 		{keys.Vesna, "vesna", model.ElementType_Wind, model.WeaponType_WEAPON_SWORD_ONE_HAND, "UI_AvatarIcon_Vesna", 11431, 11432, 11435},
 		{keys.Sandrone, "sandrone", model.ElementType_Ice, model.WeaponType_WEAPON_CLAYMORE, "UI_AvatarIcon_MarionetteNew", 11331, 11332, 11335},
+		{keys.Zibai, "zibai", model.ElementType_Rock, model.WeaponType_WEAPON_SWORD_ONE_HAND, "UI_AvatarIcon_Zibai", 11261, 11262, 11265},
 	}
 	for _, want := range checks {
 		data := catalog.CharacterMap[want.key]
@@ -84,6 +87,22 @@ nefer attack;
 vesna skill;
 sandrone skill;
 `
+	file := ast.NewFile()
+	simcfg, gcsl, err := simulator.Parse(file, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := simulator.RunWithSeededConfig(context.Background(), file, cfg, simcfg, gcsl, []int64{1}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestZibaiConfigParsesAndRuns(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join(repoRoot(t), "docs/yuheng/configs/zibai-c0.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := string(raw)
 	file := ast.NewFile()
 	simcfg, gcsl, err := simulator.Parse(file, cfg)
 	if err != nil {

@@ -49,3 +49,7 @@ Nefer, Vesna, and Sandrone have no excel avatar in this module, so a full `pipel
 ## Nefer premium team, stage 1
 
 `docs/yuheng/nefer-premium-stage1.md` records a resource-natural execution check of Nefer / Lauma / Columbina / Sucrose. The four configs under `docs/yuheng/configs/nefer-premium-*.txt` are experimental. They are not a damage benchmark and they are not a backend rotation profile. No character mechanic was changed for that check.
+
+## Zibai
+
+`docs/yuheng/zibai.md` records the append-only port of upstream Zibai. The engine key sits after Sandrone. No ICD group was added. The config under `docs/yuheng/configs/zibai-c0.txt` is a registration check, not a rotation.

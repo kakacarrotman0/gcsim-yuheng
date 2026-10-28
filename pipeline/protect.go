@@ -11,8 +11,9 @@ import (
 )
 
 // pinnedCharacterSlugs is every character const except NoChar and InvalidChar.
-// The production order is unchanged. Nefer, Vesna, and Sandrone are appended
-// so their iota values sit after Zhongli.
+// The production order is unchanged. Nefer, Vesna, Sandrone, and Zibai are
+// appended so their iota values sit after Zhongli. Zibai is not inserted
+// alphabetically ahead of Zhongli.
 var pinnedCharacterSlugs = []string{
 	"AetherAnemo", "AetherCryo", "AetherDendro", "AetherElectro",
 	"AetherGeo", "AetherHydro", "AetherPyro", "Aino",
@@ -47,7 +48,7 @@ var pinnedCharacterSlugs = []string{
 	"Xingqiu", "Xinyan", "YaeMiko", "Yanfei",
 	"Yaoyao", "Yelan", "Yoimiya", "YumemizukiMizuki",
 	"YunJin", "Zhongli", "Nefer", "Vesna",
-	"Sandrone",
+	"Sandrone", "Zibai",
 }
 
 // pinnedICDGroups is the ICD const suffix. Groups through LohenSkill keep the
@@ -131,9 +132,10 @@ func fullRegenGate() error {
 }
 
 // assertHandMaintainedRegen refuses a pipeline run whose character or ICD
-// output would renumber production IDs or drop Alyosha, Lohen, Vesna, or Sandrone.
-// Nefer, Vesna, and Sandrone are not excel-backed, so a full run fails closed
-// before any generated file is written.
+// output would renumber production IDs or drop Alyosha, Lohen, Vesna, Sandrone, or Zibai.
+// Nefer, Vesna, Sandrone, and Zibai are not excel-backed in this module, so a full run
+// fails closed before any generated file is written. Zibai's config.yml is hand-maintained;
+// a generator that sorted it ahead of Zhongli would still miss this tail pin.
 func (c *Compiled) assertHandMaintainedRegen() error {
 	var names []string
 	for _, cfg := range c.Configuration {

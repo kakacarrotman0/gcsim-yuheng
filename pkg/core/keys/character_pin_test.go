@@ -6,7 +6,7 @@ import (
 )
 
 // productionCharacterNames is the yuheng-production _CharNames list, with
-// nefer, vesna, and sandrone inserted immediately before invalidchar.
+// nefer, vesna, sandrone, and zibai inserted immediately before invalidchar.
 var productionCharacterNames = []string{
 	"", "aetheranemo", "aethercryo", "aetherdendro",
 	"aetherelectro", "aethergeo", "aetherhydro", "aetherpyro",
@@ -41,7 +41,7 @@ var productionCharacterNames = []string{
 	"xilonen", "xingqiu", "xinyan", "yaemiko",
 	"yanfei", "yaoyao", "yelan", "yoimiya",
 	"yumemizukimizuki", "yunjin", "zhongli", "nefer",
-	"vesna", "sandrone", "invalidchar",
+	"vesna", "sandrone", "zibai", "invalidchar",
 }
 
 func TestCharacterIDsMatchProductionPin(t *testing.T) {
@@ -52,7 +52,7 @@ func TestCharacterIDsMatchProductionPin(t *testing.T) {
 	if Zhongli != 130 || Neuvillette != 88 || Vodyanitsa != 114 || Nilou != 90 {
 		t.Fatalf("landmark IDs zhongli=%d neuvillette=%d vodyanitsa=%d nilou=%d", Zhongli, Neuvillette, Vodyanitsa, Nilou)
 	}
-	if Nefer != Zhongli+1 || Vesna != Zhongli+2 || Sandrone != Zhongli+3 || InvalidChar != Zhongli+4 {
-		t.Fatalf("batch4 tail nefer=%d vesna=%d sandrone=%d invalid=%d", Nefer, Vesna, Sandrone, InvalidChar)
+	if Nefer != Zhongli+1 || Vesna != Zhongli+2 || Sandrone != Zhongli+3 || Zibai != Zhongli+4 || InvalidChar != Zhongli+5 {
+		t.Fatalf("tail nefer=%d vesna=%d sandrone=%d zibai=%d invalid=%d", Nefer, Vesna, Sandrone, Zibai, InvalidChar)
 	}
 }
