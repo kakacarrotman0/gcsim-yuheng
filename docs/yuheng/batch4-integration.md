@@ -45,3 +45,7 @@ Vesna and Sandrone both appended after `ICDGroupLohenSkill`. The resolved tail i
 Nefer, Vesna, and Sandrone have no excel avatar in this module, so a full `pipeline run` cannot satisfy the character pin even after the env gate opens. That refusal is intentional. Unattended full regeneration remains a release blocker: there is no path that refreshes official generated characters while leaving these three kits untouched, because generation rewrites the shared tables in one pass. Deleting stale generated files stays disabled until that strategy exists.
 
 `go run ./pipeline run` was not executed with `GCSIM_ALLOW_FULL_REGEN=1` for this correction. The closed gate was executed, and it did not modify tracked files.
+
+## Nefer premium team, stage 1
+
+`docs/yuheng/nefer-premium-stage1.md` records a resource-natural execution check of Nefer / Lauma / Columbina / Sucrose. The four configs under `docs/yuheng/configs/nefer-premium-*.txt` are experimental. They are not a damage benchmark and they are not a backend rotation profile. No character mechanic was changed for that check.
