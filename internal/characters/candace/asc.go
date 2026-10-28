@@ -8,8 +8,9 @@ import (
 	"github.com/genshinsim/gcsim/pkg/modifier"
 )
 
-// A1 is not implemented:
-// TODO: If Candace is hit by an attack in the Hold duration of Sacred Rite: Heron's Sanctum, that skill will finish charging instantly.
+// A1, Aegis of Crossed Arrows, is skill[perfect=1] after ascension 1.
+// It releases the charged hold 55 frames earlier. The sim does not detect an incoming hit.
+// Before ascension 1 the parameter is ignored.
 
 const a4Key = "candace-a4"
 

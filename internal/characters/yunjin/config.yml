@@ -100,7 +100,7 @@ abilities:
   - name: skill
     params:
       hold: 0 for Tap (default), 1 for Hold Lv. 1, 2 for Hold Lv. 2.
-      perfect: If 1, perform perfect counter (Hold Lv. 2 frames). Default 0.
+      perfect: If 1 and Yun Jin is ascended, use True to Oneself. Press timing with Charge Level 2 damage. Ignored before ascension 1.
     hitbox:
       - name: E-Tap
         shape: Circle
