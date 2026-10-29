@@ -41,3 +41,33 @@ jobs:
     - name: yarn-setup-and-test
       if: steps.filter.outputs.ui == 'true'
       uses: ./.github/actions/yarn-setup-and-test
+  test-engine-contracts:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    # Character-ID, ICD, and pipeline-regeneration contracts. The job always
+    # executes these three packages. A path filter would turn a missed
+    # contract into a green skip, so this job does not use one.
+    # GCSIM_ALLOW_FULL_REGEN is unset below. These tests assert that
+    # regeneration refuses; they do not run the pipeline.
+    - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+      with:
+        go-version: "1.27.0"
+    - name: Install go-task v3.44.0
+      shell: bash
+      run: |
+        set -euo pipefail
+        url="https://github.com/go-task/task/releases/download/v3.44.0/task_linux_amd64.tar.gz"
+        sha="d6c9c0a14793659766ee0c06f9843452942ae6982a3151c6bbd78959c1682b82"
+        curl -fsSL -o /tmp/task_linux_amd64.tar.gz "$url"
+        echo "${sha}  /tmp/task_linux_amd64.tar.gz" | sha256sum -c -
+        mkdir -p "$HOME/.local/bin"
+        tar -xzf /tmp/task_linux_amd64.tar.gz -C "$HOME/.local/bin" task
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        "$HOME/.local/bin/task" --version
+    - name: Engine compatibility contracts
+      shell: bash
+      run: |
+        set -euo pipefail
+        unset GCSIM_ALLOW_FULL_REGEN
+        go test ./pkg/core/keys/ ./pkg/core/attacks/ ./pipeline/
