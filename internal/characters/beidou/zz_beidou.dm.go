@@ -15,7 +15,8 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Beidou, NewChar)
 	paramsFor := map[action.Action][]string{
-		action.ActionSkill: {"counter"},
+		action.ActionCharge: {"final", "no_limit"},
+		action.ActionSkill:  {"counter"},
 	}
 	validation.RegisterCharParamValidationFunc(keys.Beidou, func(a action.Action, keys []string) error {
 		valid, ok := paramsFor[a]
@@ -118,6 +119,42 @@ var (
 			3.02867,
 			3.258696,
 		},
+	}
+	// attack: Oceanborne - Charged Attack Cyclic DMG: {5}
+	charge = []float64{
+		0.56244,
+		0.60822,
+		0.654,
+		0.7194,
+		0.76518,
+		0.8175,
+		0.88944,
+		0.96138,
+		1.03332,
+		1.1118,
+		1.201725,
+		1.307477,
+		1.413229,
+		1.51898,
+		1.634346,
+	}
+	// attack: Oceanborne - Charged Attack Final DMG: {6}
+	chargeFinal = []float64{
+		1.01824,
+		1.10112,
+		1.184,
+		1.3024,
+		1.38528,
+		1.48,
+		1.61024,
+		1.74048,
+		1.87072,
+		2.0128,
+		2.1756,
+		2.367053,
+		2.558506,
+		2.749958,
+		2.958816,
 	}
 	// skill: Tidecaller - Shield DMG Absorption: {0} Max HP+{1}
 	shieldPer = []float64{

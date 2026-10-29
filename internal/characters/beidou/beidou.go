@@ -16,6 +16,7 @@ func init() {
 type char struct {
 	*tmpl.Character
 	burstAtk *info.AttackEvent
+	caState  tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {

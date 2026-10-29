@@ -12,6 +12,7 @@ type char struct {
 	skillArea info.AttackPattern
 	fieldSrc  int
 	a4Snap    info.Snapshot
+	caState   tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {

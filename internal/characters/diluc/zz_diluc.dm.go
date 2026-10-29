@@ -15,6 +15,7 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Diluc, NewChar)
 	paramsFor := map[action.Action][]string{
+		action.ActionCharge:     {"final", "no_limit"},
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
 	}
@@ -102,6 +103,42 @@ var (
 			3.618611,
 			3.893442,
 		},
+	}
+	// attack: TemperedSword - Charged Attack Cyclic DMG: {4}
+	charge = []float64{
+		0.688,
+		0.744,
+		0.8,
+		0.88,
+		0.936,
+		1,
+		1.088,
+		1.176,
+		1.264,
+		1.36,
+		1.47,
+		1.59936,
+		1.72872,
+		1.85808,
+		1.9992,
+	}
+	// attack: TemperedSword - Charged Attack Final DMG: {5}
+	chargeFinal = []float64{
+		1.247,
+		1.3485,
+		1.45,
+		1.595,
+		1.6965,
+		1.8125,
+		1.972,
+		2.1315,
+		2.291,
+		2.465,
+		2.664375,
+		2.89884,
+		3.133305,
+		3.36777,
+		3.62355,
 	}
 	// attack: TemperedSword - Plunge DMG: {8}
 	collision = []float64{

@@ -19,6 +19,7 @@ type char struct {
 	c4buff             []float64
 	savedNormalCounter int
 	c6Count            int
+	caState            tmpl.SpinChargeState
 }
 
 const eWindowKey = "diluc-e-window"
@@ -52,6 +53,9 @@ func (c *char) Init() error {
 	if c.Base.Cons >= 4 {
 		c.c4buff = make([]float64, attributes.EndStatType)
 		c.c4buff[attributes.DmgP] = 0.4
+	}
+	if c.Base.Ascension >= 1 {
+		c.a1()
 	}
 	return nil
 }

@@ -15,6 +15,7 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Chongyun, NewChar)
 	paramsFor := map[action.Action][]string{
+		action.ActionCharge:     {"final", "no_limit"},
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
 	}
@@ -102,6 +103,42 @@ var (
 			2.56586,
 			2.7071,
 		},
+	}
+	// attack: Demonbane - Charged Attack Cyclic DMG: {4}
+	charge = []float64{
+		0.562853,
+		0.608666,
+		0.65448,
+		0.719928,
+		0.765742,
+		0.8181,
+		0.890093,
+		0.962086,
+		1.034078,
+		1.112616,
+		1.191154,
+		1.269691,
+		1.348229,
+		1.426766,
+		1.505304,
+	}
+	// attack: Demonbane - Charged Attack Final DMG: {5}
+	chargeFinal = []float64{
+		1.01781,
+		1.100655,
+		1.1835,
+		1.30185,
+		1.384695,
+		1.479375,
+		1.60956,
+		1.739745,
+		1.86993,
+		2.01195,
+		2.15397,
+		2.29599,
+		2.43801,
+		2.58003,
+		2.72205,
 	}
 	// attack: Demonbane - Plunge DMG: {8}
 	collision = []float64{

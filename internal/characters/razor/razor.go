@@ -14,6 +14,7 @@ type char struct {
 	a4Bonus []float64
 	c1bonus []float64
 	c2bonus []float64
+	caState tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, p info.CharacterProfile) error {

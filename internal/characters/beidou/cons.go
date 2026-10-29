@@ -27,7 +27,8 @@ func (c *char) c4Init() {
 	}, c4Key)
 }
 
-// TODO: this should also be added to her CA
+// Stunning Revenge is a Normal Attack instance. KQM records that its ICD is shared
+// with Charged Attacks; the extra hit itself is not a Charged Attack hit.
 // Beidou's Normal Attacks gain an additional instance of 20% Electro DMG for 10s.
 func (c *char) makeC4Callback() info.AttackCBFunc {
 	if c.Base.Cons < 4 {
