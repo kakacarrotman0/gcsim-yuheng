@@ -17,8 +17,13 @@ const (
 
 func init() {
 	burstFrames = frames.InitAbilSlice(110)
-	burstFrames[action.ActionSkill] = 96
 	burstFrames[action.ActionSwap] = 97
+	// The draft put skill at 96 and called the swap frame the earliest cancel.
+	// The action loop asks for the next action at CanQueueAfter, so a skill
+	// cancel of 96 was never requested: skill became ready on the swap frame.
+	// 96 is also the draft's unextracted initial-heal delay. The heal in this
+	// file is queued at frame 1. Skill stays on the swap cancel that runs.
+	burstFrames[action.ActionSkill] = burstFrames[action.ActionSwap]
 }
 
 func (c *char) Burst(p map[string]int) (action.Info, error) {
