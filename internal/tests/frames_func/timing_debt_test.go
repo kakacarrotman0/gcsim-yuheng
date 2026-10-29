@@ -34,7 +34,6 @@ func TestKnownTimingDebtMatchesOnlyItsExactRow(t *testing.T) {
 
 func TestChangedTimingDebtValuesFail(t *testing.T) {
 	for _, d := range knownTimingDebt {
-		d := d
 		cases := []struct {
 			name string
 			edit func(*timingDebt)
