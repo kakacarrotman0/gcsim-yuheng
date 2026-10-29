@@ -5,8 +5,9 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/glog"
 )
 
-// A1 is not implemented:
-// TODO: Using Opening Flourish at the precise moment when Yun Jin is attacked will unleash its Level 2 Charged (Hold) form.
+// A1, True to Oneself, is skill[perfect=1] after ascension 1.
+// It uses the press animation and Charge Level 2 damage, gauge, poise, and particles.
+// The sim does not detect an incoming hit. Before ascension 1 the parameter is ignored.
 
 // count elemental types
 func (c *char) a4Init() {

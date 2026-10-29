@@ -18,6 +18,7 @@ func init() {
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
 		action.ActionSkill:      {"hold"},
+		action.ActionCharge:     {"final", "no_limit"},
 	}
 	validation.RegisterCharParamValidationFunc(keys.Eula, func(a action.Action, keys []string) error {
 		valid, ok := paramsFor[a]
@@ -158,6 +159,42 @@ var (
 				2.087352,
 			},
 		},
+	}
+	// attack: FavoniusBladeworkEdel - Charged Attack Spinning DMG: {5}
+	charge = []float64{
+		0.688,
+		0.744,
+		0.8,
+		0.88,
+		0.936,
+		1,
+		1.088,
+		1.176,
+		1.264,
+		1.36,
+		1.47,
+		1.59936,
+		1.72872,
+		1.85808,
+		1.9992,
+	}
+	// attack: FavoniusBladeworkEdel - Charged Attack Final DMG: {6}
+	chargeFinal = []float64{
+		1.24399,
+		1.345245,
+		1.4465,
+		1.59115,
+		1.692405,
+		1.808125,
+		1.96724,
+		2.126355,
+		2.28547,
+		2.45905,
+		2.657944,
+		2.891843,
+		3.125742,
+		3.359641,
+		3.614804,
 	}
 	// attack: FavoniusBladeworkEdel - Plunge DMG: {9}
 	collision = []float64{

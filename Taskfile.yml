@@ -2,6 +2,11 @@ version: '3'
 
 tasks:
   build:
+    desc: Compile cmd/gcsim from checked-in generated data
+    cmds:
+      - go build -o {{.OUT | default "gcsim"}} ./cmd/gcsim
+  build-generated:
+    desc: Regenerates protobufs, pipeline tables, and editor keys. Not a supported build.
     cmds:
       - task: protos
       - task: pipeline
@@ -24,12 +29,20 @@ tasks:
     cmd: go generate ./pkg/stats
 
   pipeline:
-    desc: Run pipeline
+    desc: Run pipeline after the regeneration gate. Uses checked-in pipeline/kind_enumer.go.
     vars:
       CLI_ARGS: '{{.CLI_ARGS | default "run"}}'
     cmds:
-      - go generate ./pipeline
+      - sh scripts/pipeline-preflight.sh
       - go run ./pipeline {{.CLI_ARGS}}
+  # Unsupported maintenance. Rewrites pipeline/kind_enumer.go from the
+  # go:generate directive on pipeline/spec.go. Not used by task pipeline
+  # or task build. The preflight still refuses unless GCSIM_ALLOW_FULL_REGEN=1.
+  pipeline-enumer:
+    desc: Unsupported maintenance. Regenerates pipeline/kind_enumer.go. Not a normal pipeline run.
+    cmds:
+      - sh scripts/pipeline-preflight.sh
+      - go generate ./pipeline
   editor-keys:
     desc: Generate the config editor's keyword tables from pkg/gcs/ast
     cmd: go run ./cmd/editorkeys
@@ -38,9 +51,9 @@ tasks:
       - git add -v 'ui/packages/docs/docs/reference/*/*.md' > /dev/null
       - git add -v '*.dm.*'
   pipeline-clean:
+    desc: Refuses to delete generated files. Deletion before validation is disabled.
     cmds:
-      - git rm -f --ignore-unmatch 'ui/packages/docs/docs/reference/*/*.md' > /dev/null
-      - git rm -f --ignore-unmatch '*.dm.*'
+      - sh scripts/pipeline-clean.sh
 
   enumer:
     cmds:

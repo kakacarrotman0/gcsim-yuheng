@@ -1,0 +1,10 @@
+# Execution check for Sayu's charged attack. The hit spacing is the
+# unmeasured claymore playback schedule. This file is not a damage benchmark.
+# Fuuin Dash is the skill, so this config stays on the charged attack.
+
+options iteration=1 duration=8;
+target lvl=100 resist=0.1;
+sayu char lvl=90/90 cons=0 talent=9,1,1;
+sayu add weapon="favoniusgreatsword" refine=1 lvl=90/90;
+active sayu;
+sayu attack, charge, charge[final=1];

@@ -15,6 +15,7 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Dehya, NewChar)
 	paramsFor := map[action.Action][]string{
+		action.ActionCharge:     {"final", "no_limit"},
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
 	}
@@ -102,6 +103,42 @@ var (
 			2.415527,
 			2.548492,
 		},
+	}
+	// attack: SandstormAssault - Charged Attack Cyclic DMG: {4}
+	charge = []float64{
+		0.5633,
+		0.60915,
+		0.655,
+		0.7205,
+		0.76635,
+		0.81875,
+		0.8908,
+		0.96285,
+		1.0349,
+		1.1135,
+		1.1921,
+		1.2707,
+		1.3493,
+		1.4279,
+		1.5065,
+	}
+	// attack: SandstormAssault - Charged Attack Final DMG: {5}
+	chargeFinal = []float64{
+		1.01824,
+		1.10112,
+		1.184,
+		1.3024,
+		1.38528,
+		1.48,
+		1.61024,
+		1.74048,
+		1.87072,
+		2.0128,
+		2.15488,
+		2.29696,
+		2.43904,
+		2.58112,
+		2.7232,
 	}
 	// attack: SandstormAssault - Plunge DMG: {8}
 	collision = []float64{

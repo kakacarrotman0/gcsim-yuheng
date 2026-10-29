@@ -15,6 +15,7 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Razor, NewChar)
 	paramsFor := map[action.Action][]string{
+		action.ActionCharge:     {"final", "no_limit"},
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
 		action.ActionSkill:      {"hold"},
@@ -103,6 +104,42 @@ var (
 			2.98378,
 			3.12292,
 		},
+	}
+	// attack: SteelFang - Charged Attack Cyclic DMG: {4}
+	charge = []float64{
+		0.625392,
+		0.676296,
+		0.7272,
+		0.79992,
+		0.850824,
+		0.909,
+		0.988992,
+		1.068984,
+		1.148976,
+		1.23624,
+		1.323504,
+		1.410768,
+		1.498032,
+		1.585296,
+		1.67256,
+	}
+	// attack: SteelFang - Charged Attack Final DMG: {5}
+	chargeFinal = []float64{
+		1.1309,
+		1.22295,
+		1.315,
+		1.4465,
+		1.53855,
+		1.64375,
+		1.7884,
+		1.93305,
+		2.0777,
+		2.2355,
+		2.3933,
+		2.5511,
+		2.7089,
+		2.8667,
+		3.0245,
 	}
 	// attack: SteelFang - Plunge DMG: {8}
 	collision = []float64{

@@ -23,6 +23,7 @@ type char struct {
 	absorbCheckLocation info.AttackPattern
 	qTickRadius         float64
 	c2Bonus             float64
+	caState             tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {

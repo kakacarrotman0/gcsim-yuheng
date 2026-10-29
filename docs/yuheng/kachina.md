@@ -39,6 +39,8 @@ Off-field support. Tap skill enters Nightsoul's Blessing at 60 points, summons a
 | Normal, charged, skill-cancel, burst hitmark 35, and mounted hitmarks | Community sheet (caramielle), cited by open gcsim PR #2697. Not an independent capture |
 | Plunge cancel windows | Standard polearm template. Approximate |
 
+N4 → charged attack and charged attack → charged attack are 500. That value is longer than the N4 animation (51) and the charged-attack animation (55), so neither transition can be taken while the action is still playing. The next charged attack becomes ready on the tick the animation state expires. N1 → charged attack stays 20, inside the N1 animation of 31. The 500 entries come from the same caramielle sheet as the other attack frames, via open gcsim PR #2697. A reviewer on that PR asked for the frames to be recounted. 500 is not a measured cancel window, and it is not replaced here with the animation length: that would open a cancel on the last frame of the action.
+
 ## Mechanics notes
 
 - Independent and mounted slams are Nightsoul-aligned Geo, 1U, `ICDTagElementalArt` / `ICDGroupDefault`, DEF ratio, blunt. A4 adds `0.2 * current DEF` as flat damage on those Elemental Art hits, read when the slam is queued.

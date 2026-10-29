@@ -36,28 +36,54 @@ func (c *Compiled) buildICDGroup() error {
 	return nil
 }
 
+// compareICDGroup keeps the five original groups first and the hand-appended
+// groups last. Alphabetical insertion would put VesnaSkill ahead of Venti and
+// renumber every constant in between.
+func compareICDGroup(a, b string) int {
+	if a == b {
+		return 0
+	}
+	for _, s := range []string{
+		"Default",
+		"PoleExtraAttack",
+		"ReactionA",
+		"ReactionB",
+		"Burning",
+	} {
+		switch s {
+		case a:
+			return -1
+		case b:
+			return +1
+		}
+	}
+	// Latest name first, so the listed order is the generated order:
+	// Alyosha, Lohen, VesnaSkillStart, VesnaSkill, SandroneMachineGun.
+	for _, s := range []string{
+		"SandroneMachineGun",
+		"VesnaSkill",
+		"VesnaSkillStart",
+		"LohenSkill",
+		"AlyoshaElementalBurst",
+	} {
+		switch s {
+		case a:
+			return +1
+		case b:
+			return -1
+		}
+	}
+	return cmp.Compare(a, b)
+}
+
 func (c *Compiled) GenerateICDGroup() error {
-	sorted := slices.SortedFunc(maps.Keys(c.ICDGroup), func(a, b string) int {
-		n := cmp.Compare(a, b)
-		if n == 0 {
-			return n
-		}
-		for _, s := range []string{
-			"Default",
-			"PoleExtraAttack",
-			"ReactionA",
-			"ReactionB",
-			"Burning",
-		} {
-			switch s {
-			case a:
-				return -1
-			case b:
-				return +1
-			}
-		}
-		return n
-	})
+	sorted := slices.SortedFunc(maps.Keys(c.ICDGroup), compareICDGroup)
+	if err := validateICDOrder(sorted); err != nil {
+		return fmt.Errorf("refusing to regenerate ICD groups: %w", err)
+	}
+	if err := validateHandICDSequences(c.ICDGroup); err != nil {
+		return fmt.Errorf("refusing to regenerate ICD groups: %w", err)
+	}
 	typ := "ICDGroup"
 	consts := make(map[string]string)
 

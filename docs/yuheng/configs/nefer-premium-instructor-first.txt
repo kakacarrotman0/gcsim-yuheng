@@ -1,0 +1,51 @@
+# Stage 1 experimental config. Not a damage benchmark and not an optimized rotation.
+# Team: Nefer / Lauma / Columbina / Sucrose. Instructor Sucrose setup.
+# Source rotation, KQM Lauma Quick Guide:
+#   (Nefer E)¹ > Columbina E N1 > Sucrose ED > Lauma (N1)¹ Q hE > Columbina Q N1 > Sucrose ED² > Nefer E 3[CD] E 3[CD]
+#   ¹ first rotation only.
+#   ² the guide allows Sucrose N1 Q here when Burst is available. This file uses ED,
+#     the primary written cast, not the Burst substitute.
+# Sucrose's own guide gives a different Instructor sequence. See
+# docs/yuheng/nefer-premium-stage1.md. This file follows the Lauma guide.
+# No seeded Dew. Energy starts full (engine default). swap_delay=12 is a Yuheng
+# validation assumption. One level-100 target. Talent levels and add-stats lines
+# are assumptions.
+# Weapons and sets from the Lauma guide's Instructor paragraph:
+#   Nefer 4pc Night of the Sky's Unveiling, R1 Reliquary of Truth.
+#   Columbina 4pc Silken Moon's Serenade, R5 Prototype Amber.
+#   Lauma 4pc Deepwood Memories, R1 Etherlight Spindlelute.
+#   Sucrose 4pc Instructor, R5 Sacrificial Fragments.
+# Nefer, Lauma, and Columbina cancel frames are placeholders.
+
+options iteration=3 duration=50 swap_delay=12;
+target lvl=100 resist=0.1;
+
+nefer char lvl=90/90 cons=0 talent=9,9,9;
+nefer add weapon="reliquaryoftruth" refine=1 lvl=90/90;
+nefer add set="nightoftheskysunveiling" count=4;
+nefer add stats hp=4780 atk=311 em=374 cr=0.20 cd=0.622 er=0.10;
+
+columbina char lvl=90/90 cons=0 talent=9,9,9;
+columbina add weapon="prototypeamber" refine=5 lvl=90/90;
+columbina add set="silkenmoonsserenade" count=4;
+columbina add stats hp=4780 hp%=0.466 atk=311 cr=0.311 cd=0.20 er=0.518 em=80;
+
+lauma char lvl=90/90 cons=0 talent=9,9,9;
+lauma add weapon="etherlightspindlelute" refine=1 lvl=90/90;
+lauma add set="deepwoodmemories" count=4;
+lauma add stats hp=4780 atk=311 em=561 er=0.30 cr=0.15 cd=0.20;
+
+sucrose char lvl=90/90 cons=0 talent=6,6,6;
+sucrose add weapon="sacrificialfragments" refine=5 lvl=90/90;
+sucrose add set="instructor" count=4;
+sucrose add stats hp=4780 atk=311 em=561 er=0.20 cr=0.10 cd=0.15;
+
+active nefer;
+
+nefer skill;
+columbina skill, attack;
+sucrose skill, dash;
+lauma attack, burst, skill[hold=1];
+columbina burst, attack;
+sucrose skill, dash;
+nefer skill, charge, dash, charge, dash, charge, dash, skill, charge, dash, charge, dash, charge, dash;

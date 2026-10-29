@@ -71,6 +71,15 @@ const (
 	ICDGroupYelanBurst
 	ICDGroupAlyoshaElementalBurst
 	ICDGroupLohenSkill
+	// Hand-appended after the generated block. Do not insert these above
+	// ICDGroupLohenSkill. Order is Vesna's entry group, Vesna's 2s skill
+	// group, then Sandrone's provisional machine-gun group.
+	// VesnaSkillStart copies the default 2.5s/3-hit row onto its own counter.
+	// VesnaSkill is the separate 2s Windborne/Pinion counter.
+	// SandroneMachineGun is a provisional 2.5s/1,0,0 copy, not a validated bullet loop.
+	ICDGroupVesnaSkillStart
+	ICDGroupVesnaSkill
+	ICDGroupSandroneMachineGun
 )
 
 var ICDGroupResetTimer = []int{
@@ -140,6 +149,9 @@ var ICDGroupResetTimer = []int{
 	ICDGroupYelanBurst:                120,  // 2s
 	ICDGroupAlyoshaElementalBurst:     96,   // 1.6s
 	ICDGroupLohenSkill:                300,  // 5s
+	ICDGroupVesnaSkillStart:           150,  // 2.5s
+	ICDGroupVesnaSkill:                120,  // 2s
+	ICDGroupSandroneMachineGun:        150,  // 2.5s, provisional
 }
 
 var ICDGroupEleApplicationSequence = [][]float64{
@@ -209,6 +221,9 @@ var ICDGroupEleApplicationSequence = [][]float64{
 	ICDGroupYelanBurst:                {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
 	ICDGroupAlyoshaElementalBurst:     {1.0, 0.0},
 	ICDGroupLohenSkill:                {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0},
+	ICDGroupVesnaSkillStart:           {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
+	ICDGroupVesnaSkill:                {1.0, 0.0},
+	ICDGroupSandroneMachineGun:        {1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0},
 }
 
 var ICDGroupDamageSequence = [][]float64{
@@ -278,4 +293,7 @@ var ICDGroupDamageSequence = [][]float64{
 	ICDGroupYelanBurst:                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
 	ICDGroupAlyoshaElementalBurst:     {1.0, 1.0, 1.0, 1.0},
 	ICDGroupLohenSkill:                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+	ICDGroupVesnaSkillStart:           {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+	ICDGroupVesnaSkill:                {1.0},
+	ICDGroupSandroneMachineGun:        {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
 }

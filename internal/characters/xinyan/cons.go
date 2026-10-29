@@ -85,5 +85,25 @@ func (c *char) makeC4CB() info.AttackCBFunc {
 	}
 }
 
-// Decreases the Stamina Consumption of Xinyan's Charged Attacks by 30%. Additionally, Xinyan's Charged Attacks gain an ATK Bonus equal to 50% of her DEF.
-// func (c *char) c6() {}
+// Decreases the Stamina Consumption of Xinyan's Charged Attacks by 30%.
+// The ATK bonus is 50% of DEF added to her stats, so dynamic hits other than the charged attack use it too.
+func (c *char) c6() {
+	if c.Base.Cons < 6 {
+		return
+	}
+	c.Core.Player.AddStamPercentMod("xinyan-c6-stam", -1, func(a action.Action) (float64, bool) {
+		if a == action.ActionCharge {
+			return -0.3, false
+		}
+		return 0, false
+	})
+	c.AddStatMod(character.StatMod{
+		Base:         modifier.NewBase("xinyan-c6", -1),
+		AffectedStat: attributes.ATK,
+		Amount: func() []float64 {
+			m := make([]float64, attributes.EndStatType)
+			m[attributes.ATK] = 0.5 * c.TotalDef(false)
+			return m
+		},
+	})
+}

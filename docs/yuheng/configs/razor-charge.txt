@@ -1,0 +1,10 @@
+# Execution check for Razor's charged attack. The hit spacing is the
+# unmeasured claymore playback schedule. This file is not a damage benchmark.
+# Lightning Fang disables the charged attack, so this config stays outside the burst.
+
+options iteration=1 duration=8;
+target lvl=100 resist=0.1;
+razor char lvl=90/90 cons=0 talent=9,1,1;
+razor add weapon="favoniusgreatsword" refine=1 lvl=90/90;
+active razor;
+razor attack, charge, charge[final=1];

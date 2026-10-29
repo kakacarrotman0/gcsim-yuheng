@@ -17,8 +17,10 @@ const (
 	hexEMKey   = "fischl-hexerei-em"
 )
 
-// A1 is not implemented:
-// TODO: When Fischl hits Oz with a fully-charged Aimed Shot, Oz brings down Thundering Retribution, dealing AoE Electro DMG equal to 152.7% of the arrow's DMG.
+// Stellar Predator: a fully charged aimed shot that hits Oz makes Oz fire Thundering Retribution.
+// The bolt is 152.7% of that arrow's base DMG, as its own Charged Attack multiplier.
+// aim[oz=1] is the trigger. Oz is not a separate target, so the shot is not a collision check.
+const a1RetributionRatio = 1.527
 
 // If your current active character triggers an Electro-related Elemental Reaction when Oz is on the field,
 // the opponent shall be stricken with Thundering Retribution that deals Electro DMG equal to 80% of Fischl's ATK.

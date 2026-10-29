@@ -15,6 +15,8 @@ import (
 )
 
 const (
+	// Distinct from LcExtraHitOverride. Columbina's A4 grants each 33% chance
+	// separately, and the Lunar-Crystallize reader must not see the Lunar-Charged flag.
 	LcrExtraHitOverride    = "lunarcrystallize-bonus-hit-chance"
 	lcrContributionKey     = "lunarcrystallize-contribution"
 	lcrCountKey            = "lunarcrystallize-count"

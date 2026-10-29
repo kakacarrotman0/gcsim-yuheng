@@ -45,7 +45,51 @@ func (c *char) Aimed(p map[string]int) (action.Info, error) {
 		travel = 10
 	}
 	weakspot := p["weakspot"]
+	ai := c.aimedShotInfo(hold, weakspot)
+	// Stellar Predator replaces the enemy hit. The arrow is aimed at Oz, and the
+	// bolt uses Oz's own travel so bow travel bonuses follow Oz to the enemy.
+	if p["oz"] != 0 && hold == attacks.AimParamLv1 && c.Base.Ascension >= 1 && c.StatusIsActive(ozActiveKey) {
+		c.Core.Tasks.Add(func() {
+			if !c.StatusIsActive(ozActiveKey) {
+				// The arrow already spent its flight. Oz is gone, so the shot lands with no further travel.
+				c.Core.QueueAttack(ai, c.aimedPattern(), 0, 0)
+				return
+			}
+			c.Core.QueueAttack(
+				c.a1BoltInfo(weakspot),
+				combat.NewSingleTargetHit(c.Core.Combat.DefaultTarget),
+				0,
+				c.ozTravel,
+			)
+		}, aimedHitmarks[hold]+travel)
+	} else {
+		c.Core.QueueAttack(
+			ai,
+			c.aimedPattern(),
+			aimedHitmarks[hold],
+			aimedHitmarks[hold]+travel,
+		)
+	}
 
+	return action.Info{
+		Frames:          frames.NewAbilFunc(aimedFrames[hold]),
+		AnimationLength: aimedFrames[hold][action.InvalidAction],
+		CanQueueAfter:   aimedHitmarks[hold],
+		State:           action.AimState,
+	}, nil
+}
+
+func (c *char) aimedPattern() info.AttackPattern {
+	return combat.NewBoxHit(
+		c.Core.Combat.Player(),
+		c.Core.Combat.PrimaryTarget(),
+		info.Point{Y: -0.5},
+		0.1,
+		1,
+	)
+}
+
+func (c *char) aimedShotInfo(hold, weakspot int) info.AttackInfo {
 	ai := info.AttackInfo{
 		ActorIndex:           c.Index(),
 		Abil:                 "Fully-Charged Aimed Shot",
@@ -66,23 +110,21 @@ func (c *char) Aimed(p map[string]int) (action.Info, error) {
 		ai.Element = attributes.Physical
 		ai.Mult = aim[c.TalentLvlAttack()]
 	}
-	c.Core.QueueAttack(
-		ai,
-		combat.NewBoxHit(
-			c.Core.Combat.Player(),
-			c.Core.Combat.PrimaryTarget(),
-			info.Point{Y: -0.5},
-			0.1,
-			1,
-		),
-		aimedHitmarks[hold],
-		aimedHitmarks[hold]+travel,
-	)
+	return ai
+}
 
-	return action.Info{
-		Frames:          frames.NewAbilFunc(aimedFrames[hold]),
-		AnimationLength: aimedFrames[hold][action.InvalidAction],
-		CanQueueAfter:   aimedHitmarks[hold],
-		State:           action.AimState,
-	}, nil
+func (c *char) a1BoltInfo(weakspot int) info.AttackInfo {
+	return info.AttackInfo{
+		ActorIndex:   c.Index(),
+		Abil:         "Thundering Retribution (A1)",
+		AttackTag:    attacks.AttackTagExtra,
+		ICDTag:       attacks.ICDTagNone,
+		ICDGroup:     attacks.ICDGroupDefault,
+		StrikeType:   attacks.StrikeTypePierce,
+		Element:      attributes.Electro,
+		Durability:   25,
+		PoiseDMG:     40,
+		Mult:         fullaim[c.TalentLvlAttack()] * a1RetributionRatio,
+		HitWeakPoint: weakspot == 1,
+	}
 }

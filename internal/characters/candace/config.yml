@@ -115,7 +115,7 @@ abilities:
   - name: skill
     params:
       hold: 0 for Tap (default), 1 for Hold.
-      perfect: 0 for no A1 (default), non-zero value for A1. This sets hold to 1.
+      perfect: 0 for no A1 (default), non-zero value for A1 after ascension 1. This sets hold to 1 and subtracts 55 frames. Ignored before ascension 1.
     hitbox:
       - name: E-Tap
         shape: Box

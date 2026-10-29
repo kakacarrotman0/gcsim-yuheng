@@ -10,6 +10,7 @@ import (
 type char struct {
 	*tmpl.Character
 	afterCount int
+	caState    tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {

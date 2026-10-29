@@ -8,6 +8,11 @@ on:
         required: true
         type: string
         default: github:iam-akuzihs/excel/live
+      allow_full_regen:
+        description: Opt in to a full pipeline run. Generated files are still not deleted first, and the character and ICD guards remain on.
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -43,10 +48,19 @@ jobs:
       - name: Run pipeline
         env:
           DM_REPO: ${{ inputs.DM_REPO }}
+          GCSIM_ALLOW_FULL_REGEN: ${{ inputs.allow_full_regen && '1' || '0' }}
         run: |-
           set -eu
 
-          nix develop -c task pipeline-clean > /dev/null 2>&1
+          # Do not delete tracked generated files before validation.
+          # The old clean step ran before the in-process guards could refuse.
+          if [ "${GCSIM_ALLOW_FULL_REGEN}" != "1" ]; then
+            echo "refusing full pipeline regeneration: allow_full_regen is false; checked-in generated files were not modified" >&2
+            git diff --quiet
+            git diff --cached --quiet
+            exit 1
+          fi
+
           nix develop -c task pipeline -- run -remote -no-cache
           nix develop -c task pipeline-add > /dev/null 2>&1
 

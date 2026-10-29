@@ -12,7 +12,7 @@ import (
 
 var (
 	skillFrames   [][]int
-	skillHitmarks = []int{13, 50, 93}
+	skillHitmarks = []int{13, 50, 92}
 	skillCDStarts = []int{11, 48, 90}
 )
 
@@ -47,10 +47,12 @@ func init() {
 // perfect = 1 if you are doing a perfect counter
 // hold = 1 or 2 for regular charging up to level 1 or 2
 func (c *char) Skill(p map[string]int) (action.Info, error) {
-	// Hold parameter gets used in action frames to get earliest possible release frame
+	// Hold parameter gets used in action frames to get earliest possible release frame.
+	// True to Oneself is the perfect counter: press timing, Charge Level 2 damage.
+	// Incoming hits are not simulated, so perfect=1 is that shortcut, and only after ascension 1.
 	chargeLevel := min(p["hold"], 2)
 	animIdx := chargeLevel
-	if p["perfect"] == 1 {
+	if p["perfect"] == 1 && c.Base.Ascension >= 1 {
 		animIdx = 0
 		chargeLevel = 2
 	}
@@ -75,20 +77,23 @@ func (c *char) Skill(p map[string]int) (action.Info, error) {
 	radius := 4.0
 	switch chargeLevel {
 	case 0:
+		ai.PoiseDMG = 100
 		ai.HitlagHaltFrames = 0.06 * 60
 		count = 2
 	case 1:
-		// 2 or 3, 1:1 ratio
-		if c.Core.Rand.Float64() < 0.5 {
+		// KQM 2~3 (3:2): 60% chance of 2 particles, 40% chance of 3.
+		if c.Core.Rand.Float64() < 0.6 {
 			count = 2
 		} else {
 			count = 3
 		}
+		ai.PoiseDMG = 200
 		ai.Abil = "Opening Flourish (Level 1)"
 		ai.HitlagHaltFrames = 0.09 * 60
 		radius = 6
 	case 2:
 		count = 3
+		ai.PoiseDMG = 300
 		ai.Durability = 100
 		ai.Abil = "Opening Flourish (Level 2)"
 		ai.HitlagHaltFrames = 0.12 * 60

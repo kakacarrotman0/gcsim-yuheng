@@ -32,6 +32,8 @@ func (c *char) applyOrbital(duration, delay int) {
 		)
 	}
 	c.AddStatus(orbitalKey, duration, true)
+	// Skill and burst both create the maximum number of Rain Swords.
+	c.rainSwords = c.maxRainSwords()
 	c.Core.Log.NewEvent(
 		"orbital duration extended", glog.LogCharacterEvent, c.Index(),
 	).Write(
@@ -50,6 +52,10 @@ func (c *char) orbitalTickTask(src int) func() {
 		)
 		if !c.StatusIsActive(orbitalKey) {
 			c.orbitalActive = false
+			// Swords that were not shattered heal when the orbit ends.
+			// Burst only stops shattering; it does not cancel this expiry heal.
+			c.a1Heal(c.rainSwords)
+			c.rainSwords = 0
 			return
 		}
 

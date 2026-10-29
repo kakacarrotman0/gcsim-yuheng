@@ -1,0 +1,10 @@
+# Execution check for Xinyan's charged attack at C0, C1, and C6.
+# The hit spacing is the unmeasured claymore playback schedule.
+# This file is not a damage benchmark.
+
+options iteration=1 duration=8;
+target lvl=100 resist=0.1;
+xinyan char lvl=90/90 cons=6 talent=9,1,1;
+xinyan add weapon="favoniusgreatsword" refine=1 lvl=90/90;
+active xinyan;
+xinyan attack, charge, charge[final=1];

@@ -14,7 +14,7 @@ import (
 
 const (
 	LcKey              = "lunarcharged-cloud"
-	LcExtraHitOverride = "lunarcrystallize-bonus-hit-chance"
+	LcExtraHitOverride = "lunarcharged-bonus-hit-chance"
 	lcSrcKey           = "lunarcharged-cloud-src"
 	lcIcdKey           = "lunarcharged-cloud-icd"
 )

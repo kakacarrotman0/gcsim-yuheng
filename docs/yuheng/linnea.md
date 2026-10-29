@@ -51,6 +51,9 @@ Unit tests in `linnea_test.go` check identity and Moonsign, C3/C5 talent indexes
 | Lumi cadence (`skillSuperInterval` 62/122/90, recast window 0.6s, second pound +21f, Million Ton at 50f, standard interval 120f, burst-summon first hit 214f) | Approximate. Taken from the upstream draft, which marks the skill frames as unknown. Not a measured sheet |
 | Normal hitmarks 15/12/47 and aimed hitmarks 15/86 | Placeholders from that same draft (`TODO: implement frames`). Not a measured sheet |
 | Plunge cancel windows | Approximate bow template. The draft had no plunge |
+| Burst skill cancel | Same frame as the swap cancel, 97. The draft wrote skill at 96, which is also its unextracted initial-heal delay. The action loop opens the next-action queue at the swap frame, so 96 was never requested. The heal itself is queued at frame 1 |
+
+Skill frames still start from `InitAbilSlice(14)`, marked unknown in the draft. Attack 33, aim 44, skill 20, burst 15, and walk 32 are longer than that animation, so those cancels are not taken; the action expires first. N3 still uses hitmark 47 with an N3 → N1 frame of 43 (`TODO: implement frames`). Both pairs are placeholders. No measured sheet gives a replacement, so those tables are unchanged.
 
 ## Mechanics notes
 

@@ -17,6 +17,7 @@ func init() {
 	paramsFor := map[action.Action][]string{
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
+		action.ActionCharge:     {"final", "no_limit"},
 	}
 	validation.RegisterCharParamValidationFunc(keys.Kaveh, func(a action.Action, keys []string) error {
 		valid, ok := paramsFor[a]
@@ -102,6 +103,42 @@ var (
 			2.603029,
 			2.746315,
 		},
+	}
+	// attack: SchematicSetup - Charged Attack Cyclic DMG: {4}
+	charge = []float64{
+		0.53148,
+		0.57474,
+		0.618,
+		0.6798,
+		0.72306,
+		0.7725,
+		0.84048,
+		0.90846,
+		0.97644,
+		1.0506,
+		1.12476,
+		1.19892,
+		1.27308,
+		1.34724,
+		1.4214,
+	}
+	// attack: SchematicSetup - Charged Attack Final DMG: {5}
+	chargeFinal = []float64{
+		0.96148,
+		1.03974,
+		1.118,
+		1.2298,
+		1.30806,
+		1.3975,
+		1.52048,
+		1.64346,
+		1.76644,
+		1.9006,
+		2.03476,
+		2.16892,
+		2.30308,
+		2.43724,
+		2.5714,
 	}
 	// attack: SchematicSetup - Plunge DMG: {8}
 	collision = []float64{

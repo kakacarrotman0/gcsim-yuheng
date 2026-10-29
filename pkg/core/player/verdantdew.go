@@ -26,10 +26,19 @@ func (h *Handler) verdantDewGen() {
 	}
 
 	h.partialDewCount++
-	if h.partialDewCount >= maxPartialDew {
+	need := maxPartialDew
+	if h.verdantDewHaste {
+		// 25% faster than the 146-frame counter. 80% of 146 rounds to 117.
+		need = (maxPartialDew*4 + 2) / 5
+	}
+	if h.partialDewCount >= need {
 		h.AddVerdantDew()
 		h.partialDewCount = 0
 	}
+}
+
+func (h *Handler) SetVerdantDewHaste(on bool) {
+	h.verdantDewHaste = on
 }
 
 func (h *Handler) OnLunarBloom() {
@@ -40,7 +49,7 @@ func (h *Handler) OnLunarBloom() {
 // sets verdant dew to an amt between 0 and 3, inclusive.
 func (h *Handler) SetVerdantDew(amt int) {
 	h.verdantDew = max(min(amt, 3), 0)
-	h.Log.NewEvent(fmt.Sprintf("verdant dew set to %v", h.moonridgeDew), glog.LogElementEvent, -1)
+	h.Log.NewEvent(fmt.Sprintf("verdant dew set to %v", h.verdantDew), glog.LogElementEvent, -1)
 }
 
 func (h *Handler) AddVerdantDew() {

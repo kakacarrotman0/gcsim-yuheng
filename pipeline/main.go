@@ -463,11 +463,19 @@ func check(ctx context.Context, cmd *cli.Command) error {
 }
 
 func run(ctx context.Context, cmd *cli.Command) error {
+	// Refuse before fetch, compile, or any generator. Opening the gate does
+	// not disable assertHandMaintainedRegen, which still runs before writes.
+	if err := fullRegenGate(); err != nil {
+		return err
+	}
 	c, err := compile(ctx, cmd)
 	if err != nil {
 		return err
 	}
 	c.ClearRef()
+	if err := c.assertHandMaintainedRegen(); err != nil {
+		return err
+	}
 
 	for _, fn := range []func() error{
 		c.GenerateArtifacts,

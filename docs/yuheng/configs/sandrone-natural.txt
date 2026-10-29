@@ -1,0 +1,41 @@
+# Yuheng validation config
+# Sandrone / Yae Miko / Kaeya / Qiqi. Energy starts full, which is the engine default.
+# One Burst, then Charged Attack and Skill. Particles come from Fagio and the Skill.
+# A second Burst is not forced. This is not a damage benchmark and not a frame-validated combo.
+# KQM's C0 pattern is 3[C E] (Q). The charge lock here is the ability-interval horizon, not a measured cancel.
+
+options iteration=5 duration=30 swap_delay=12;
+target lvl=100 resist=0.1;
+
+sandrone char lvl=90/90 cons=0 talent=8,8,8;
+sandrone add weapon="tidalshadow" refine=1 lvl=90/90;
+sandrone add set="gildeddreams" count=4;
+sandrone add stats hp=4780 atk=311 cr=0.311 cd=0.622 atk%=0.466;
+sandrone add stats def=39.36 def%=0.124 hp=507.88 hp%=0.0992 atk=33.08 atk%=0.0992 er=0.2204 em=39.64 cr=0.331 cd=0.5296;
+
+yaemiko char lvl=90/90 cons=0 talent=8,8,8;
+yaemiko add weapon="widsith" refine=1 lvl=90/90;
+yaemiko add set="gildeddreams" count=2;
+yaemiko add set="gladiatorsfinale" count=2;
+yaemiko add stats hp=4780 atk=311 cr=0.311 cd=0.622 atk%=0.466;
+yaemiko add stats def=39.36 def%=0.124 hp=507.88 hp%=0.0992 atk=33.08 atk%=0.0992 er=0.2204 em=39.64 cr=0.331 cd=0.5296;
+
+kaeya char lvl=90/90 cons=0 talent=8,8,8;
+kaeya add weapon="favoniussword" refine=3 lvl=90/90;
+kaeya add set="noblesseoblige" count=4;
+kaeya add stats hp=4780 atk=311 er=0.518 cryo%=0.466 cr=0.311;
+kaeya add stats def=39.36 def%=0.124 hp=507.88 hp%=0.0992 atk=33.08 atk%=0.0992 er=0.2204 em=39.64 cr=0.331 cd=0.5296;
+
+qiqi char lvl=90/90 cons=0 talent=8,8,8;
+qiqi add weapon="sacrificialsword" refine=1 lvl=90/90;
+qiqi add set="tenacityofthemillelith" count=4;
+qiqi add stats hp=4780 atk=311 er=0.518 hp%=0.466 cr=0.311;
+qiqi add stats def=39.36 def%=0.124 hp=507.88 hp%=0.0992 atk=33.08 atk%=0.0992 er=0.2204 em=39.64 cr=0.331 cd=0.5296;
+
+active sandrone;
+
+sandrone burst;
+yaemiko skill;
+kaeya skill;
+qiqi skill;
+sandrone charge, skill, attack, charge, skill, attack, charge, skill;

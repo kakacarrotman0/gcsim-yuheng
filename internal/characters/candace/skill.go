@@ -38,7 +38,9 @@ func init() {
 func (c *char) Skill(p map[string]int) (action.Info, error) {
 	chargeLevel := min(p["hold"], 1)
 	windup := 0
-	if p["perfect"] != 0 {
+	// Aegis of Crossed Arrows finishes the hold instantly. KQM: subtract 55 frames from the hold hitmark.
+	// Incoming hits are not simulated, so perfect is that shortcut, and only after ascension 1.
+	if p["perfect"] != 0 && c.Base.Ascension >= 1 {
 		chargeLevel = 1
 		windup = 55
 	}
@@ -111,12 +113,12 @@ func (c *char) Skill(p map[string]int) (action.Info, error) {
 	if c.Base.Cons >= 4 {
 		cd = skillCD[0]
 	}
-	c.SetCDWithDelay(action.ActionSkill, cd, skillCDStarts[chargeLevel])
+	c.SetCDWithDelay(action.ActionSkill, cd, skillCDStarts[chargeLevel]-windup)
 
 	return action.Info{
 		Frames:          func(next action.Action) int { return skillFrames[chargeLevel][next] - windup },
-		AnimationLength: skillFrames[chargeLevel][action.InvalidAction],
-		CanQueueAfter:   skillFrames[chargeLevel][action.ActionSwap], // earliest cancel
+		AnimationLength: skillFrames[chargeLevel][action.InvalidAction] - windup,
+		CanQueueAfter:   skillFrames[chargeLevel][action.ActionSwap] - windup, // earliest cancel
 		State:           action.SkillState,
 	}, nil
 }
