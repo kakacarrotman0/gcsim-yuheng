@@ -24,12 +24,12 @@ import (
 
 func asNefer(ch *character.CharWrapper) *char { return ch.Character.(*char) }
 
-func addNefer(t *testing.T, c *core.Core, cons int, em float64) *character.CharWrapper {
+func addNefer(t *testing.T, c *core.Core, cons int) *character.CharWrapper {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Nefer, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
 	prof.Talents = info.TalentProfile{Attack: 1, Skill: 1, Burst: 1}
-	prof.Stats[attributes.EM] = em
+	prof.Stats[attributes.EM] = 800
 	prof.Stats[attributes.DendroP] = 0.5
 	idx, err := c.AddChar(prof)
 	if err != nil {
@@ -60,9 +60,9 @@ func collectDmg(c *core.Core) *[]recorded {
 }
 
 func findHit(hits []recorded, name string) (recorded, bool) {
-	for _, h := range hits {
-		if h.info.Abil == name {
-			return h, true
+	for i := range hits {
+		if hits[i].info.Abil == name {
+			return hits[i], true
 		}
 	}
 	return recorded{}, false
@@ -107,7 +107,7 @@ func openDance(t *testing.T, c *core.Core, ch *character.CharWrapper) {
 
 func TestVeilIsBaseDamageMultiplier(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addNefer(t, c, 0, 800)
+	ch := addNefer(t, c, 0)
 	start(t, c, ch.Index())
 	openDance(t, c, ch)
 	asNefer(ch).addVeils(3)
@@ -155,7 +155,7 @@ func TestVeilIsBaseDamageMultiplier(t *testing.T) {
 
 func TestC1IsInsideTheVeilMultiplier(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addNefer(t, c, 1, 800)
+	ch := addNefer(t, c, 1)
 	start(t, c, ch.Index())
 	openDance(t, c, ch)
 	asNefer(ch).addVeils(3)
@@ -183,7 +183,7 @@ func TestC1IsInsideTheVeilMultiplier(t *testing.T) {
 
 func TestC2FiveStacksAreThe140Percent(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addNefer(t, c, 2, 800)
+	ch := addNefer(t, c, 2)
 	start(t, c, ch.Index())
 	openDance(t, c, ch)
 	// The skill already granted 2. Three more reach the C2 cap.
@@ -225,7 +225,7 @@ func TestC2FiveStacksAreThe140Percent(t *testing.T) {
 
 func TestC6VeilAndElevationStaySeparate(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addNefer(t, c, 6, 800)
+	ch := addNefer(t, c, 6)
 	start(t, c, ch.Index())
 	// Gleam is the party's Moonsign. Set the flag directly so Columbina's own buffs stay out of this check.
 	asNefer(ch).gleam = true
@@ -265,7 +265,7 @@ func TestC6VeilAndElevationStaySeparate(t *testing.T) {
 
 func TestBurstVeilIsDamageBonus(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addNefer(t, c, 0, 800)
+	ch := addNefer(t, c, 0)
 	start(t, c, ch.Index())
 	ch.BaseStats[attributes.CR] = 0
 	ch.Energy = ch.EnergyMax
@@ -315,7 +315,7 @@ func countParticles(t *testing.T, seed int64, hit bool, enemies int) (float64, a
 			c.Combat.DefaultTarget = e.Key()
 		}
 	}
-	ch := addChar(t, c, keys.Nefer, 0, 1)
+	ch := addChar(t, c, keys.Nefer, 0)
 	start(t, c, ch.Index())
 	ch.ParticleDelay = 0
 	var n float64
@@ -367,7 +367,7 @@ func TestSkillParticlesMiss(t *testing.T) {
 func TestSkillParticlesOncePerCast(t *testing.T) {
 	c, trg := makeCore(2)
 	trg[1].SetPos(info.Point{X: 0, Y: 0})
-	ch := addChar(t, c, keys.Nefer, 0, 1)
+	ch := addChar(t, c, keys.Nefer, 0)
 	start(t, c, ch.Index())
 	ch.ParticleDelay = 0
 	var events int
@@ -404,7 +404,7 @@ func reactionCount(c *core.Core, name string) *int {
 
 func TestOrdinaryBloomWithoutNefer(t *testing.T) {
 	c, _ := makeCore(1)
-	col := addChar(t, c, keys.Collei, 0, 1)
+	col := addChar(t, c, keys.Collei, 0)
 	start(t, c, col.Index())
 	blooms := reactionCount(c, "bloom")
 	spawnOwnedCore(c, col.Index())
@@ -424,7 +424,7 @@ func eventCount(c *core.Core, ev event.Event, key string) *int {
 // The core's later explosion is damage labeled "bloom"; it is not a second reaction.
 func TestLunarBloomEventIsDistinctFromCoreExplosion(t *testing.T) {
 	c, _ := makeCore(1)
-	col := addChar(t, c, keys.Collei, 0, 1)
+	col := addChar(t, c, keys.Collei, 0)
 	start(t, c, col.Index())
 	onBloom := eventCount(c, event.OnBloom, "ordinary-bloom")
 	onLunar := eventCount(c, event.OnLunarBloom, "ordinary-lunar")
@@ -436,8 +436,8 @@ func TestLunarBloomEventIsDistinctFromCoreExplosion(t *testing.T) {
 	}
 
 	c, _ = makeCore(1)
-	col = addChar(t, c, keys.Collei, 0, 1)
-	addChar(t, c, keys.Nefer, 0, 1)
+	col = addChar(t, c, keys.Collei, 0)
+	addChar(t, c, keys.Nefer, 0)
 	start(t, c, col.Index())
 	onBloom = eventCount(c, event.OnBloom, "nefer-bloom")
 	onLunar = eventCount(c, event.OnLunarBloom, "nefer-lunar")
@@ -451,7 +451,7 @@ func TestLunarBloomEventIsDistinctFromCoreExplosion(t *testing.T) {
 
 func TestOrdinaryHyperbloomAndBurgeon(t *testing.T) {
 	c, trg := makeCore(1)
-	col := addChar(t, c, keys.Collei, 0, 1)
+	col := addChar(t, c, keys.Collei, 0)
 	start(t, c, col.Index())
 	hyper := reactionCount(c, "hyperbloom")
 	burgeon := reactionCount(c, "burgeon")
@@ -516,8 +516,8 @@ func bountifulCores(c *core.Core) []*nilou.BountifulCore {
 
 func TestBountifulCoreExplodesWithoutDeceit(t *testing.T) {
 	c, _ := makeCore(1)
-	nl := addChar(t, c, keys.Nilou, 0, 1)
-	col := addChar(t, c, keys.Collei, 0, 1)
+	nl := addChar(t, c, keys.Nilou, 0)
+	col := addChar(t, c, keys.Collei, 0)
 	start(t, c, nl.Index())
 	armNilou(t, c)
 	blooms := reactionCount(c, "bloom")
@@ -530,9 +530,9 @@ func TestBountifulCoreExplodesWithoutDeceit(t *testing.T) {
 
 func TestBountifulCoreDeceitDoesNotExplode(t *testing.T) {
 	c, _ := makeCore(1)
-	nl := addChar(t, c, keys.Nilou, 0, 1)
-	addChar(t, c, keys.Columbina, 0, 1)
-	nef := addChar(t, c, keys.Nefer, 0, 1)
+	nl := addChar(t, c, keys.Nilou, 0)
+	addChar(t, c, keys.Columbina, 0)
+	nef := addChar(t, c, keys.Nefer, 0)
 	start(t, c, nl.Index())
 	armNilou(t, c)
 	c.Player.SetActive(nef.Index())
@@ -554,8 +554,8 @@ func TestBountifulCoreDeceitDoesNotExplode(t *testing.T) {
 
 func TestAbsorbRefreshesOneVeil(t *testing.T) {
 	c, _ := makeCore(1)
-	addChar(t, c, keys.Columbina, 0, 1)
-	nef := addChar(t, c, keys.Nefer, 0, 1)
+	addChar(t, c, keys.Columbina, 0)
+	nef := addChar(t, c, keys.Nefer, 0)
 	start(t, c, nef.Index())
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
 		t.Fatal(err)
@@ -620,8 +620,8 @@ func dewFrame(t *testing.T, c *core.Core) int {
 
 func TestC4HasteEndsOnSwap(t *testing.T) {
 	c, trg := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 4, 1)
-	addChar(t, c, keys.Columbina, 0, 1)
+	nef := addChar(t, c, keys.Nefer, 4)
+	addChar(t, c, keys.Columbina, 0)
 	start(t, c, nef.Index())
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
 		t.Fatal(err)
@@ -644,7 +644,7 @@ func TestC4HasteEndsOnSwap(t *testing.T) {
 
 func TestC4HasteEndsWhenDanceEnds(t *testing.T) {
 	c, _ := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 4, 1)
+	nef := addChar(t, c, keys.Nefer, 4)
 	start(t, c, nef.Index())
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
 		t.Fatal(err)

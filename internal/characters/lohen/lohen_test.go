@@ -1,6 +1,7 @@
 package lohen
 
 import (
+	"errors"
 	"math"
 	"testing"
 
@@ -563,14 +564,14 @@ func TestWillAndHighSpiritsAtAscensionZero(t *testing.T) {
 	}
 }
 
-func waitReady(t *testing.T, c *core.Core, act action.Action, key keys.Char, limit int) bool {
+func waitReady(t *testing.T, c *core.Core, act action.Action, limit int) bool {
 	t.Helper()
 	for c.F < limit {
-		err := c.Player.ReadyCheck(act, key, nil)
+		err := c.Player.ReadyCheck(act, keys.Lohen, nil)
 		if err == nil {
 			return true
 		}
-		if err != player.ErrPlayerNotReady && err != player.ErrActionNotReady {
+		if !errors.Is(err, player.ErrPlayerNotReady) && !errors.Is(err, player.ErrActionNotReady) {
 			t.Fatalf("ready %v: %v", act, err)
 		}
 		advance(c, 1)
@@ -657,13 +658,13 @@ func TestNormalAndChargedShareSkillICD(t *testing.T) {
 		t.Fatal(err)
 	}
 	limit := int(masterDuration[0] * 60)
-	if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) {
+	if !waitReady(t, c, action.ActionAttack, limit) {
 		t.Fatal("attack never ready")
 	}
 	if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
 		t.Fatal(err)
 	}
-	if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) {
+	if !waitReady(t, c, action.ActionCharge, limit) {
 		t.Fatal("charge never ready")
 	}
 	if err := c.Player.Exec(action.ActionCharge, keys.Lohen, nil); err != nil {
@@ -695,13 +696,13 @@ func TestPlaceholderN1CCount(t *testing.T) {
 	limit := int(masterDuration[0] * 60)
 	n1c := 0
 	for c.F < limit {
-		if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+		if !waitReady(t, c, action.ActionAttack, limit) || !asLohen(ch).masterActive() {
 			break
 		}
 		if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
 			t.Fatal(err)
 		}
-		if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+		if !waitReady(t, c, action.ActionCharge, limit) || !asLohen(ch).masterActive() {
 			break
 		}
 		if err := c.Player.Exec(action.ActionCharge, keys.Lohen, nil); err != nil {
@@ -749,14 +750,14 @@ func TestN1CSpacingStaysPlaceholderWithHitlag(t *testing.T) {
 	limit := int(masterDuration[0] * 60)
 	var starts []int
 	for c.F < limit {
-		if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+		if !waitReady(t, c, action.ActionAttack, limit) || !asLohen(ch).masterActive() {
 			break
 		}
 		starts = append(starts, c.F)
 		if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
 			t.Fatal(err)
 		}
-		if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+		if !waitReady(t, c, action.ActionCharge, limit) || !asLohen(ch).masterActive() {
 			break
 		}
 		if err := c.Player.Exec(action.ActionCharge, keys.Lohen, nil); err != nil {
@@ -825,14 +826,14 @@ func runEarliestN1C(t *testing.T, params map[string]int) n1cRun {
 	}
 	limit := int(masterDuration[0] * 60)
 	for c.F < limit {
-		if !waitReady(t, c, action.ActionAttack, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+		if !waitReady(t, c, action.ActionAttack, limit) || !asLohen(ch).masterActive() {
 			break
 		}
 		run.attackStarts = append(run.attackStarts, c.F)
 		if err := c.Player.Exec(action.ActionAttack, keys.Lohen, nil); err != nil {
 			t.Fatal(err)
 		}
-		if !waitReady(t, c, action.ActionCharge, keys.Lohen, limit) || !asLohen(ch).masterActive() {
+		if !waitReady(t, c, action.ActionCharge, limit) || !asLohen(ch).masterActive() {
 			break
 		}
 		run.chargeStarts = append(run.chargeStarts, c.F)

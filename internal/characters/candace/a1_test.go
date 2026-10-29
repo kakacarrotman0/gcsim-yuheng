@@ -39,13 +39,13 @@ func makeCore(t *testing.T) *core.Core {
 	return c
 }
 
-func addCandace(t *testing.T, c *core.Core, cons, maxLevel, talent int) *character.CharWrapper {
+func addCandace(t *testing.T, c *core.Core, cons, maxLevel int) *character.CharWrapper {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Candace, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
 	prof.Base.Level = maxLevel
 	prof.Base.MaxLevel = maxLevel
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Talents = info.TalentProfile{Attack: 9, Skill: 9, Burst: 9}
 	if _, err := c.AddChar(prof); err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func particlesOf(c *core.Core) *[]float64 {
 
 func TestTapAndHold(t *testing.T) {
 	c := makeCore(t)
-	ch := addCandace(t, c, 0, 90, 9)
+	ch := addCandace(t, c, 0, 90)
 	hits := watch(c)
 	parts := particlesOf(c)
 	act, err := ch.Character.(*char).Skill(nil)
@@ -115,7 +115,7 @@ func TestTapAndHold(t *testing.T) {
 	}
 
 	c = makeCore(t)
-	ch = addCandace(t, c, 0, 90, 9)
+	ch = addCandace(t, c, 0, 90)
 	hits = watch(c)
 	parts = particlesOf(c)
 	act, err = ch.Character.(*char).Skill(map[string]int{"hold": 1})
@@ -149,7 +149,7 @@ func TestTapAndHold(t *testing.T) {
 
 func TestPerfectCounterRequiresAscensionAndSkips55Frames(t *testing.T) {
 	c := makeCore(t)
-	ch := addCandace(t, c, 0, 20, 9)
+	ch := addCandace(t, c, 0, 20)
 	if ch.Base.Ascension != 0 {
 		t.Fatalf("ascension %d", ch.Base.Ascension)
 	}
@@ -167,7 +167,7 @@ func TestPerfectCounterRequiresAscensionAndSkips55Frames(t *testing.T) {
 	}
 
 	c = makeCore(t)
-	ch = addCandace(t, c, 0, 20, 9)
+	ch = addCandace(t, c, 0, 20)
 	hits = watch(c)
 	act, err = ch.Character.(*char).Skill(map[string]int{"perfect": 1, "hold": 1})
 	if err != nil {
@@ -182,7 +182,7 @@ func TestPerfectCounterRequiresAscensionAndSkips55Frames(t *testing.T) {
 	}
 
 	c = makeCore(t)
-	ch = addCandace(t, c, 0, 40, 9)
+	ch = addCandace(t, c, 0, 40)
 	if ch.Base.Ascension != 1 {
 		t.Fatalf("ascension %d", ch.Base.Ascension)
 	}
@@ -224,7 +224,7 @@ func TestPerfectCounterRequiresAscensionAndSkips55Frames(t *testing.T) {
 
 func TestC4ShortensHoldCooldownIncludingTheCounter(t *testing.T) {
 	c := makeCore(t)
-	ch := addCandace(t, c, 4, 90, 9)
+	ch := addCandace(t, c, 4, 90)
 	if _, err := ch.Character.(*char).Skill(map[string]int{"hold": 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestC4ShortensHoldCooldownIncludingTheCounter(t *testing.T) {
 	}
 
 	c = makeCore(t)
-	ch = addCandace(t, c, 4, 90, 9)
+	ch = addCandace(t, c, 4, 90)
 	if _, err := ch.Character.(*char).Skill(map[string]int{"perfect": 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +247,7 @@ func TestC4ShortensHoldCooldownIncludingTheCounter(t *testing.T) {
 func TestC2TriggersOnChargedAndPerfectHits(t *testing.T) {
 	for _, param := range []map[string]int{{"hold": 1}, {"perfect": 1}} {
 		c := makeCore(t)
-		ch := addCandace(t, c, 2, 90, 9)
+		ch := addCandace(t, c, 2, 90)
 		if _, err := ch.Character.(*char).Skill(param); err != nil {
 			t.Fatal(err)
 		}

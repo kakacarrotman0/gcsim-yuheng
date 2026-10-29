@@ -24,7 +24,7 @@ func init() {
 	testhelper.RegisterTestWeapon()
 }
 
-func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
+func makeCore() (*core.Core, []*enemy.Enemy) {
 	c, err := core.New(core.Opt{Seed: 1, Debug: false})
 	if err != nil {
 		panic(err)
@@ -32,7 +32,7 @@ func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
 	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
 	c.Combat.SetPlayer(a)
 	var trgs []*enemy.Enemy
-	for range trgCount {
+	for range 1 {
 		e := enemy.New(c, info.EnemyProfile{
 			Level:  100,
 			Resist: make(map[attributes.Element]float64),
@@ -72,7 +72,7 @@ func addKachina(t *testing.T, c *core.Core, cons, talent int) *character.CharWra
 }
 
 func TestBaseStats(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	if ch.Base.Element != attributes.Geo {
 		t.Fatalf("element %v", ch.Base.Element)
@@ -92,7 +92,7 @@ func TestBaseStats(t *testing.T) {
 }
 
 func TestNormalAttack(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	var hits []info.AttackInfo
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -117,7 +117,7 @@ func TestNormalAttack(t *testing.T) {
 }
 
 func TestSkillOffFieldSlams(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	var hits []info.AttackInfo
 	var crystallized int
@@ -203,7 +203,7 @@ func TestSkillOffFieldSlams(t *testing.T) {
 }
 
 func TestSkillEndsWhenPointsDeplete(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	var slams int
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -235,7 +235,7 @@ func TestSkillEndsWhenPointsDeplete(t *testing.T) {
 }
 
 func TestParticles(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	ac := ch.Character.(*char)
 	var particles []character.Particle
@@ -282,7 +282,7 @@ func addSteles(c *core.Core, n, base int) {
 }
 
 func TestConstructIgnoresThreeCap(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	addSteles(c, 3, 100)
 	if c.Constructs.CountByType(construct.GeoConstructZhongliSkill) != 3 {
@@ -312,7 +312,7 @@ func TestConstructIgnoresThreeCap(t *testing.T) {
 		t.Fatal("the limited cap evicted twirly")
 	}
 
-	c2, _ := makeCore(1)
+	c2, _ := makeCore()
 	ch2 := addKachina(t, c2, 0, 1)
 	if err := c2.Player.Exec(action.ActionSkill, keys.Kachina, nil); err != nil {
 		t.Fatal(err)
@@ -354,7 +354,7 @@ func TestConstructIgnoresThreeCap(t *testing.T) {
 }
 
 func TestBurstAndC2(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	var hits []info.AttackInfo
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -380,7 +380,7 @@ func TestBurstAndC2(t *testing.T) {
 		t.Fatal("c0 burst should not leave a construct")
 	}
 
-	c2, _ := makeCore(1)
+	c2, _ := makeCore()
 	ch2 := addKachina(t, c2, 2, 1)
 	if err := c2.Player.Exec(action.ActionBurst, keys.Kachina, nil); err != nil {
 		t.Fatal(err)
@@ -410,7 +410,7 @@ func TestBurstAndC2(t *testing.T) {
 }
 
 func TestC1CrystallizePickup(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 1, 1)
 	ch.Energy = 0
 	c.Player.Shields.Add(crystallize.NewShield(ch.Index(), attributes.Cryo, 1, 90, 0, c.F+600))
@@ -429,7 +429,7 @@ func TestC1CrystallizePickup(t *testing.T) {
 }
 
 func TestC4ActiveDEF(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 4, 1)
 	if err := c.Player.Exec(action.ActionBurst, keys.Kachina, nil); err != nil {
 		t.Fatal(err)
@@ -444,7 +444,7 @@ func TestC4ActiveDEF(t *testing.T) {
 }
 
 func TestC6ShieldBreak(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 6, 1)
 	var hits int
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -472,7 +472,7 @@ func TestC6ShieldBreak(t *testing.T) {
 }
 
 func TestA1OwnGeoBonus(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	prof := testhelper.DefaultProfile(keys.Kachina, testhelper.TestWeaponKey)
 	kidx, err := c.AddChar(prof)
 	if err != nil {
@@ -499,7 +499,7 @@ func TestA1OwnGeoBonus(t *testing.T) {
 }
 
 func TestTalentScaling(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 0, 10)
 	if ch.TalentLvlSkill() != 9 {
 		t.Fatalf("skill index %d", ch.TalentLvlSkill())
@@ -518,7 +518,7 @@ func TestTalentScaling(t *testing.T) {
 }
 
 func TestOffFieldContinues(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	kprof := testhelper.DefaultProfile(keys.Kachina, testhelper.TestWeaponKey)
 	kidx, err := c.AddChar(kprof)
 	if err != nil {

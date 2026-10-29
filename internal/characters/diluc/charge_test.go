@@ -150,7 +150,7 @@ func TestRelentlessStaminaAndDuration(t *testing.T) {
 	}
 }
 
-func spinUntilFinisher(t *testing.T, maxLevel int) (drop float64, end int) {
+func spinUntilFinisher(t *testing.T, maxLevel int) (float64, int) {
 	t.Helper()
 	c := makeCore(t)
 	addDiluc(t, c, maxLevel, 9)
@@ -166,12 +166,13 @@ func spinUntilFinisher(t *testing.T, maxLevel int) (drop float64, end int) {
 	start := c.F
 	doCharge(t, c, nil)
 	untilQueue(t, c)
-	drop = startStam - c.Player.Stam
+	drop := startStam - c.Player.Stam
 	var finisher int
 	limit := tmpl.ClaymoreSpinDuration + 3*60 + 180
 	for c.F < start+limit {
 		untilQueue(t, c)
-		for _, h := range *hits {
+		for i := range *hits {
+			h := &(*hits)[i]
 			if h.info.Abil == "Charge Attack (Finisher)" {
 				finisher = h.frame
 			}

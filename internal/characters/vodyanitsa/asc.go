@@ -127,14 +127,14 @@ func (c *char) concertoFlat(stellar bool) float64 {
 		return 0
 	}
 	perKilo := a4HydroPerKilo
-	cap := a4HydroCap
+	bonusCap := a4HydroCap
 	if stellar {
 		perKilo = a4StellarPerKilo
-		cap = a4StellarCap
+		bonusCap = a4StellarCap
 	}
 	bonus := (hp - a4MinHP) * perKilo * 0.001
-	if bonus > cap {
-		return cap
+	if bonus > bonusCap {
+		return bonusCap
 	}
 	return bonus
 }

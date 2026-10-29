@@ -25,8 +25,8 @@ func (c *char) Burst(_ map[string]int) (action.Info, error) {
 	c.veils = nil
 	c.burstBonus = float64(stacks) * burstVeil[c.TalentLvlBurst()]
 	lvl := c.TalentLvlBurst()
-	c.queueCircle(c.hybrid("Sacred Vow (1)", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, 25, burst1ATK[lvl], burst1EM[lvl]), burstHit1)
-	c.queueCircle(c.hybrid("Sacred Vow (2)", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, 25, burst2ATK[lvl], burst2EM[lvl]), burstHit2)
+	c.queueCircle(c.hybrid("Sacred Vow (1)", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, burst1ATK[lvl], burst1EM[lvl]), burstHit1)
+	c.queueCircle(c.hybrid("Sacred Vow (2)", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, burst2ATK[lvl], burst2EM[lvl]), burstHit2)
 	c.SetCDWithDelay(action.ActionBurst, burstCD, burstHit1)
 	c.QueueCharTask(func() { c.burstBonus = 0 }, burstHit2+1)
 	return action.Info{

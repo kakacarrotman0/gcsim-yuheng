@@ -274,6 +274,6 @@ func (c *char) c6KeepWill() bool {
 	return c.Base.Cons >= 6 && c.masterActive() && c.Core.F >= c.c6ICDUntil
 }
 
-func (c *char) damageRatio(will float64, perPoint float64) float64 {
+func (c *char) damageRatio(will, perPoint float64) float64 {
 	return 1 + will*perPoint
 }

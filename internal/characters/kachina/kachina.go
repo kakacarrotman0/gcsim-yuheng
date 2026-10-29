@@ -138,7 +138,7 @@ func (c *char) canPaySlam() bool {
 	return c.nightsoulState.HasBlessing() && c.nightsoulState.Points() > pointEpsilon
 }
 
-func (c *char) twirlyAttackInfo(abil string, mult float64, poise float64) info.AttackInfo {
+func (c *char) twirlyAttackInfo(abil string, mult, poise float64) info.AttackInfo {
 	ai := info.AttackInfo{
 		ActorIndex:     c.Index(),
 		Abil:           abil,

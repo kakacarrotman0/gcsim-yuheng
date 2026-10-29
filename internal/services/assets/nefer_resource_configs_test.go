@@ -103,22 +103,6 @@ func TestNeferResourceConfigsExecute(t *testing.T) {
 	}
 }
 
-func failedActionMean(res *model.SimulationResult) float64 {
-	var sum float64
-	for _, row := range res.GetStatistics().GetFailedActions() {
-		if row == nil {
-			continue
-		}
-		sum += descMean(row.GetInsufficientEnergy())
-		sum += descMean(row.GetInsufficientStamina())
-		sum += descMean(row.GetSwapCd())
-		sum += descMean(row.GetSkillCd())
-		sum += descMean(row.GetDashCd())
-		sum += descMean(row.GetBurstCd())
-	}
-	return sum
-}
-
 func descMean(stat *model.DescriptiveStats) float64 {
 	if stat == nil || stat.Mean == nil {
 		return 0

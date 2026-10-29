@@ -60,11 +60,12 @@ func (c *char) Skill(p map[string]int) (action.Info, error) {
 }
 
 func (c *char) toggleTwirly(forceMount bool) action.Info {
-	if forceMount {
+	switch {
+	case forceMount:
 		c.mountTwirly()
-	} else if c.mounted {
+	case c.mounted:
 		c.dismountTwirly()
-	} else {
+	default:
 		c.mountTwirly()
 	}
 	return action.Info{

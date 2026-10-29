@@ -30,7 +30,7 @@ func init() {
 	testhelper.RegisterTestWeapon()
 }
 
-func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
+func makeCore() (*core.Core, []*enemy.Enemy) {
 	c, err := core.New(core.Opt{Seed: 1, Debug: false})
 	if err != nil {
 		panic(err)
@@ -38,7 +38,7 @@ func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
 	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
 	c.Combat.SetPlayer(a)
 	var trgs []*enemy.Enemy
-	for range trgCount {
+	for range 1 {
 		e := enemy.New(c, info.EnemyProfile{
 			Level:  100,
 			Resist: make(map[attributes.Element]float64),
@@ -158,7 +158,7 @@ func gauge(c *core.Core, trg *enemy.Enemy, actor int, ele attributes.Element) {
 }
 
 func TestDecodingOverdriveAndRecovery(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	var book logbook
@@ -200,7 +200,7 @@ func TestDecodingOverdriveAndRecovery(t *testing.T) {
 }
 
 func TestC1SlowerGain(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 1, 1)
 	mustInit(t, c)
 	if err := c.Player.Exec(action.ActionCharge, keys.Sandrone, nil); err != nil {
@@ -221,7 +221,7 @@ func TestC1SlowerGain(t *testing.T) {
 }
 
 func TestSkillRepairAndCooldown(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	asSandrone(ch).power = 100
@@ -253,7 +253,7 @@ func TestSkillRepairAndCooldown(t *testing.T) {
 }
 
 func TestEarlySkillCancelLeavesPower(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	asSandrone(ch).power = 100
@@ -292,7 +292,7 @@ func TestEarlySkillCancelLeavesPower(t *testing.T) {
 }
 
 func TestCondensedRadianceTags(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	var book logbook
@@ -314,7 +314,7 @@ func TestCondensedRadianceTags(t *testing.T) {
 }
 
 func TestReactionsWithAndWithoutSandrone(t *testing.T) {
-	plain, ptrg := makeCore(1)
+	plain, ptrg := makeCore()
 	k := addProfile(t, plain, keys.Kaeya, 0, 1)
 	addProfile(t, plain, keys.Sucrose, 0, 1)
 	mustInit(t, plain)
@@ -331,7 +331,7 @@ func TestReactionsWithAndWithoutSandrone(t *testing.T) {
 		t.Fatalf("plain reactions sc %d swirl %d", sc, swirl)
 	}
 
-	live, ltrg := makeCore(1)
+	live, ltrg := makeCore()
 	sk := addProfile(t, live, keys.Sandrone, 0, 1)
 	mustInit(t, live)
 	var stellar, plainSC, plainSwirl int
@@ -354,7 +354,7 @@ func TestReactionsWithAndWithoutSandrone(t *testing.T) {
 }
 
 func TestSharedParticles(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	particles := 0
@@ -387,7 +387,7 @@ func TestSharedParticles(t *testing.T) {
 }
 
 func TestBurstEnergyAndRadiance(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	var book logbook
@@ -406,7 +406,7 @@ func TestBurstEnergyAndRadiance(t *testing.T) {
 		t.Fatalf("burst names %v", book.names)
 	}
 
-	c2, _ := makeCore(1)
+	c2, _ := makeCore()
 	ch2 := addProfile(t, c2, keys.Sandrone, 0, 1)
 	mustInit(t, c2)
 	s := asSandrone(ch2)
@@ -433,7 +433,7 @@ func TestBurstEnergyAndRadiance(t *testing.T) {
 }
 
 func TestA1StacksAndPrism(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	s := asSandrone(ch)
@@ -464,7 +464,7 @@ func TestA1StacksAndPrism(t *testing.T) {
 		t.Fatalf("stacks survived expiry %d", s.tactics())
 	}
 
-	low, _ := makeCore(1)
+	low, _ := makeCore()
 	lowCh := addProfile(t, low, keys.Sandrone, 0, 1)
 	mustInit(t, low)
 	asSandrone(lowCh).power = 40
@@ -480,14 +480,14 @@ func TestA1StacksAndPrism(t *testing.T) {
 }
 
 func TestA4CapDoesNotRecurse(t *testing.T) {
-	low, _ := makeCore(1)
+	low, _ := makeCore()
 	lowCh := addProfileAt(t, low, keys.Sandrone, 0, 1, 20, 20)
 	mustInit(t, low)
 	if math.Abs(lowCh.Stat(attributes.EM)-100) > 1e-9 {
 		t.Fatalf("pre-a4 em %v", lowCh.Stat(attributes.EM))
 	}
 
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	ch.BaseStats[attributes.ATK] += 10000
@@ -506,7 +506,7 @@ func TestA4CapDoesNotRecurse(t *testing.T) {
 }
 
 func TestConstellationLevels(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 6, 1)
 	mustInit(t, c)
 	if ch.TalentLvlAttack() != 3 || ch.TalentLvlBurst() != 3 || ch.TalentLvlSkill() != 0 {
@@ -515,7 +515,7 @@ func TestConstellationLevels(t *testing.T) {
 }
 
 func TestC2CritOnCondensedBeams(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 2, 1)
 	mustInit(t, c)
 	base := ch.Stat(attributes.CD)
@@ -542,7 +542,7 @@ func TestC2CritOnCondensedBeams(t *testing.T) {
 		}
 	}
 
-	plain, _ := makeCore(1)
+	plain, _ := makeCore()
 	plainCh := addProfile(t, plain, keys.Sandrone, 2, 1)
 	mustInit(t, plain)
 	base = plainCh.Stat(attributes.CD)
@@ -560,7 +560,7 @@ func TestC2CritOnCondensedBeams(t *testing.T) {
 }
 
 func TestC4CooldownDoesNotRecurse(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 4, 1)
 	mustInit(t, c)
 	var book logbook
@@ -592,7 +592,7 @@ func TestC4CooldownDoesNotRecurse(t *testing.T) {
 }
 
 func TestC6ClusterAndElevation(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	addProfile(t, c, keys.Sandrone, 6, 1)
 	mustInit(t, c)
 	var book logbook
@@ -609,7 +609,7 @@ func TestC6ClusterAndElevation(t *testing.T) {
 		t.Fatalf("cluster names %v", book.names)
 	}
 
-	rad, _ := makeCore(1)
+	rad, _ := makeCore()
 	radCh := addProfile(t, rad, keys.Sandrone, 6, 1)
 	mustInit(t, rad)
 	radCh.AddStatus(reactable.PolestarFieldKey, 900, true)
@@ -632,7 +632,7 @@ func TestC6ClusterAndElevation(t *testing.T) {
 }
 
 func TestSwapDecayAndSecondRotation(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	addProfile(t, c, keys.Kaeya, 0, 1)
 	mustInit(t, c)
@@ -685,7 +685,7 @@ func TestSwapDecayAndSecondRotation(t *testing.T) {
 }
 
 func TestTeammateCompatibility(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	sand := addProfile(t, c, keys.Sandrone, 0, 10)
 	od := addProfile(t, c, keys.Odette, 0, 10)
 	addProfile(t, c, keys.YaeMiko, 0, 10)
@@ -723,7 +723,7 @@ func TestTeammateCompatibility(t *testing.T) {
 func TestOverdriveExitSchedule(t *testing.T) {
 	exitAt := func(t *testing.T, start float64, wantPower float64, wantIdle bool) {
 		t.Helper()
-		c, _ := makeCore(1)
+		c, _ := makeCore()
 		ch := addProfile(t, c, keys.Sandrone, 0, 1)
 		mustInit(t, c)
 		s := asSandrone(ch)
@@ -763,7 +763,7 @@ func TestOverdriveExitSchedule(t *testing.T) {
 }
 
 func TestTacticsDecayBoundaryAndRefresh(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	s := asSandrone(ch)
@@ -781,7 +781,7 @@ func TestTacticsDecayBoundaryAndRefresh(t *testing.T) {
 		t.Fatalf("decay boundary reduce %v power %v until %d", s.frostReduce, s.power, s.tacticsUntil)
 	}
 
-	c2, _ := makeCore(1)
+	c2, _ := makeCore()
 	ch2 := addProfile(t, c2, keys.Sandrone, 0, 1)
 	mustInit(t, c2)
 	s2 := asSandrone(ch2)
@@ -804,7 +804,7 @@ func TestTacticsDecayBoundaryAndRefresh(t *testing.T) {
 		t.Fatalf("timer expiry tactics %d", s2.tactics())
 	}
 
-	c3, _ := makeCore(1)
+	c3, _ := makeCore()
 	ch3 := addProfile(t, c3, keys.Sandrone, 0, 1)
 	mustInit(t, c3)
 	s3 := asSandrone(ch3)
@@ -820,7 +820,7 @@ func TestTacticsDecayBoundaryAndRefresh(t *testing.T) {
 }
 
 func TestBurstClearsTacticsInsideAndOutsideRadiance(t *testing.T) {
-	outside, _ := makeCore(1)
+	outside, _ := makeCore()
 	ch := addProfile(t, outside, keys.Sandrone, 0, 1)
 	mustInit(t, outside)
 	s := asSandrone(ch)
@@ -842,7 +842,7 @@ func TestBurstClearsTacticsInsideAndOutsideRadiance(t *testing.T) {
 		t.Fatalf("outside mult %v", book.mult[len(book.mult)-1])
 	}
 
-	late, _ := makeCore(1)
+	late, _ := makeCore()
 	lateCh := addProfile(t, late, keys.Sandrone, 0, 1)
 	mustInit(t, late)
 	lateS := asSandrone(lateCh)
@@ -864,7 +864,7 @@ func TestBurstClearsTacticsInsideAndOutsideRadiance(t *testing.T) {
 		t.Fatalf("late mult %v want %v", lateBook.mult[len(lateBook.mult)-1], want)
 	}
 
-	drop, _ := makeCore(1)
+	drop, _ := makeCore()
 	dropCh := addProfile(t, drop, keys.Sandrone, 0, 1)
 	mustInit(t, drop)
 	dropS := asSandrone(dropCh)
@@ -888,7 +888,7 @@ func TestBurstClearsTacticsInsideAndOutsideRadiance(t *testing.T) {
 }
 
 func TestPrismSurvivesSkillCancel(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Sandrone, 0, 1)
 	mustInit(t, c)
 	asSandrone(ch).power = 100
@@ -915,7 +915,7 @@ func TestPrismSurvivesSkillCancel(t *testing.T) {
 		t.Fatalf("prism particles %d", particles)
 	}
 
-	plain, _ := makeCore(1)
+	plain, _ := makeCore()
 	plainCh := addProfile(t, plain, keys.Sandrone, 0, 1)
 	mustInit(t, plain)
 	asSandrone(plainCh).power = 100
@@ -931,7 +931,7 @@ func TestPrismSurvivesSkillCancel(t *testing.T) {
 		t.Fatalf("late polestar changed the snapped shot %v", plainBook.names)
 	}
 
-	full, _ := makeCore(1)
+	full, _ := makeCore()
 	fullCh := addProfile(t, full, keys.Sandrone, 0, 1)
 	mustInit(t, full)
 	asSandrone(fullCh).power = 100
@@ -951,7 +951,7 @@ func TestPrismSurvivesSkillCancel(t *testing.T) {
 }
 
 func TestQiqiStillConstructs(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	addProfile(t, c, keys.Sandrone, 0, 1)
 	addProfile(t, c, keys.Qiqi, 0, 1)
 	addProfile(t, c, keys.Vodyanitsa, 0, 1)

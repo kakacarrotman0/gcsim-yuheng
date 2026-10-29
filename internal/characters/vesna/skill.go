@@ -60,7 +60,7 @@ func (c *char) Skill(p map[string]int) (action.Info, error) {
 	c.enterArmed()
 	// Tag "Vesna Elemental Skill Start" on attenuation group "default":
 	// 2.5s/3-hit, and not Windborne's 2s counter.
-	c.artHit("The Art of Victory", skillDMG[c.TalentLvlSkill()], skillHitmark, skillRadius, attacks.StrikeTypeSlash, attacks.ICDGroupVesnaSkillStart)
+	c.artHit("The Art of Victory", skillDMG[c.TalentLvlSkill()], skillHitmark, attacks.StrikeTypeSlash, attacks.ICDGroupVesnaSkillStart)
 	c.SetCD(action.ActionSkill, skillCD)
 	return c.skillInfo(), nil
 }
@@ -95,9 +95,9 @@ func (c *char) windborne() {
 
 	switch cast {
 	case 1:
-		c.artHit("Windborne Sword Lv1", skillDMG[lvl], lv1Hitmark, skillRadius, attacks.StrikeTypePierce, attacks.ICDGroupVesnaSkill)
+		c.artHit("Windborne Sword Lv1", skillDMG[lvl], lv1Hitmark, attacks.StrikeTypePierce, attacks.ICDGroupVesnaSkill)
 	case 2:
-		c.artHit("Windborne Sword Lv2", wbLv2[lvl], lv2Slash, skillRadius, attacks.StrikeTypeSlash, attacks.ICDGroupVesnaSkill)
+		c.artHit("Windborne Sword Lv2", wbLv2[lvl], lv2Slash, attacks.StrikeTypeSlash, attacks.ICDGroupVesnaSkill)
 		c.queueSpirit("Spirit Blade Lv2", wbLv2Blade[lvl], lv2Blade, false, bladeRadius)
 	default:
 		for i := range 4 {
@@ -107,7 +107,7 @@ func (c *char) windborne() {
 	}
 }
 
-func (c *char) artHit(name string, mult float64, delay int, radius float64, strike attacks.StrikeType, grp attacks.ICDGroup) {
+func (c *char) artHit(name string, mult float64, delay int, strike attacks.StrikeType, grp attacks.ICDGroup) {
 	ai := info.AttackInfo{
 		ActorIndex: c.Index(),
 		Abil:       name,
@@ -119,7 +119,7 @@ func (c *char) artHit(name string, mult float64, delay int, radius float64, stri
 		Durability: 25,
 		Mult:       mult,
 	}
-	ap := combat.NewCircleHitOnTarget(c.Core.Combat.Player(), nil, radius)
+	ap := combat.NewCircleHitOnTarget(c.Core.Combat.Player(), nil, skillRadius)
 	c.Core.Tasks.Add(func() {
 		c.Core.QueueAttack(ai, ap, 0, 0, c.tryParticle)
 	}, delay)

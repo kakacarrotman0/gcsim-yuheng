@@ -42,12 +42,12 @@ func makeCore(t *testing.T) *core.Core {
 	return c
 }
 
-func addRazor(t *testing.T, c *core.Core, maxLevel, talent int) *characterWait {
+func addRazor(t *testing.T, c *core.Core) *characterWait {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Razor, testhelper.TestWeaponKey)
-	prof.Base.Level = maxLevel
-	prof.Base.MaxLevel = maxLevel
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Base.Level = 90
+	prof.Base.MaxLevel = 90
+	prof.Talents = info.TalentProfile{Attack: 9, Skill: 9, Burst: 9}
 	if _, err := c.AddChar(prof); err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func (w *characterWait) untilQueue(t *testing.T) {
 
 func TestSteelFangCharge(t *testing.T) {
 	c := makeCore(t)
-	w := addRazor(t, c, 90, 9)
+	w := addRazor(t, c)
 	hits := w.watch()
 	w.charge(t, nil)
 	w.untilQueue(t)
@@ -157,7 +157,7 @@ func TestSteelFangCharge(t *testing.T) {
 
 func TestSteelFangChargeEndsAtFiveSeconds(t *testing.T) {
 	c := makeCore(t)
-	w := addRazor(t, c, 90, 9)
+	w := addRazor(t, c)
 	hits := w.watch()
 	start := c.F
 	w.charge(t, nil)
@@ -181,7 +181,7 @@ func TestSteelFangChargeEndsAtFiveSeconds(t *testing.T) {
 
 func TestSteelFangChargeEndsWhenStaminaRunsOut(t *testing.T) {
 	c := makeCore(t)
-	w := addRazor(t, c, 90, 9)
+	w := addRazor(t, c)
 	hits := w.watch()
 	start := c.F
 	w.charge(t, map[string]int{"no_limit": 1})
@@ -208,7 +208,7 @@ func TestSteelFangChargeEndsWhenStaminaRunsOut(t *testing.T) {
 
 func TestSteelFangChargeCancelDropsTheFinisher(t *testing.T) {
 	c := makeCore(t)
-	w := addRazor(t, c, 90, 9)
+	w := addRazor(t, c)
 	hits := w.watch()
 	start := c.F
 	w.charge(t, nil)
@@ -242,7 +242,7 @@ func TestSteelFangChargeCancelDropsTheFinisher(t *testing.T) {
 
 func TestLightningFangDisablesCharge(t *testing.T) {
 	c := makeCore(t)
-	w := addRazor(t, c, 90, 9)
+	w := addRazor(t, c)
 	hits := w.watch()
 	c.Player.ByIndex(0).Energy = c.Player.ByIndex(0).EnergyMax
 	if err := c.Player.Exec(action.ActionBurst, keys.Razor, nil); err != nil {

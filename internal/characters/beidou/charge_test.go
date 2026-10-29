@@ -17,12 +17,12 @@ import (
 	"github.com/genshinsim/gcsim/pkg/testhelper"
 )
 
-func addBeidouCharge(t *testing.T, c *core.Core, maxLevel, talent int) {
+func addBeidouCharge(t *testing.T, c *core.Core) {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Beidou, testhelper.TestWeaponKey)
-	prof.Base.Level = maxLevel
-	prof.Base.MaxLevel = maxLevel
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Base.Level = 90
+	prof.Base.MaxLevel = 90
+	prof.Talents = info.TalentProfile{Attack: 9, Skill: 9, Burst: 9}
 	prof.Stats[attributes.CR] = 1
 	if _, err := c.AddChar(prof); err != nil {
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func spinOpen(atkspd float64) int {
 
 func TestOceanborneCharge(t *testing.T) {
 	c := makeCore(t)
-	addBeidouCharge(t, c, 90, 9)
+	addBeidouCharge(t, c)
 	hits := watch(c)
 	doCharge(t, c, nil)
 	untilQueue(t, c)
@@ -96,7 +96,8 @@ func TestOceanborneCharge(t *testing.T) {
 		}
 	}
 	var cyclic, finisher int
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		switch h.info.Abil {
 		case "Charge Attack":
 			cyclic++
@@ -137,7 +138,7 @@ func TestTidecallerA4SpeedsChargeWithoutShorteningWindup(t *testing.T) {
 func chargeDelay(t *testing.T, counter int) int {
 	t.Helper()
 	c := makeCore(t)
-	addBeidouCharge(t, c, 90, 9)
+	addBeidouCharge(t, c)
 	hits := watch(c)
 	if err := c.Player.Exec(action.ActionSkill, keys.Beidou, map[string]int{"counter": counter}); err != nil {
 		t.Fatal(err)
@@ -146,7 +147,8 @@ func chargeDelay(t *testing.T, counter int) int {
 	start := c.F
 	doCharge(t, c, nil)
 	untilQueue(t, c)
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		if h.info.Abil == "Charge Attack" {
 			return h.frame - start
 		}
@@ -169,7 +171,7 @@ func TestTidecallerA4BuffsChargeDamage(t *testing.T) {
 func chargeDamage(t *testing.T, counter int) float64 {
 	t.Helper()
 	c := makeCore(t)
-	addBeidouCharge(t, c, 90, 9)
+	addBeidouCharge(t, c)
 	hits := watch(c)
 	if err := c.Player.Exec(action.ActionSkill, keys.Beidou, map[string]int{"counter": counter}); err != nil {
 		t.Fatal(err)
@@ -177,7 +179,8 @@ func chargeDamage(t *testing.T, counter int) float64 {
 	untilQueue(t, c)
 	doCharge(t, c, nil)
 	untilQueue(t, c)
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		if h.info.Abil == "Charge Attack" {
 			return h.dmg
 		}
@@ -188,7 +191,7 @@ func chargeDamage(t *testing.T, counter int) float64 {
 
 func TestStormbreakerFollowsCharge(t *testing.T) {
 	c := makeCore(t)
-	addBeidouCharge(t, c, 90, 9)
+	addBeidouCharge(t, c)
 	hits := watch(c)
 	c.Player.ByIndex(0).Energy = c.Player.ByIndex(0).EnergyMax
 	if err := c.Player.Exec(action.ActionBurst, keys.Beidou, nil); err != nil {
@@ -199,7 +202,8 @@ func TestStormbreakerFollowsCharge(t *testing.T) {
 	untilQueue(t, c)
 	advance(c, 3)
 	saw := false
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		if h.info.Abil == "Stormbreaker (Bounce)" {
 			saw = true
 			if h.info.Element != attributes.Electro || h.info.AttackTag != attacks.AttackTagElementalBurst {
@@ -214,14 +218,15 @@ func TestStormbreakerFollowsCharge(t *testing.T) {
 
 func TestOceanborneChargeEndsAtFiveSeconds(t *testing.T) {
 	c := makeCore(t)
-	addBeidouCharge(t, c, 90, 9)
+	addBeidouCharge(t, c)
 	hits := watch(c)
 	start := c.F
 	doCharge(t, c, nil)
 	var finisher int
 	for c.F < start+tmpl.ClaymoreSpinDuration+180 {
 		untilQueue(t, c)
-		for _, h := range *hits {
+		for i := range *hits {
+			h := &(*hits)[i]
 			if h.info.Abil == "Charge Attack (Finisher)" {
 				finisher = h.frame
 			}

@@ -51,13 +51,14 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 		Durability: 25,
 		Mult:       attack[hit][c.TalentLvlAttack()],
 	}
-	if hit == 0 {
+	switch hit {
+	case 0:
 		ai.PoiseDMG = 8.1
-	} else if hit == 1 {
+	case 1:
 		ai.PoiseDMG = 7.5
-	} else if hit == 2 {
+	case 2:
 		ai.PoiseDMG = 9.2
-	} else {
+	default:
 		ai.PoiseDMG = 12.3
 	}
 

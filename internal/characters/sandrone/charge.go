@@ -80,7 +80,7 @@ func (c *char) sweeping(gen int) {
 	// Bullet 41133002 is triggered once on machine-gun attach and killed on remove.
 	// Its internal hit loop is not in the avatar ability file, and the bullet asset
 	// was not in the public dumps checked for this pass. One hit stands in for it.
-	ai := c.cryoInfo("Sweeping Fire", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupSandroneMachineGun, sweeping[c.TalentLvlAttack()], 25)
+	ai := c.cryoInfo("Sweeping Fire", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupSandroneMachineGun, sweeping[c.TalentLvlAttack()])
 	c.queue(ai, 3.5, 0, false)
 }
 
@@ -128,7 +128,7 @@ func (c *char) fireCondensed(count int) {
 		ai := c.stellarInfo("Condensed Beam"+stellarSwirlText, attacks.AttackTagDirectStellarSwirl, condensedSwirl[lvl])
 		c.queue(ai, 4, 0, true)
 	default:
-		ai := c.cryoInfo("Condensed Beam", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupDefault, condensedOrdinary[lvl], 25)
+		ai := c.cryoInfo("Condensed Beam", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupDefault, condensedOrdinary[lvl])
 		c.queue(ai, 4, 0, true)
 	}
 	if c.Base.Cons >= 6 && count >= 3 {
@@ -149,7 +149,7 @@ func (c *char) cluster(rad radianceState) {
 		default:
 			// Ordinary cluster uses MarionetteExtrdaAttackLaserNormalT6, durability 25.
 			// That tag is not in MarionetteNew_Elemball_Driver, so it does not drop a particle.
-			ai := c.cryoInfo("Condensed Cluster Beam", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupDefault, c6Ordinary, 25)
+			ai := c.cryoInfo("Condensed Cluster Beam", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupDefault, c6Ordinary)
 			c.queue(ai, 4, delay, false)
 		}
 	}
@@ -195,7 +195,7 @@ func (c *char) overdriveLoop(gen int) {
 }
 
 func (c *char) overdriveHit() {
-	ai := c.cryoInfo("Overdrive", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupSandroneMachineGun, overdrive[c.TalentLvlAttack()], 25)
+	ai := c.cryoInfo("Overdrive", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, attacks.ICDGroupSandroneMachineGun, overdrive[c.TalentLvlAttack()])
 	c.queue(ai, 3.5, 0, false)
 }
 
@@ -222,7 +222,7 @@ func (c *char) decayTick() {
 	c.addPower(-loss)
 }
 
-func (c *char) cryoInfo(abil string, tag attacks.AttackTag, icd attacks.ICDTag, group attacks.ICDGroup, mult float64, dur float64) info.AttackInfo {
+func (c *char) cryoInfo(abil string, tag attacks.AttackTag, icd attacks.ICDTag, group attacks.ICDGroup, mult float64) info.AttackInfo {
 	return info.AttackInfo{
 		ActorIndex:     c.Index(),
 		Abil:           abil,
@@ -231,7 +231,7 @@ func (c *char) cryoInfo(abil string, tag attacks.AttackTag, icd attacks.ICDTag, 
 		ICDGroup:       group,
 		StrikeType:     attacks.StrikeTypeBlunt,
 		Element:        attributes.Cryo,
-		Durability:     info.Durability(dur),
+		Durability:     25,
 		Mult:           mult,
 		IgnoreInfusion: true,
 	}

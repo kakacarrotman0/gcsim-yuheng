@@ -122,7 +122,6 @@ type char struct {
 	tacticsUntil int
 	particleAt   int
 	chargeUntil  int
-	c4Src        string
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {

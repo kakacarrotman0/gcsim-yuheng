@@ -23,7 +23,7 @@ func init() {
 	testhelper.RegisterTestWeapon()
 }
 
-func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
+func makeCore() (*core.Core, []*enemy.Enemy) {
 	c, err := core.New(core.Opt{Seed: 1, Debug: false})
 	if err != nil {
 		panic(err)
@@ -31,7 +31,7 @@ func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
 	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
 	c.Combat.SetPlayer(a)
 	var trgs []*enemy.Enemy
-	for range trgCount {
+	for range 1 {
 		e := enemy.New(c, info.EnemyProfile{
 			Level:  100,
 			Resist: make(map[attributes.Element]float64),
@@ -54,11 +54,11 @@ func advance(c *core.Core, n int) {
 	}
 }
 
-func addAlyosha(t *testing.T, c *core.Core, cons, talent int) *character.CharWrapper {
+func addAlyosha(t *testing.T, c *core.Core, cons int) *character.CharWrapper {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Alyosha, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Talents = info.TalentProfile{Attack: 1, Skill: 1, Burst: 1}
 	idx, err := c.AddChar(prof)
 	if err != nil {
 		t.Fatalf("add char: %v", err)
@@ -79,8 +79,8 @@ func hitsOf(c *core.Core) *[]info.AttackInfo {
 }
 
 func TestBaseStats(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
 	if ch.Base.Element != attributes.Electro {
 		t.Fatalf("element %v", ch.Base.Element)
 	}
@@ -96,8 +96,8 @@ func TestBaseStats(t *testing.T) {
 }
 
 func TestSkillMarkAndParticles(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, trg := makeCore()
+	ch := addAlyosha(t, c, 0)
 	hits := hitsOf(c)
 	var particles []character.Particle
 	c.Events.Subscribe(event.OnParticleReceived, func(args ...any) {
@@ -146,7 +146,7 @@ func TestSkillMarkAndParticles(t *testing.T) {
 }
 
 func TestPrecisionIsActiveOnly(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	kprof := testhelper.DefaultProfile(keys.Alyosha, testhelper.TestWeaponKey)
 	aidx, err := c.AddChar(kprof)
 	if err != nil {
@@ -185,8 +185,8 @@ func TestPrecisionIsActiveOnly(t *testing.T) {
 }
 
 func TestBurstFieldDogAndHeal(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
 	ch.SetHPByRatio(0.5)
 	var heals []float64
 	c.Events.Subscribe(event.OnHeal, func(args ...any) {
@@ -225,8 +225,8 @@ func TestBurstFieldDogAndHeal(t *testing.T) {
 }
 
 func TestMoonsignStaysZero(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
 	if ch.Moonsign != 0 {
 		t.Fatalf("moonsign %d", ch.Moonsign)
 	}
@@ -237,8 +237,8 @@ func TestMoonsignStaysZero(t *testing.T) {
 }
 
 func TestC0MarkedTargetActivates(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
 	if err := c.Player.Exec(action.ActionSkill, keys.Alyosha, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -255,8 +255,8 @@ func TestC0MarkedTargetActivates(t *testing.T) {
 }
 
 func TestC2UnmarkedTargetApplies(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 2, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 2)
 	if err := c.Player.Exec(action.ActionBurst, keys.Alyosha, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -272,8 +272,8 @@ func TestC2UnmarkedTargetApplies(t *testing.T) {
 }
 
 func TestC2PremarkedTargetActivatesThenApplies(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 2, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 2)
 	if err := c.Player.Exec(action.ActionSkill, keys.Alyosha, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -290,8 +290,8 @@ func TestC2PremarkedTargetActivatesThenApplies(t *testing.T) {
 }
 
 func TestC1ElectroReactionOnly(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 1, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 1)
 	ch.Energy = 0
 	c.Events.Emit(event.OnQuicken, nil, nil)
 	c.Events.Emit(event.OnAggravate, nil, nil)
@@ -309,8 +309,8 @@ func TestC1ElectroReactionOnly(t *testing.T) {
 }
 
 func TestC6SecondStack(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 6, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 6)
 	// apply, activate, apply, activate: the second activation is the C6 stack
 	for range 4 {
 		ch.ResetActionCooldown(action.ActionSkill)
@@ -334,8 +334,8 @@ func TestC6SecondStack(t *testing.T) {
 }
 
 func TestStellarBonusScalesWithStacks(t *testing.T) {
-	c0, _ := makeCore(1)
-	ch0 := addAlyosha(t, c0, 0, 1)
+	c0, _ := makeCore()
+	ch0 := addAlyosha(t, c0, 0)
 	ch0.AddStatus(reactable.PolestarFieldKey, 30*60, true)
 	castSkills(t, c0, ch0, 2)
 	ac0 := ch0.Character.(*char)
@@ -343,8 +343,8 @@ func TestStellarBonusScalesWithStacks(t *testing.T) {
 		t.Fatalf("c0 stellar %v", ac0.stellarBonus)
 	}
 
-	c6, _ := makeCore(1)
-	ch6 := addAlyosha(t, c6, 6, 1)
+	c6, _ := makeCore()
+	ch6 := addAlyosha(t, c6, 6)
 	ch6.AddStatus(reactable.PolestarFieldKey, 30*60, true)
 	castSkills(t, c6, ch6, 2)
 	ac6 := ch6.Character.(*char)
@@ -360,8 +360,8 @@ func TestStellarBonusScalesWithStacks(t *testing.T) {
 		t.Fatal("stellar bonus leaked onto a non-reaction tag")
 	}
 
-	bare, _ := makeCore(1)
-	chBare := addAlyosha(t, bare, 6, 1)
+	bare, _ := makeCore()
+	chBare := addAlyosha(t, bare, 6)
 	castSkills(t, bare, chBare, 4)
 	acBare := chBare.Character.(*char)
 	if acBare.stellarBonusFor(chBare.Index(), attacks.AttackTagDirectStellarConduct) != 0 {
@@ -381,8 +381,8 @@ func castSkills(t *testing.T, c *core.Core, ch *character.CharWrapper, n int) {
 }
 
 func TestStellarBonusNotGrantedWithoutField(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
 	ac := ch.Character.(*char)
 	for range 2 {
 		ch.ResetActionCooldown(action.ActionSkill)
@@ -415,8 +415,8 @@ func TestStellarBonusNotGrantedWithoutField(t *testing.T) {
 }
 
 func TestHoldSkillReceivesA4(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
 	var snaps []info.AttackEvent
 	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
 		snaps = append(snaps, *args[1].(*info.AttackEvent))
@@ -441,8 +441,8 @@ func TestHoldSkillReceivesA4(t *testing.T) {
 }
 
 func TestA4Caps(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addAlyosha(t, c, 0, 1)
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
 	ac := ch.Character.(*char)
 	bonus := ac.Stat(attributes.ER) * a4PerER
 	if bonus > a4Cap {

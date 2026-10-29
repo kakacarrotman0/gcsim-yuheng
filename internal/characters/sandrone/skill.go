@@ -94,7 +94,7 @@ func (c *char) prism(second, boosted bool, rad radianceState) {
 	if second {
 		name = "Prism Shot 2"
 	}
-	ai := c.cryoInfo(name, attacks.AttackTagElementalArt, attacks.ICDTagElementalArt, attacks.ICDGroupDefault, mult, 25)
+	ai := c.cryoInfo(name, attacks.AttackTagElementalArt, attacks.ICDTagElementalArt, attacks.ICDGroupDefault, mult)
 	ai.StrikeType = attacks.StrikeTypeDefault
 	c.queue(ai, 3, 0, true)
 }
