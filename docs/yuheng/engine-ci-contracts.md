@@ -24,6 +24,22 @@ Go is 1.27.0, the same version as `.github/actions/go-setup-and-test`. `task` is
 - UI tests, frame evidence, and simulator configs under `docs/yuheng/configs/`.
 - Branch protection. This workflow starts the job. Making `test-engine-contracts` a merge blocker on a protected branch is a separate repository setting and is not changed here.
 
+## Unvalidated frame debt
+
+`internal/tests/frames_func` runs inside the existing `test-go` command (`./internal/...`). `TestFramesFunc` still checks every character and every transition. Four existing rows are excused only when the character, executed action, transition, animation length, queue-open frame, and cancel frame all match `knownTimingDebt`.
+
+These rows are unvalidated timing debt. They are not measured gameplay and they are not a claim that the transition is correct.
+
+| Character | Action | Transition | Animation | Queue opens | Recorded frame | Why it is debt |
+| --- | --- | --- | --- | --- | --- | --- |
+| Kachina | N4 | Charge | 51 | 16 | 500 | Sheet sentinel. The charge cancel is unavailable until N4's animation expires. |
+| Kachina | Charge | Charge | 55 | 20 | 500 | Sheet sentinel. A second charge is unavailable until the charge animation expires. |
+| Linnea | Skill | Attack, Aim, Skill, Burst, Walk | 14 | 13 | 33, 44, 20, 15, 32 | Draft slice marked unknown. Those cancels are longer than the placeholder animation, so they are not taken. |
+| Linnea | N3 | Aim, Skill, Burst, Dash, Jump, Swap | 43 | 47 | 47 | `attack.go` still marks the frames unimplemented. The hitmark is past the N3 → N1 frame. |
+| Linnea | N3 | Every other transition | 43 | 47 | 43 | Same unimplemented pair. The queue opens at the hitmark, after these frames. |
+
+A different number, character, action, or transition fails the test. Kachina's other charge cancels, including N1 → Charge at frame 20, stay under the strict check. Linnea's burst cancel is not in this table. `TestChargeTransitionsStayUnavailableUntilTheActionExpires` and `TestBurstSkillCancelIsReadyWhenTheQueueOpens` still run.
+
 ## How a later engine batch should report tests
 
 Paste the commands and the commit they ran against. Do not substitute a summary for the result line.
