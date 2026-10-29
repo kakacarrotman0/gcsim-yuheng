@@ -9,6 +9,8 @@ talents:
       - - attack(3-Hit DMG)
         - attack(3-Hit DMG)
       - attack(4-Hit DMG)
+  - charge: attack(Charged Attack Spinning DMG)
+  - chargeFinal: attack(Charged Attack Final DMG)
 
   - skillPress: skill(Fuufuu Windwheel DMG)
   - skillAbsorb: skill(Fuufuu Windwheel Elemental DMG)
@@ -68,21 +70,23 @@ abilities:
         hitlag: {time: 0.08, scale: 0.01, defense_halt: true}
 
   - name: charge
+    note: Hitmarks are not published. Playback uses the neutral claymore spin schedule. final=1 releases the finisher. no_limit=1 ignores the 5s cap. Fuuin Dash is the skill. The attacks-table "x 9" is not a fixed hit count.
+    params:
+      final: 0 keeps spinning, 1 releases the finisher. Default 0.
+      no_limit: 1 ignores the 5s cap. Default 0.
     hitbox:
       - name: CA-Spinning
-        note: not implemented yet
         shape: Circle
         center: Player
         offset: [0, 0.3]
         radius: 2.8
-        hitlag: {time: 0.03, scale: 0.01, defense_halt: true, deployable: true}
+        hitlag: {time: 0.03, scale: 0.01, defense_halt: true}
 
       - name: CA-Final
-        note: not implemented yet
         shape: Circle
         center: Player
         radius: 3.3
-        hitlag: {time: 0.15, scale: 0.01, defense_halt: true, deployable: true}
+        hitlag: {time: 0.15, scale: 0.01, defense_halt: true}
 
   - name: skill
     params:

@@ -141,6 +141,13 @@ func (c *Character) spinStamina(src int, st *SpinChargeState) {
 }
 
 func (c *Character) ClaymoreSpinAttack(final bool, cyclic, finisher float64, cb info.AttackCBFunc) {
+	c.ClaymoreSpinAttackRadius(final, cyclic, finisher, cb, 3, 3.5)
+}
+
+// ClaymoreSpinAttackRadius is the same hit as ClaymoreSpinAttack with the
+// character's configured spin and finisher radii. ClaymoreSpinAttack keeps
+// the shared 3 / 3.5 placeholder.
+func (c *Character) ClaymoreSpinAttackRadius(final bool, cyclic, finisher float64, cb info.AttackCBFunc, cyclicRadius, finalRadius float64) {
 	ai := info.AttackInfo{
 		ActorIndex:         c.Index(),
 		Abil:               "Charge Attack",
@@ -157,14 +164,14 @@ func (c *Character) ClaymoreSpinAttack(final bool, cyclic, finisher float64, cb 
 		CanBeDefenseHalted: true,
 	}
 	offset := 0.3
-	radius := 3.0
+	radius := cyclicRadius
 	if final {
 		ai.Abil = "Charge Attack (Finisher)"
 		ai.PoiseDMG = 120
 		ai.Mult = finisher
 		ai.HitlagHaltFrames = 0.15 * 60
 		offset = 0
-		radius = 3.5
+		radius = finalRadius
 	}
 	c.Core.QueueAttack(
 		ai,

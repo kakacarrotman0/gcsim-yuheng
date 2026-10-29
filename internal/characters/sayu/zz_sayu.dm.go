@@ -15,7 +15,8 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Sayu, NewChar)
 	paramsFor := map[action.Action][]string{
-		action.ActionSkill: {"hold", "short_hold"},
+		action.ActionSkill:  {"hold", "short_hold"},
+		action.ActionCharge: {"final", "no_limit"},
 	}
 	validation.RegisterCharParamValidationFunc(keys.Sayu, func(a action.Action, keys []string) error {
 		valid, ok := paramsFor[a]
@@ -120,6 +121,42 @@ var (
 			2.650087,
 			2.851359,
 		}},
+	}
+	// attack: ShuumatsubanNinjaBlade - Charged Attack Spinning DMG: {5}
+	charge = []float64{
+		0.625455,
+		0.676364,
+		0.727273,
+		0.8,
+		0.850909,
+		0.909091,
+		0.989091,
+		1.069091,
+		1.149091,
+		1.236364,
+		1.336364,
+		1.453964,
+		1.571564,
+		1.689164,
+		1.817455,
+	}
+	// attack: ShuumatsubanNinjaBlade - Charged Attack Final DMG: {6}
+	chargeFinal = []float64{
+		1.1309,
+		1.22295,
+		1.315,
+		1.4465,
+		1.53855,
+		1.64375,
+		1.7884,
+		1.93305,
+		2.0777,
+		2.2355,
+		2.416313,
+		2.628948,
+		2.841584,
+		3.054219,
+		3.286185,
 	}
 	// skill: YoohooArtFuuinDash - Fuufuu Windwheel DMG: {0}
 	skillPress = []float64{

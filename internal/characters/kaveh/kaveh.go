@@ -12,6 +12,7 @@ import (
 type char struct {
 	*tmpl.Character
 	a4Stacks int
+	caState  tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {

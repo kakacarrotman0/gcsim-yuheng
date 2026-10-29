@@ -211,13 +211,43 @@ func TestChonghuaInfusesChargeAndMelts(t *testing.T) {
 func TestSteadyBreathingSpeedsChargeInsideTheField(t *testing.T) {
 	plain := fieldChargeDelay(t, 20)
 	buffed := fieldChargeDelay(t, 40)
-	if plain != tmpl.ClaymoreSpinWindup+tmpl.ClaymoreSpinHit {
-		t.Fatalf("a0 delay %d", plain)
+	want := tmpl.ClaymoreSpinWindup + tmpl.ClaymoreSpinHit
+	if plain != want || buffed != want {
+		t.Fatalf("a0 delay %d a1 delay %d", plain, buffed)
 	}
-	want := frames.AtkSpdAdjust(tmpl.ClaymoreSpinWindup, 0.08) + frames.AtkSpdAdjust(tmpl.ClaymoreSpinHit, 0.08)
-	if buffed != want {
-		t.Fatalf("a1 delay %d, attack-speed clock %d", buffed, want)
+	plainNA := normalDashLock(t, 20)
+	buffedNA := normalDashLock(t, 40)
+	if plainNA != attackHitmarks[0] {
+		t.Fatalf("a0 normal dash lock %d", plainNA)
 	}
+	wantNA := frames.AtkSpdAdjust(attackHitmarks[0], 0.08)
+	if buffedNA != wantNA {
+		t.Fatalf("a1 normal dash lock %d, want %d", buffedNA, wantNA)
+	}
+}
+
+func normalDashLock(t *testing.T, maxLevel int) int {
+	t.Helper()
+	c, _ := makeCore(t)
+	addChongyun(t, c, maxLevel, 9, 0)
+	if err := c.Player.Exec(action.ActionSkill, keys.Chongyun, nil); err != nil {
+		t.Fatal(err)
+	}
+	for c.F <= skillHitmark {
+		advance(c, 1)
+	}
+	if err := c.Player.Exec(action.ActionAttack, keys.Chongyun, nil); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for c.Player.IsAnimationLocked(action.ActionDash) {
+		advance(c, 1)
+		n++
+		if n > 80 {
+			t.Fatal("normal never opened a dash cancel")
+		}
+	}
+	return n
 }
 
 func fieldChargeDelay(t *testing.T, maxLevel int) int {
@@ -237,6 +267,13 @@ func fieldChargeDelay(t *testing.T, maxLevel int) int {
 	}
 	for c.F <= skillHitmark {
 		advance(c, 1)
+	}
+	spd := c.Player.ByIndex(0).Stat(attributes.AtkSpd)
+	if maxLevel == 20 && spd != 0 {
+		t.Fatalf("a0 attack speed %v", spd)
+	}
+	if maxLevel == 40 && spd != 0.08 {
+		t.Fatalf("a1 attack speed %v", spd)
 	}
 	start := c.F
 	doCharge(t, c, nil)

@@ -7,8 +7,8 @@ import (
 )
 
 // Chonghua's field infuses claymore Charged Attacks through the existing weapon infusion.
-// C1 stays on the fourth Normal Attack. A1's 8% attack speed is the existing AtkSpd stat;
-// the talent text names Normal Attacks, and this clock inherits that stat.
+// C1 stays on the fourth Normal Attack. A1's 8% is a Normal ATK SPD stat on
+// "chongyun-field". Normals keep that stat. This clock subtracts it.
 func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 	return c.SpinChargeAttack(&c.caState, tmpl.SpinChargeSpec{
 		Windup:     tmpl.ClaymoreSpinWindup,
@@ -16,10 +16,20 @@ func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 		FinalHit:   tmpl.ClaymoreSpinFinalHit,
 		Transition: tmpl.ClaymoreSpinTransition,
 		Duration:   tmpl.ClaymoreSpinDuration,
-		Adjust:     frames.AtkSpdAdjust,
+		Adjust:     c.chargeAdjust,
 		Hit: func(final bool) {
 			lvl := c.TalentLvlAttack()
 			c.ClaymoreSpinAttack(final, charge[lvl], chargeFinal[lvl], nil)
 		},
 	}, p)
+}
+
+func (c *char) chargeAdjust(f int, spd float64) int {
+	if c.StatModIsActive("chongyun-field") {
+		spd -= 0.08
+		if spd < 0 {
+			spd = 0
+		}
+	}
+	return frames.AtkSpdAdjust(f, spd)
 }
