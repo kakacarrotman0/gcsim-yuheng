@@ -26,6 +26,7 @@ type char struct {
 	c1FlatDmgRatioE    float64
 	c1FlatDmgRatioQ    float64
 	c6Count            int
+	caState            tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {

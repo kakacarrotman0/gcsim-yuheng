@@ -8,6 +8,8 @@ talents:
       - attack(2-Hit DMG)
       - attack(3-Hit DMG)
       - attack(4-Hit DMG)
+  - charge: attack(Charged Attack Cyclic DMG)
+  - chargeFinal: attack(Charged Attack Final DMG)
   - collision: attack(Plunge DMG)
   - lowPlunge: attack(Low/High Plunge DMG)
   - highPlunge: attack(Low/High Plunge DMG|1)
@@ -68,21 +70,23 @@ abilities:
         hitlag: {time: 0.12, scale: 0.01, defense_halt: true}
 
   - name: charge
+    note: Hitmarks are not published. Playback uses the neutral claymore spin schedule. final=1 releases the finisher. no_limit=1 ignores the 5s cap.
+    params:
+      final: 0 keeps spinning, 1 releases the finisher. Default 0.
+      no_limit: 1 ignores the 5s cap. Default 0.
     hitbox:
       - name: CA-Spinning
-        note: not implemented yet
         shape: Circle
         center: Player
         offset: [0, 0.3]
         radius: 3
-        hitlag: {time: 0.03, scale: 0.01, defense_halt: true, deployable: true}
+        hitlag: {time: 0.03, scale: 0.01, defense_halt: true}
 
       - name: CA-Final
-        note: not implemented yet
         shape: Circle
         center: Player
         radius: 3.5
-        hitlag: {time: 0.15, scale: 0.01, defense_halt: true, deployable: true}
+        hitlag: {time: 0.15, scale: 0.01, defense_halt: true}
 
   - name: plunge
     hitbox:

@@ -14,6 +14,7 @@ type char struct {
 	shieldLevel3Requirement int
 	c2Buff                  []float64
 	shieldTickSrc           int
+	caState                 tmpl.SpinChargeState
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {
@@ -43,6 +44,7 @@ func (c *char) Init() error {
 	if c.Base.Cons >= 2 {
 		c.c2()
 	}
+	c.c6()
 
 	return nil
 }
