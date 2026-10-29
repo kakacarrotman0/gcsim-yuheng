@@ -41,13 +41,13 @@ func makeCore(t *testing.T) *core.Core {
 	return c
 }
 
-func addKaveh(t *testing.T, c *core.Core, maxLevel, talent, cons int) {
+func addKaveh(t *testing.T, c *core.Core, cons int) {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Kaveh, testhelper.TestWeaponKey)
-	prof.Base.Level = maxLevel
-	prof.Base.MaxLevel = maxLevel
+	prof.Base.Level = 90
+	prof.Base.MaxLevel = 90
 	prof.Base.Cons = cons
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Talents = info.TalentProfile{Attack: 9, Skill: 9, Burst: 9}
 	if _, err := c.AddChar(prof); err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func openDome(t *testing.T, c *core.Core) {
 
 func TestSchematicCharge(t *testing.T) {
 	c := makeCore(t)
-	addKaveh(t, c, 90, 9, 0)
+	addKaveh(t, c, 0)
 	hits := watch(c)
 	doCharge(t, c, nil)
 	untilQueue(t, c)
@@ -169,7 +169,7 @@ func TestSchematicCharge(t *testing.T) {
 
 func TestSchematicChargeEndsAtFiveSeconds(t *testing.T) {
 	c := makeCore(t)
-	addKaveh(t, c, 90, 9, 0)
+	addKaveh(t, c, 0)
 	hits := watch(c)
 	start := c.F
 	doCharge(t, c, nil)
@@ -193,7 +193,7 @@ func TestSchematicChargeEndsAtFiveSeconds(t *testing.T) {
 
 func TestPaintedDomeCharge(t *testing.T) {
 	c := makeCore(t)
-	addKaveh(t, c, 90, 9, 6)
+	addKaveh(t, c, 6)
 	hits := watch(c)
 	openDome(t, c)
 	ch := c.Player.ByIndex(0)
@@ -244,7 +244,7 @@ func TestPaintedDomeCharge(t *testing.T) {
 
 func TestC2SpeedsNormalsOnly(t *testing.T) {
 	c := makeCore(t)
-	addKaveh(t, c, 90, 9, 2)
+	addKaveh(t, c, 2)
 	openDome(t, c)
 	if got := c.Player.ByIndex(0).Stat(attributes.AtkSpd); got != 0.15 {
 		t.Fatalf("c2 attack speed %v", got)

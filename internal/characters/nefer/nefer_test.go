@@ -57,11 +57,11 @@ func advance(c *core.Core, n int) {
 	}
 }
 
-func addChar(t *testing.T, c *core.Core, k keys.Char, cons, talent int) *character.CharWrapper {
+func addChar(t *testing.T, c *core.Core, k keys.Char, cons int) *character.CharWrapper {
 	t.Helper()
 	prof := testhelper.DefaultProfile(k, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Talents = info.TalentProfile{Attack: 1, Skill: 1, Burst: 1}
 	idx, err := c.AddChar(prof)
 	if err != nil {
 		t.Fatalf("add %v: %v", k, err)
@@ -100,7 +100,7 @@ func spawnCore(c *core.Core) {
 
 func TestIdentity(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addChar(t, c, keys.Nefer, 0, 1)
+	ch := addChar(t, c, keys.Nefer, 0)
 	start(t, c, ch.Index())
 	if ch.Base.Element != attributes.Dendro {
 		t.Fatalf("element %v", ch.Base.Element)
@@ -121,7 +121,7 @@ func TestIdentity(t *testing.T) {
 
 func TestSkillOpensShadowDance(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addChar(t, c, keys.Nefer, 0, 1)
+	ch := addChar(t, c, keys.Nefer, 0)
 	start(t, c, ch.Index())
 	hits := collect(c)
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
@@ -148,7 +148,7 @@ func TestSkillOpensShadowDance(t *testing.T) {
 
 func TestPhantasmConsumesDew(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addChar(t, c, keys.Nefer, 0, 1)
+	ch := addChar(t, c, keys.Nefer, 0)
 	start(t, c, ch.Index())
 	c.Player.SetVerdantDew(1)
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
@@ -192,7 +192,7 @@ func TestPhantasmConsumesDew(t *testing.T) {
 
 func TestThreePhantasmsEndDance(t *testing.T) {
 	c, _ := makeCore(1)
-	ch := addChar(t, c, keys.Nefer, 0, 1)
+	ch := addChar(t, c, keys.Nefer, 0)
 	start(t, c, ch.Index())
 	c.Player.SetVerdantDew(3)
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
@@ -226,8 +226,8 @@ func TestThreePhantasmsEndDance(t *testing.T) {
 
 func TestGleamSeedsBecomeDeceit(t *testing.T) {
 	c, _ := makeCore(1)
-	addChar(t, c, keys.Columbina, 0, 1)
-	nef := addChar(t, c, keys.Nefer, 0, 1)
+	addChar(t, c, keys.Columbina, 0)
+	nef := addChar(t, c, keys.Nefer, 0)
 	start(t, c, nef.Index())
 	if c.Player.GetMoonsignLevel() < 2 {
 		t.Fatal("expected gleam")
@@ -262,8 +262,8 @@ func TestGleamSeedsBecomeDeceit(t *testing.T) {
 
 func TestThreeSeedsGrantEM(t *testing.T) {
 	c, _ := makeCore(1)
-	addChar(t, c, keys.Columbina, 0, 1)
-	nef := addChar(t, c, keys.Nefer, 0, 1)
+	addChar(t, c, keys.Columbina, 0)
+	nef := addChar(t, c, keys.Nefer, 0)
 	start(t, c, nef.Index())
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
 		t.Fatal(err)
@@ -284,8 +284,8 @@ func TestThreeSeedsGrantEM(t *testing.T) {
 
 func TestC6ConvertsSecondHit(t *testing.T) {
 	c, _ := makeCore(1)
-	addChar(t, c, keys.Columbina, 0, 1)
-	nef := addChar(t, c, keys.Nefer, 6, 1)
+	addChar(t, c, keys.Columbina, 0)
+	nef := addChar(t, c, keys.Nefer, 6)
 	start(t, c, nef.Index())
 	c.Player.SetVerdantDew(1)
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
@@ -315,7 +315,7 @@ func TestC6ConvertsSecondHit(t *testing.T) {
 
 func TestC4DewHaste(t *testing.T) {
 	c, _ := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 4, 1)
+	nef := addChar(t, c, keys.Nefer, 4)
 	start(t, c, nef.Index())
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
 		t.Fatal(err)
@@ -337,7 +337,7 @@ func TestC4DewHaste(t *testing.T) {
 
 func TestC4ShredWhileShadowDance(t *testing.T) {
 	c, trg := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 4, 1)
+	nef := addChar(t, c, keys.Nefer, 4)
 	start(t, c, nef.Index())
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
 		t.Fatal(err)
@@ -350,13 +350,13 @@ func TestC4ShredWhileShadowDance(t *testing.T) {
 
 func TestTalentCons(t *testing.T) {
 	c, _ := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 3, 1)
+	nef := addChar(t, c, keys.Nefer, 3)
 	start(t, c, nef.Index())
 	if nef.TalentLvlSkill() != 3 {
 		t.Fatalf("c3 skill index %d", nef.TalentLvlSkill())
 	}
 	c5, _ := makeCore(1)
-	ch := addChar(t, c5, keys.Nefer, 5, 1)
+	ch := addChar(t, c5, keys.Nefer, 5)
 	start(t, c5, ch.Index())
 	if ch.TalentLvlBurst() != 3 {
 		t.Fatalf("c5 burst index %d", ch.TalentLvlBurst())
@@ -365,8 +365,8 @@ func TestTalentCons(t *testing.T) {
 
 func TestShadowDanceEndsOnSwap(t *testing.T) {
 	c, _ := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 0, 1)
-	col := addChar(t, c, keys.Columbina, 0, 1)
+	nef := addChar(t, c, keys.Nefer, 0)
+	col := addChar(t, c, keys.Columbina, 0)
 	start(t, c, nef.Index())
 	c.Player.SetVerdantDew(2)
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
@@ -447,7 +447,7 @@ func TestShadowDanceEndsOnSwap(t *testing.T) {
 
 func TestShadowDanceExpires(t *testing.T) {
 	c, _ := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 0, 1)
+	nef := addChar(t, c, keys.Nefer, 0)
 	start(t, c, nef.Index())
 	c.Player.SetVerdantDew(1)
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
@@ -472,8 +472,8 @@ func TestShadowDanceExpires(t *testing.T) {
 
 func TestQueuedPhantasmStillLandsAfterSwap(t *testing.T) {
 	c, _ := makeCore(1)
-	nef := addChar(t, c, keys.Nefer, 0, 1)
-	addChar(t, c, keys.Columbina, 0, 1)
+	nef := addChar(t, c, keys.Nefer, 0)
+	addChar(t, c, keys.Columbina, 0)
 	start(t, c, nef.Index())
 	c.Player.SetVerdantDew(1)
 	if err := c.Player.Exec(action.ActionSkill, keys.Nefer, nil); err != nil {
@@ -513,8 +513,8 @@ func readySkill(ch *character.CharWrapper) bool {
 
 func names(hits []info.AttackInfo) []string {
 	out := make([]string, len(hits))
-	for i, h := range hits {
-		out[i] = h.Abil
+	for i := range hits {
+		out[i] = hits[i].Abil
 	}
 	return out
 }

@@ -80,11 +80,11 @@ func advance(c *core.Core, n int) {
 
 func playerBolts(hits []landed) []landed {
 	var out []landed
-	for _, h := range hits {
-		if h.info.Abil == "Oz (Skill)" || h.info.Abil == "Oz (Summon)" {
+	for i := range hits {
+		if hits[i].info.Abil == "Oz (Skill)" || hits[i].info.Abil == "Oz (Summon)" {
 			continue
 		}
-		out = append(out, h)
+		out = append(out, hits[i])
 	}
 	return out
 }

@@ -30,7 +30,7 @@ func init() {
 
 func (c *char) Skill(_ map[string]int) (action.Info, error) {
 	lvl := c.TalentLvlSkill()
-	c.queueCircle(c.hybrid("Senet Strategy: Dance of a Thousand Nights", attacks.AttackTagElementalArt, attacks.ICDTagElementalArt, 25, skillATK[lvl], skillEM[lvl]), skillHit, c.particleCB)
+	c.queueCircle(c.hybrid("Senet Strategy: Dance of a Thousand Nights", attacks.AttackTagElementalArt, attacks.ICDTagElementalArt, skillATK[lvl], skillEM[lvl]), skillHit, c.particleCB)
 	c.SetCDWithDelay(action.ActionSkill, skillCD, skillHit)
 	c.enterDance()
 	if c.Base.Cons >= 2 && c.Base.Ascension >= 1 {

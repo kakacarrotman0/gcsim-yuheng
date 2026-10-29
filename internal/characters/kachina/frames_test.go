@@ -44,7 +44,7 @@ func TestChargeTransitionsStayUnavailableUntilTheActionExpires(t *testing.T) {
 
 func newKachina(t *testing.T) (*core.Core, *character.CharWrapper) {
 	t.Helper()
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addKachina(t, c, 0, 1)
 	return c, ch
 }

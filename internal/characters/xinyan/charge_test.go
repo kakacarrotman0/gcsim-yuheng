@@ -39,11 +39,11 @@ func makeCore(t *testing.T) *core.Core {
 	return c
 }
 
-func addXinyan(t *testing.T, c *core.Core, cons, talent int) {
+func addXinyan(t *testing.T, c *core.Core, cons int) {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Xinyan, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
-	prof.Talents.Attack = talent
+	prof.Talents.Attack = 9
 	prof.Stats[attributes.CR] = 1
 	if _, err := c.AddChar(prof); err != nil {
 		t.Fatal(err)
@@ -87,7 +87,7 @@ func untilQueue(t *testing.T, c *core.Core) {
 func chargeHitFrame(t *testing.T, cons int) int {
 	t.Helper()
 	c := makeCore(t)
-	addXinyan(t, c, cons, 9)
+	addXinyan(t, c, cons)
 	hits := watch(c)
 	if err := c.Player.Exec(action.ActionAttack, keys.Xinyan, nil); err != nil {
 		t.Fatal(err)
@@ -98,7 +98,8 @@ func chargeHitFrame(t *testing.T, cons int) int {
 	}
 	started := c.F
 	untilQueue(t, c)
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		if h.info.Abil == "Charge Attack" {
 			return h.frame - started
 		}
@@ -109,7 +110,7 @@ func chargeHitFrame(t *testing.T, cons int) int {
 
 func TestDanceOnFireCharge(t *testing.T) {
 	c := makeCore(t)
-	addXinyan(t, c, 0, 9)
+	addXinyan(t, c, 0)
 	hits := watch(c)
 	if err := c.Player.Exec(action.ActionCharge, keys.Xinyan, nil); err != nil {
 		t.Fatal(err)
@@ -154,9 +155,9 @@ func TestFatalAccelerationSpeedsChargedAttack(t *testing.T) {
 
 func TestRockinInAFlamingWorld(t *testing.T) {
 	c0 := makeCore(t)
-	addXinyan(t, c0, 0, 9)
+	addXinyan(t, c0, 0)
 	c6 := makeCore(t)
-	addXinyan(t, c6, 6, 9)
+	addXinyan(t, c6, 6)
 	ch := c6.Player.ByIndex(0)
 	bonus := ch.Stat(attributes.ATK) - c0.Player.ByIndex(0).Stat(attributes.ATK)
 	if math.Abs(bonus-0.5*ch.TotalDef(false)) > 1e-6 {

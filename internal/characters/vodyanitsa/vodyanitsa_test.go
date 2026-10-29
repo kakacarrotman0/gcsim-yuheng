@@ -23,7 +23,7 @@ func init() {
 	testhelper.RegisterTestWeapon()
 }
 
-func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
+func makeCore() (*core.Core, []*enemy.Enemy) {
 	c, err := core.New(core.Opt{Seed: 1, Debug: false})
 	if err != nil {
 		panic(err)
@@ -31,7 +31,7 @@ func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
 	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
 	c.Combat.SetPlayer(a)
 	var trgs []*enemy.Enemy
-	for range trgCount {
+	for range 1 {
 		e := enemy.New(c, info.EnemyProfile{
 			Level:  100,
 			Resist: make(map[attributes.Element]float64),
@@ -54,7 +54,7 @@ func advance(c *core.Core, n int) {
 	}
 }
 
-func addVody(t *testing.T, c *core.Core, cons int, talent int) *character.CharWrapper {
+func addVody(t *testing.T, c *core.Core, cons, talent int) *character.CharWrapper {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Vodyanitsa, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
@@ -71,7 +71,7 @@ func addVody(t *testing.T, c *core.Core, cons int, talent int) *character.CharWr
 }
 
 func TestBaseStats(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 0, 1)
 	if ch.Base.Element != attributes.Hydro {
 		t.Fatalf("element %v", ch.Base.Element)
@@ -91,7 +91,7 @@ func TestBaseStats(t *testing.T) {
 }
 
 func TestNormalAttackScalingAndGauge(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	ch := addVody(t, c, 0, 1)
 	var hits []info.AttackInfo
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -119,7 +119,7 @@ func TestNormalAttackScalingAndGauge(t *testing.T) {
 }
 
 func TestSkillHornHealParticlesAndRes(t *testing.T) {
-	c, trg := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 0, 10)
 	var horns int
 	var initial int
@@ -168,9 +168,7 @@ func TestSkillHornHealParticlesAndRes(t *testing.T) {
 	if particles != 5*particleCount {
 		t.Fatalf("particles %v", particles)
 	}
-	if !trg[0].ResistModIsActive(hydroShredKey) && !trg[0].ResistModIsActive(cryoShredKey) {
-		// shred lasts 6s from the last horn, which is inside the song; after songDur+5 it may have expired
-	}
+	// shred lasts 6s from the last horn, which is inside the song; after songDur+5 it may have expired
 	lead, _ := ch.Condition([]string{"lead"})
 	// initial + 5 horns, on field, consume lead
 	if lead.(int) != leadMax-6 {
@@ -179,7 +177,7 @@ func TestSkillHornHealParticlesAndRes(t *testing.T) {
 }
 
 func TestSkillResActiveAfterHit(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	addVody(t, c, 0, 10)
 	if err := c.Player.Exec(action.ActionSkill, keys.Vodyanitsa, nil); err != nil {
 		t.Fatal(err)
@@ -191,7 +189,7 @@ func TestSkillResActiveAfterHit(t *testing.T) {
 }
 
 func TestBurstSongRatioAndEnergy(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 0, 10)
 	var flat []float64
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -240,7 +238,7 @@ func TestBurstSongRatioAndEnergy(t *testing.T) {
 }
 
 func TestC2ExtendsSong(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	addVody(t, c, 2, 6)
 	var horns int
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -258,7 +256,7 @@ func TestC2ExtendsSong(t *testing.T) {
 }
 
 func TestC1AndC4(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 4, 6)
 	atkBefore := ch.TotalAtk()
 	if err := c.Player.Exec(action.ActionSkill, keys.Vodyanitsa, nil); err != nil {
@@ -282,7 +280,7 @@ func TestC1AndC4(t *testing.T) {
 }
 
 func TestC3C5TalentLevels(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 6, 10)
 	if ch.TalentLvlSkill() != 12 {
 		t.Fatalf("c3 skill index %d", ch.TalentLvlSkill())
@@ -299,7 +297,7 @@ func TestC3C5TalentLevels(t *testing.T) {
 }
 
 func TestC6HydroDmg(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	addVody(t, c, 6, 10)
 	var dmgP float64
 	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
@@ -322,7 +320,7 @@ func TestC6HydroDmg(t *testing.T) {
 }
 
 func TestA4BelowThresholdAndCap(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 0, 10)
 	raw := ch.Character.(*char)
 	// A naked level 90 is below the 40000 Max HP threshold.
@@ -348,7 +346,7 @@ func TestA4BelowThresholdAndCap(t *testing.T) {
 }
 
 func TestA1DetonateShred(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	ch := addVody(t, c, 0, 1)
 	raw := ch.Character.(*char)
 	raw.wandering = true
@@ -365,7 +363,7 @@ func TestA1DetonateShred(t *testing.T) {
 }
 
 func TestRadianceExtendOnlyOnEnter(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	if reactable.RadianceSwirlDuration(c, false) != 8*60 {
 		t.Fatal("base duration")
 	}
@@ -383,7 +381,7 @@ func TestRadianceExtendOnlyOnEnter(t *testing.T) {
 }
 
 func TestChargeAttackHasNoICD(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	addVody(t, c, 0, 1)
 	var hit info.AttackInfo
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -399,7 +397,7 @@ func TestChargeAttackHasNoICD(t *testing.T) {
 }
 
 func TestC4HealIgnoresStackItGrants(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 4, 10)
 	if err := c.Player.Exec(action.ActionSkill, keys.Vodyanitsa, nil); err != nil {
 		t.Fatal(err)
@@ -424,7 +422,7 @@ func TestC4HealIgnoresStackItGrants(t *testing.T) {
 }
 
 func TestC4StacksExpireIndependently(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 4, 10)
 	raw := ch.Character.(*char)
 	raw.addC4Stack()
@@ -445,7 +443,7 @@ func TestC4StacksExpireIndependently(t *testing.T) {
 }
 
 func TestA4HydroFlatAndStellarStage(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 0, 10)
 	raw := ch.Character.(*char)
 	ch.BaseStats[attributes.HP] = 50000
@@ -489,7 +487,7 @@ func TestA4HydroFlatAndStellarStage(t *testing.T) {
 }
 
 func TestPlungeWhileAirborne(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addVody(t, c, 0, 1)
 	var hits []info.AttackInfo
 	c.Events.Subscribe(event.OnEnemyHit, func(args ...any) {
@@ -514,7 +512,7 @@ func TestPlungeWhileAirborne(t *testing.T) {
 }
 
 func TestNoA4BelowAscension(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	prof := testhelper.DefaultProfile(keys.Vodyanitsa, testhelper.TestWeaponKey)
 	prof.Base.Level = 20
 	prof.Base.MaxLevel = 20

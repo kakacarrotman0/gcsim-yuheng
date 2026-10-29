@@ -53,7 +53,7 @@ func (c *char) Burst(_ map[string]int) (action.Info, error) {
 
 func (c *char) bombard() {
 	lvl := c.TalentLvlBurst()
-	ai := c.cryoInfo("Bombardment", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, attacks.ICDGroupDefault, burstBombard[lvl], 25)
+	ai := c.cryoInfo("Bombardment", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, attacks.ICDGroupDefault, burstBombard[lvl])
 	ai.StrikeType = attacks.StrikeTypeDefault
 	c.queue(ai, 7.3, 0, false)
 }
@@ -74,7 +74,7 @@ func (c *char) ray(stacks int, rad radianceState) {
 		ai := c.stellarInfo("Convective Inhibition Ray"+stellarSwirlText, attacks.AttackTagDirectStellarSwirl, burstRaySwirl[lvl]*mult)
 		c.queue(ai, 7.5, 0, false)
 	default:
-		ai := c.cryoInfo("Convective Inhibition Ray", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, attacks.ICDGroupDefault, burstRayOrdinary[lvl], 25)
+		ai := c.cryoInfo("Convective Inhibition Ray", attacks.AttackTagElementalBurst, attacks.ICDTagElementalBurst, attacks.ICDGroupDefault, burstRayOrdinary[lvl])
 		c.queue(ai, 7.5, 0, false)
 	}
 }

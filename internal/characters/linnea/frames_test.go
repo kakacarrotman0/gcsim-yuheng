@@ -11,7 +11,7 @@ import (
 // queue. CanQueueAfter is that tick. A skill frame earlier than it is never
 // requested.
 func TestBurstSkillCancelIsReadyWhenTheQueueOpens(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Linnea, 0, 1)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
@@ -41,7 +41,7 @@ func TestBurstSkillCancelIsReadyWhenTheQueueOpens(t *testing.T) {
 		t.Fatalf("ready tick %d, swap cancel %d", skillTick, burstFrames[action.ActionSwap])
 	}
 
-	infoCore, _ := makeCore(1)
+	infoCore, _ := makeCore()
 	infoChar := addProfile(t, infoCore, keys.Linnea, 0, 1)
 	if err := infoCore.Init(); err != nil {
 		t.Fatal(err)

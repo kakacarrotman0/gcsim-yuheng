@@ -28,7 +28,7 @@ func init() {
 	testhelper.RegisterTestWeapon()
 }
 
-func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
+func makeCore() (*core.Core, []*enemy.Enemy) {
 	c, err := core.New(core.Opt{Seed: 1, Debug: false})
 	if err != nil {
 		panic(err)
@@ -36,7 +36,7 @@ func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
 	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
 	c.Combat.SetPlayer(a)
 	var trgs []*enemy.Enemy
-	for range trgCount {
+	for range 1 {
 		e := enemy.New(c, info.EnemyProfile{
 			Level:  100,
 			Resist: make(map[attributes.Element]float64),
@@ -59,18 +59,18 @@ func advance(c *core.Core, n int) {
 	}
 }
 
-func addProfile(t *testing.T, c *core.Core, key keys.Char, cons, talent int) *character.CharWrapper {
+func addProfile(t *testing.T, c *core.Core, key keys.Char, cons int) *character.CharWrapper {
 	t.Helper()
-	return addProfileAt(t, c, key, cons, talent, 90, 90)
+	return addProfileAt(t, c, key, cons, 90, 90)
 }
 
-func addProfileAt(t *testing.T, c *core.Core, key keys.Char, cons, talent, level, maxLevel int) *character.CharWrapper {
+func addProfileAt(t *testing.T, c *core.Core, key keys.Char, cons, level, maxLevel int) *character.CharWrapper {
 	t.Helper()
 	prof := testhelper.DefaultProfile(key, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
 	prof.Base.Level = level
 	prof.Base.MaxLevel = maxLevel
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Talents = info.TalentProfile{Attack: 1, Skill: 1, Burst: 1}
 	idx, err := c.AddChar(prof)
 	if err != nil {
 		t.Fatalf("add %v: %v", key, err)
@@ -123,8 +123,8 @@ func forceCrit(ch *character.CharWrapper, cr, anemo float64) {
 }
 
 func TestIdentity(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -156,8 +156,8 @@ func TestIdentity(t *testing.T) {
 }
 
 func TestTalentCons(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 6, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 6)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -171,8 +171,8 @@ func TestTalentCons(t *testing.T) {
 }
 
 func TestArmedInfusionAndParticles(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 0, 1)
+	c, trg := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -276,8 +276,8 @@ func TestArmedInfusionAndParticles(t *testing.T) {
 }
 
 func TestNaturalWindborne(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -338,8 +338,8 @@ func TestNaturalWindborne(t *testing.T) {
 }
 
 func TestEssenceCapAndBurst(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -386,8 +386,8 @@ func TestEssenceCapAndBurst(t *testing.T) {
 }
 
 func TestC1UsesAndDuration(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 1, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 1)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -443,9 +443,9 @@ func TestC1UsesAndDuration(t *testing.T) {
 }
 
 func TestSwapResets(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 6, 1)
-	addProfile(t, c, keys.Kaeya, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 6)
+	addProfile(t, c, keys.Kaeya, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -470,11 +470,11 @@ func TestSwapResets(t *testing.T) {
 }
 
 func TestC2AndTruth(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 2, 1)
-	kaeya := addProfile(t, c, keys.Kaeya, 0, 1)
-	ben := addProfile(t, c, keys.Bennett, 0, 1)
-	xl := addProfile(t, c, keys.Xiangling, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 2)
+	kaeya := addProfile(t, c, keys.Kaeya, 0)
+	ben := addProfile(t, c, keys.Bennett, 0)
+	xl := addProfile(t, c, keys.Xiangling, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -502,8 +502,8 @@ func TestC2AndTruth(t *testing.T) {
 	_ = ben
 	_ = xl
 
-	c2, _ := makeCore(1)
-	low := addProfileAt(t, c2, keys.Vesna, 2, 1, 1, 20)
+	c2, _ := makeCore()
+	low := addProfileAt(t, c2, keys.Vesna, 2, 1, 20)
 	if err := c2.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -513,11 +513,11 @@ func TestC2AndTruth(t *testing.T) {
 		t.Fatalf("c2 without a1 disc %v atk %v", condNum(t, low, "discipline"), low.Stat(attributes.ATKP))
 	}
 
-	c4, trg := makeCore(1)
-	main := addProfile(t, c4, keys.Vesna, 4, 1)
-	addProfile(t, c4, keys.Kaeya, 0, 1)
-	addProfile(t, c4, keys.Bennett, 0, 1)
-	addProfile(t, c4, keys.Xiangling, 0, 1)
+	c4, trg := makeCore()
+	main := addProfile(t, c4, keys.Vesna, 4)
+	addProfile(t, c4, keys.Kaeya, 0)
+	addProfile(t, c4, keys.Bennett, 0)
+	addProfile(t, c4, keys.Xiangling, 0)
 	if err := c4.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -548,11 +548,11 @@ func TestC2AndTruth(t *testing.T) {
 		t.Fatalf("c4 em %v from %v", main.Stat(attributes.EM), emArmed)
 	}
 
-	c0, trg0 := makeCore(1)
-	plain := addProfile(t, c0, keys.Vesna, 0, 1)
-	addProfile(t, c0, keys.Kaeya, 0, 1)
-	addProfile(t, c0, keys.Bennett, 0, 1)
-	addProfile(t, c0, keys.Xiangling, 0, 1)
+	c0, trg0 := makeCore()
+	plain := addProfile(t, c0, keys.Vesna, 0)
+	addProfile(t, c0, keys.Kaeya, 0)
+	addProfile(t, c0, keys.Bennett, 0)
+	addProfile(t, c0, keys.Xiangling, 0)
 	if err := c0.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -574,8 +574,8 @@ func TestC2AndTruth(t *testing.T) {
 		t.Fatalf("c0 truth atk %v em %v", plain.Stat(attributes.ATKP), plain.Stat(attributes.EM))
 	}
 
-	low4, trg4 := makeCore(1)
-	early := addProfileAt(t, low4, keys.Vesna, 4, 1, 40, 50)
+	low4, trg4 := makeCore()
+	early := addProfileAt(t, low4, keys.Vesna, 4, 40, 50)
 	if err := low4.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -598,8 +598,8 @@ func TestC2AndTruth(t *testing.T) {
 }
 
 func TestC6Transpose(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 6, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 6)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -678,8 +678,8 @@ func TestC6Transpose(t *testing.T) {
 }
 
 func TestStellarTagsAndFormula(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 0, 1)
+	c, trg := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -735,8 +735,8 @@ func TestStellarTagsAndFormula(t *testing.T) {
 }
 
 func TestC6DirectAndReaction(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfileAt(t, c, keys.Vesna, 6, 1, 1, 20)
+	c, trg := makeCore()
+	ch := addProfileAt(t, c, keys.Vesna, 6, 1, 20)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -797,8 +797,8 @@ func TestC6DirectAndReaction(t *testing.T) {
 }
 
 func TestSwirlSplit(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 0, 1)
+	c, trg := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -859,8 +859,8 @@ func TestSwirlSplit(t *testing.T) {
 }
 
 func TestPlungeAndCharge(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -927,8 +927,8 @@ func TestPlungeAndCharge(t *testing.T) {
 // Windborne and the ordinary pinion share a 2s counter, first hit only.
 // The entry hit has its own counter and still applies inside that window.
 func TestWindborneICD(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfileAt(t, c, keys.Vesna, 1, 1, 1, 20)
+	c, _ := makeCore()
+	ch := addProfileAt(t, c, keys.Vesna, 1, 1, 20)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -993,8 +993,8 @@ func TestWindborneICD(t *testing.T) {
 		t.Fatalf("no application after reset at %d, frame %d", resetAt, c.F)
 	}
 
-	cryo, trg := makeCore(1)
-	cryoCh := addProfileAt(t, cryo, keys.Vesna, 1, 1, 1, 20)
+	cryo, trg := makeCore()
+	cryoCh := addProfileAt(t, cryo, keys.Vesna, 1, 1, 20)
 	if err := cryo.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -1054,9 +1054,9 @@ func TestEntryICD(t *testing.T) {
 		t.Fatal("windborne row changed")
 	}
 
-	c, trg := makeCore(1)
-	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 1, 20)
-	addProfile(t, c, keys.Kaeya, 0, 1)
+	c, trg := makeCore()
+	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 20)
+	addProfile(t, c, keys.Kaeya, 0)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -1187,8 +1187,8 @@ func TestEntryICD(t *testing.T) {
 }
 
 func TestPinionOrdinaryAndRadiance(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 6, 1)
+	c, trg := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 6)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -1244,8 +1244,8 @@ func TestPinionOrdinaryAndRadiance(t *testing.T) {
 }
 
 func TestDiscCapRefreshesOldest(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Vesna, 2, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Vesna, 2)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -1273,8 +1273,8 @@ func TestDiscCapRefreshesOldest(t *testing.T) {
 // TestBurstNoICD grants energy and resets the cooldown. It is not a natural rotation.
 // The released burst row is 1U with no ICD, and each cast is one damage event.
 func TestBurstNoICD(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 1, 20)
+	c, _ := makeCore()
+	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 20)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -1301,8 +1301,8 @@ func TestBurstNoICD(t *testing.T) {
 // TestBurstFromParticles earns the 60 cost from Vesna's own Anemo particles.
 // It is a mechanics check, not a damage benchmark.
 func TestBurstFromParticles(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 1, 20)
+	c, _ := makeCore()
+	ch := addProfileAt(t, c, keys.Vesna, 0, 1, 20)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
 	}

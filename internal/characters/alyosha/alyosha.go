@@ -135,7 +135,6 @@ func (c *char) grantPrecision() {
 
 func (c *char) initPrecision() {
 	for _, other := range c.Core.Player.Chars() {
-		other := other
 		other.AddStatMod(playercharacter.StatMod{
 			Base:         modifier.NewBase("alyosha-precision", -1),
 			AffectedStat: attributes.NoStat,

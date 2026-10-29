@@ -78,21 +78,21 @@ func armAuras(trg *enemy.Enemy, src int) {
 	trg.SetAuraDurability(info.ReactionModKeyElectro, 100000, src)
 }
 
-func lcStrikes(c *core.Core, trg *enemy.Enemy, hits *[]string, n int) int {
+func lcStrikes(c *core.Core, trg *enemy.Enemy, hits *[]string) int {
 	before := len(*hits)
 	armAuras(trg, 0)
-	for range n {
+	for range 40 {
 		trg.DoLCAttack()
 	}
 	step(c, 40)
 	return count((*hits)[before:], string(info.ReactionTypeLunarCharged))
 }
 
-func lcrStrikes(c *core.Core, trg *enemy.Enemy, hits *[]string, n int) int {
+func lcrStrikes(c *core.Core, trg *enemy.Enemy, hits *[]string) int {
 	before := len(*hits)
 	var contrib [info.MaxChars]bool
 	contrib[0] = true
-	for range n {
+	for range 40 {
 		reactable.DoLCrAttackWithContrib(contrib, trg, c, 0)
 	}
 	step(c, 60)
@@ -141,10 +141,10 @@ func TestA4ArmsAndClearsEachExtraHitSeparately(t *testing.T) {
 
 func TestExtraHitsFollowOnlyTheirOwnChance(t *testing.T) {
 	const strikes = 40
-	lcOnly := strikesOf(t, strikes, true, false)
-	lcrOnly := strikesOf(t, strikes, false, true)
-	both := strikesOf(t, strikes, true, true)
-	neither := strikesOf(t, strikes, false, false)
+	lcOnly := strikesOf(t, true, false)
+	lcrOnly := strikesOf(t, false, true)
+	both := strikesOf(t, true, true)
+	neither := strikesOf(t, false, false)
 
 	// Seed 1, 40 strikes. Base counts are 40 Lunar-Charged hits and 120
 	// Lunar-Crystallize hits. The extra hits above those bases are the 33% rolls.
@@ -170,7 +170,7 @@ type strikeCounts struct {
 	lcr int
 }
 
-func strikesOf(t *testing.T, n int, lc, lcr bool) strikeCounts {
+func strikesOf(t *testing.T, lc, lcr bool) strikeCounts {
 	t.Helper()
 	c, trg, _ := newCore(t)
 	hits := watch(c)
@@ -181,8 +181,8 @@ func strikesOf(t *testing.T, n int, lc, lcr bool) strikeCounts {
 		c.Flags.Custom[reactable.LcrExtraHitOverride] = 0.33
 	}
 	return strikeCounts{
-		lc:  lcStrikes(c, trg, hits, n),
-		lcr: lcrStrikes(c, trg, hits, n),
+		lc:  lcStrikes(c, trg, hits),
+		lcr: lcrStrikes(c, trg, hits),
 	}
 }
 
@@ -192,10 +192,10 @@ func TestClearingOneChanceLeavesTheOtherStrike(t *testing.T) {
 	c.Flags.Custom[reactable.LcExtraHitOverride] = 0.33
 	c.Flags.Custom[reactable.LcrExtraHitOverride] = 0.33
 	delete(c.Flags.Custom, reactable.LcrExtraHitOverride)
-	if got := lcStrikes(c, trg, hits, 40); got != 54 {
+	if got := lcStrikes(c, trg, hits); got != 54 {
 		t.Fatalf("lunar-charged strikes after lunar-crystallize was cleared: %d", got)
 	}
-	if got := lcrStrikes(c, trg, hits, 40); got != 120 {
+	if got := lcrStrikes(c, trg, hits); got != 120 {
 		t.Fatalf("lunar-crystallize strikes after its chance was cleared: %d", got)
 	}
 
@@ -204,10 +204,10 @@ func TestClearingOneChanceLeavesTheOtherStrike(t *testing.T) {
 	c.Flags.Custom[reactable.LcExtraHitOverride] = 0.33
 	c.Flags.Custom[reactable.LcrExtraHitOverride] = 0.33
 	delete(c.Flags.Custom, reactable.LcExtraHitOverride)
-	if got := lcStrikes(c, trg, hits, 40); got != 40 {
+	if got := lcStrikes(c, trg, hits); got != 40 {
 		t.Fatalf("lunar-charged strikes after its chance was cleared: %d", got)
 	}
-	if got := lcrStrikes(c, trg, hits, 40); got != 161 {
+	if got := lcrStrikes(c, trg, hits); got != 161 {
 		t.Fatalf("lunar-crystallize strikes after lunar-charged was cleared: %d", got)
 	}
 }
@@ -218,7 +218,7 @@ func TestExtraHitsStopWhenTheDomainBuffExpires(t *testing.T) {
 	col.applyBurstBuff()
 	emitLC(c, trg)
 	emitLCr(c, trg)
-	if got := lcStrikes(c, trg, hits, 40); got != 54 {
+	if got := lcStrikes(c, trg, hits); got != 54 {
 		t.Fatalf("strikes while the domain is up: %d", got)
 	}
 	step(c, withinTimer+2)
@@ -231,10 +231,10 @@ func TestExtraHitsStopWhenTheDomainBuffExpires(t *testing.T) {
 	if _, ok := c.Flags.Custom[reactable.LcrExtraHitOverride]; ok {
 		t.Fatal("lunar-crystallize chance survived the domain")
 	}
-	if got := lcStrikes(c, trg, hits, 40); got != 40 {
+	if got := lcStrikes(c, trg, hits); got != 40 {
 		t.Fatalf("lunar-charged strikes after expiry %d", got)
 	}
-	if got := lcrStrikes(c, trg, hits, 40); got != 120 {
+	if got := lcrStrikes(c, trg, hits); got != 120 {
 		t.Fatalf("lunar-crystallize strikes after expiry %d", got)
 	}
 }

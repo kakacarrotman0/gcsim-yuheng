@@ -39,13 +39,13 @@ func makeCore(t *testing.T, seed int64) *core.Core {
 	return c
 }
 
-func addYunjin(t *testing.T, c *core.Core, cons, maxLevel, talent int) *character.CharWrapper {
+func addYunjin(t *testing.T, c *core.Core, cons, maxLevel int) *character.CharWrapper {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.YunJin, testhelper.TestWeaponKey)
 	prof.Base.Cons = cons
 	prof.Base.Level = maxLevel
 	prof.Base.MaxLevel = maxLevel
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Talents = info.TalentProfile{Attack: 9, Skill: 9, Burst: 9}
 	if _, err := c.AddChar(prof); err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestOpeningFlourishVariants(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			c := makeCore(t, 1)
-			ch := addYunjin(t, c, 0, 90, 9)
+			ch := addYunjin(t, c, 0, 90)
 			hits := watch(c)
 			parts := particlesOf(c)
 			act, err := ch.Character.(*char).Skill(tc.param)
@@ -142,7 +142,7 @@ func TestOpeningFlourishVariants(t *testing.T) {
 
 func TestPerfectCounterRequiresAscension(t *testing.T) {
 	c := makeCore(t, 1)
-	ch := addYunjin(t, c, 0, 20, 9)
+	ch := addYunjin(t, c, 0, 20)
 	if ch.Base.Ascension != 0 {
 		t.Fatalf("ascension %d", ch.Base.Ascension)
 	}
@@ -160,7 +160,7 @@ func TestPerfectCounterRequiresAscension(t *testing.T) {
 	}
 
 	c = makeCore(t, 1)
-	ch = addYunjin(t, c, 0, 20, 9)
+	ch = addYunjin(t, c, 0, 20)
 	hits = watch(c)
 	_, err = ch.Character.(*char).Skill(map[string]int{"perfect": 1, "hold": 2})
 	if err != nil {
@@ -172,7 +172,7 @@ func TestPerfectCounterRequiresAscension(t *testing.T) {
 	}
 
 	c = makeCore(t, 1)
-	ch = addYunjin(t, c, 0, 40, 9)
+	ch = addYunjin(t, c, 0, 40)
 	if ch.Base.Ascension != 1 {
 		t.Fatalf("ascension %d", ch.Base.Ascension)
 	}
@@ -201,7 +201,7 @@ func TestPerfectCounterRequiresAscension(t *testing.T) {
 	}
 
 	c = makeCore(t, 1)
-	ch = addYunjin(t, c, 1, 40, 9)
+	ch = addYunjin(t, c, 1, 40)
 	if _, err = ch.Character.(*char).Skill(map[string]int{"perfect": 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +216,7 @@ func TestHoldLevel1ParticlesFollowThreeToTwo(t *testing.T) {
 	var twos, threes int
 	for seed := int64(1); seed <= 1000; seed++ {
 		c := makeCore(t, seed)
-		ch := addYunjin(t, c, 0, 90, 9)
+		ch := addYunjin(t, c, 0, 90)
 		var n float64
 		c.Events.Subscribe(event.OnParticleReceived, func(args ...any) {
 			n = args[0].(character.Particle).Num

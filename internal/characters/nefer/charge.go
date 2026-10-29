@@ -8,8 +8,10 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/info"
 )
 
-var chargeFrames []int
-var ppFrames []int
+var (
+	chargeFrames []int
+	ppFrames     []int
+)
 
 func init() {
 	chargeFrames = frames.InitAbilSlice(caAnim)
@@ -36,7 +38,7 @@ func (c *char) ChargeAttack(_ map[string]int) (action.Info, error) {
 		return c.phantasm(), nil
 	}
 	c.absorbSeeds()
-	ai := c.hybrid("Charged Attack", attacks.AttackTagExtra, attacks.ICDTagNone, 25, charged[c.TalentLvlAttack()], 0)
+	ai := c.hybrid("Charged Attack", attacks.AttackTagExtra, attacks.ICDTagNone, charged[c.TalentLvlAttack()], 0)
 	c.queueCircle(ai, caHit)
 	return action.Info{
 		Frames:          frames.NewAbilFunc(chargeFrames),
@@ -50,12 +52,12 @@ func (c *char) phantasm() action.Info {
 	c.absorbSeeds()
 	c.ppCount++
 	lvl := c.TalentLvlSkill()
-	c.queueCircle(c.withVeil(c.hybrid("Phantasm Performance (Nefer 1)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, 25, ppN1ATK[lvl], ppN1EM[lvl])), ppN1Frame)
+	c.queueCircle(c.withVeil(c.hybrid("Phantasm Performance (Nefer 1)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, ppN1ATK[lvl], ppN1EM[lvl])), ppN1Frame)
 	if c.Base.Cons >= 6 {
 		c.queueLunar("Phantasm Performance C6 (Nefer 2)", 0.85, ppN2Frame)
 		c.queueLunar("Phantasm Performance C6 (Extra)", 1.2, ppExtra)
 	} else {
-		c.queueCircle(c.withVeil(c.hybrid("Phantasm Performance (Nefer 2)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, 25, ppN2ATK[lvl], ppN2EM[lvl])), ppN2Frame)
+		c.queueCircle(c.withVeil(c.hybrid("Phantasm Performance (Nefer 2)", attacks.AttackTagExtra, attacks.ICDTagExtraAttack, ppN2ATK[lvl], ppN2EM[lvl])), ppN2Frame)
 	}
 	c.queueLunar("Phantasm Performance (Shade 1)", shade1[lvl], shade1Frame)
 	c.queueLunar("Phantasm Performance (Shade 2)", shade2[lvl], shade2Frame)
@@ -78,7 +80,7 @@ func (c *char) phantasm() action.Info {
 	}
 }
 
-func (c *char) hybrid(name string, tag attacks.AttackTag, icd attacks.ICDTag, dur info.Durability, atk, em float64) info.AttackInfo {
+func (c *char) hybrid(name string, tag attacks.AttackTag, icd attacks.ICDTag, atk, em float64) info.AttackInfo {
 	return info.AttackInfo{
 		ActorIndex: c.Index(),
 		Abil:       name,
@@ -87,7 +89,7 @@ func (c *char) hybrid(name string, tag attacks.AttackTag, icd attacks.ICDTag, du
 		ICDGroup:   attacks.ICDGroupDefault,
 		StrikeType: attacks.StrikeTypeDefault,
 		Element:    attributes.Dendro,
-		Durability: dur,
+		Durability: 25,
 		Mult:       atk,
 		FlatDmg:    em * c.Stat(attributes.EM),
 	}

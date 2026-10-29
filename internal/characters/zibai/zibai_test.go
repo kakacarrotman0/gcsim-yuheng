@@ -26,7 +26,7 @@ func init() {
 	testhelper.RegisterTestWeapon()
 }
 
-func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
+func makeCore() (*core.Core, []*enemy.Enemy) {
 	c, err := core.New(core.Opt{Seed: 1, Debug: false})
 	if err != nil {
 		panic(err)
@@ -34,7 +34,7 @@ func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
 	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
 	c.Combat.SetPlayer(a)
 	var trgs []*enemy.Enemy
-	for range trgCount {
+	for range 1 {
 		e := enemy.New(c, info.EnemyProfile{
 			Level:  100,
 			Resist: make(map[attributes.Element]float64),
@@ -57,9 +57,9 @@ func advance(c *core.Core, n int) {
 	}
 }
 
-func addProfile(t *testing.T, c *core.Core, key keys.Char, cons, talent int) *character.CharWrapper {
+func addProfile(t *testing.T, c *core.Core, key keys.Char, cons int) *character.CharWrapper {
 	t.Helper()
-	return addProfileAt(t, c, key, cons, talent, 90, 90)
+	return addProfileAt(t, c, key, cons, 1, 90, 90)
 }
 
 func addProfileAt(t *testing.T, c *core.Core, key keys.Char, cons, talent, level, maxLevel int) *character.CharWrapper {
@@ -87,16 +87,15 @@ func mustInit(t *testing.T, c *core.Core) {
 	}
 }
 
-func hold(c *core.Core, next action.Action) int {
+func hold(c *core.Core, next action.Action) {
 	n := 0
 	for c.Player.IsAnimationLocked(next) {
 		advance(c, 1)
 		n++
 		if n > 300 {
-			return n
+			return
 		}
 	}
-	return n
 }
 
 type hit struct {
@@ -140,16 +139,6 @@ func watch(c *core.Core) *[]hit {
 	return hits
 }
 
-func countAbil(hits []hit, name string) int {
-	n := 0
-	for _, h := range hits {
-		if h.abil == name {
-			n++
-		}
-	}
-	return n
-}
-
 func findAbil(hits []hit, name string) (hit, bool) {
 	for _, h := range hits {
 		if h.abil == name {
@@ -177,8 +166,9 @@ func enterMode(t *testing.T, c *core.Core, ch *character.CharWrapper) {
 
 // weave fills Phase Shift Radiance from the ticker, Normal Attacks, and
 // Lunar-Crystallize. It does not write the radiance field.
-func weave(t *testing.T, c *core.Core, ch *character.CharWrapper, trg *enemy.Enemy, want float64) {
+func weave(t *testing.T, c *core.Core, ch *character.CharWrapper, trg *enemy.Enemy) {
 	t.Helper()
+	const want = 70
 	limit := c.F + 20*60
 	for c.F < limit && asZibai(ch).radiance < want {
 		if !ch.StatusIsActive(skillKey) {
@@ -197,8 +187,8 @@ func weave(t *testing.T, c *core.Core, ch *character.CharWrapper, trg *enemy.Ene
 }
 
 func TestIdentity(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
 	mustInit(t, c)
 	if ch.Base.Element != attributes.Geo || ch.Weapon.Class != info.WeaponClassSword || ch.EnergyMax != 60 {
 		t.Fatalf("identity ele %v weapon %v energy %v", ch.Base.Element, ch.Weapon.Class, ch.EnergyMax)
@@ -243,7 +233,7 @@ func radianceOf(v any) float64 {
 }
 
 func TestAscensionZeroStillEnablesLunarCrystallize(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfileAt(t, c, keys.Zibai, 0, 1, 20, 20)
 	mustInit(t, c)
 	if ch.Base.Ascension != 0 {
@@ -255,14 +245,14 @@ func TestAscensionZeroStillEnablesLunarCrystallize(t *testing.T) {
 }
 
 func TestTalentCons(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 6, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 6)
 	mustInit(t, c)
 	if ch.TalentLvlAttack() != 0 || ch.TalentLvlSkill() != 3 || ch.TalentLvlBurst() != 3 {
 		t.Fatalf("c6 talents na %d skill %d burst %d", ch.TalentLvlAttack(), ch.TalentLvlSkill(), ch.TalentLvlBurst())
 	}
-	c3, _ := makeCore(1)
-	only := addProfile(t, c3, keys.Zibai, 3, 1)
+	c3, _ := makeCore()
+	only := addProfile(t, c3, keys.Zibai, 3)
 	mustInit(t, c3)
 	if only.TalentLvlSkill() != 3 || only.TalentLvlBurst() != 0 {
 		t.Fatalf("c3 talents skill %d burst %d", only.TalentLvlSkill(), only.TalentLvlBurst())
@@ -270,8 +260,8 @@ func TestTalentCons(t *testing.T) {
 }
 
 func TestC0NormalAndCharge(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
 	mustInit(t, c)
 	hits := watch(c)
 	exec(t, c, action.ActionAttack, keys.Zibai)
@@ -302,8 +292,8 @@ func TestC0NormalAndCharge(t *testing.T) {
 }
 
 func TestPhaseShiftNormalsAndTicker(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
 	mustInit(t, c)
 	ready, reason := ch.ActionReady(action.ActionSkill, nil)
 	if !ready || reason != action.NoFailure {
@@ -377,8 +367,8 @@ func TestPhaseShiftNormalsAndTicker(t *testing.T) {
 }
 
 func TestTickerAloneMissesA1Window(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
 	mustInit(t, c)
 	enterMode(t, c, ch)
 	for asZibai(ch).radiance < 70 && c.F < 20*60 {
@@ -397,8 +387,8 @@ func TestTickerAloneMissesA1Window(t *testing.T) {
 }
 
 func TestC0StrideBurstAndFourUses(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
+	c, trg := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
 	mustInit(t, c)
 	hits := watch(c)
 	applied := map[string]float64{}
@@ -409,7 +399,7 @@ func TestC0StrideBurstAndFourUses(t *testing.T) {
 		}
 	}, "zibai-gauge")
 	enterMode(t, c, ch)
-	weave(t, c, ch, trg[0], 70)
+	weave(t, c, ch, trg[0])
 	if !ch.StatusIsActive(a1Key) {
 		t.Fatal("woven radiance reached 70 after a1 expired")
 	}
@@ -451,7 +441,7 @@ func TestC0StrideBurstAndFourUses(t *testing.T) {
 
 	// Three more natural strides. The fourth spends the mode.
 	for asZibai(ch).skillsUsed < 4 {
-		weave(t, c, ch, trg[0], 70)
+		weave(t, c, ch, trg[0])
 		hold(c, action.ActionSkill)
 		ready, reason = ch.ActionReady(action.ActionSkill, nil)
 		if !ready {
@@ -493,8 +483,8 @@ func TestC0StrideBurstAndFourUses(t *testing.T) {
 }
 
 func TestBurstExtendsMode(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
 	mustInit(t, c)
 	enterMode(t, c, ch)
 	before := ch.StatusDuration(skillKey)
@@ -505,9 +495,9 @@ func TestBurstExtendsMode(t *testing.T) {
 }
 
 func TestSwapClearsMode(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
-	addProfile(t, c, keys.Zhongli, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
+	addProfile(t, c, keys.Zhongli, 0)
 	mustInit(t, c)
 	enterMode(t, c, ch)
 	exec(t, c, action.ActionSwap, keys.Zhongli)
@@ -522,8 +512,8 @@ func TestSwapClearsMode(t *testing.T) {
 }
 
 func TestHydroConvertsToLunarCrystallize(t *testing.T) {
-	plain, ptrg := makeCore(1)
-	addProfile(t, plain, keys.Zhongli, 0, 1)
+	plain, ptrg := makeCore()
+	addProfile(t, plain, keys.Zhongli, 0)
 	mustInit(t, plain)
 	var hydro, lunar int
 	plain.Events.Subscribe(event.OnCrystallizeHydro, func(...any) { hydro++ }, "cry")
@@ -535,8 +525,8 @@ func TestHydroConvertsToLunarCrystallize(t *testing.T) {
 		t.Fatalf("without zibai hydro %d lunar %d", hydro, lunar)
 	}
 
-	live, ltrg := makeCore(1)
-	ch := addProfile(t, live, keys.Zibai, 0, 1)
+	live, ltrg := makeCore()
+	ch := addProfile(t, live, keys.Zibai, 0)
 	mustInit(t, live)
 	hydro, lunar = 0, 0
 	live.Events.Subscribe(event.OnCrystallizeHydro, func(...any) { hydro++ }, "cry")
@@ -550,14 +540,14 @@ func TestHydroConvertsToLunarCrystallize(t *testing.T) {
 }
 
 func TestA4PartyStats(t *testing.T) {
-	solo, _ := makeCore(1)
-	alone := addProfile(t, solo, keys.Zibai, 0, 1)
+	solo, _ := makeCore()
+	alone := addProfile(t, solo, keys.Zibai, 0)
 	mustInit(t, solo)
 
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
-	addProfile(t, c, keys.Zhongli, 0, 1)
-	addProfile(t, c, keys.Xingqiu, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
+	addProfile(t, c, keys.Zhongli, 0)
+	addProfile(t, c, keys.Xingqiu, 0)
 	mustInit(t, c)
 	if math.Abs(ch.Stat(attributes.DEFP)-alone.Stat(attributes.DEFP)-0.15) > 1e-9 {
 		t.Fatalf("def%% %v solo %v", ch.Stat(attributes.DEFP), alone.Stat(attributes.DEFP))
@@ -568,8 +558,8 @@ func TestA4PartyStats(t *testing.T) {
 }
 
 func TestC1ImmediateRadianceAndFiveStrides(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 1, 1)
+	c, trg := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 1)
 	mustInit(t, c)
 	enterMode(t, c, ch)
 	if asZibai(ch).radiance != 100 || !ch.StatusIsActive(c1Key) {
@@ -593,7 +583,7 @@ func TestC1ImmediateRadianceAndFiveStrides(t *testing.T) {
 		t.Fatalf("after first rad %v used %d", asZibai(ch).radiance, asZibai(ch).skillsUsed)
 	}
 	for asZibai(ch).skillsUsed < 5 {
-		weave(t, c, ch, trg[0], 70)
+		weave(t, c, ch, trg[0])
 		hold(c, action.ActionSkill)
 		exec(t, c, action.ActionSkill, keys.Zibai)
 	}
@@ -603,9 +593,9 @@ func TestC1ImmediateRadianceAndFiveStrides(t *testing.T) {
 }
 
 func TestC2ReactBonusAndGleamA1(t *testing.T) {
-	c, trg := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 2, 1)
-	bina := addProfile(t, c, keys.Columbina, 0, 1)
+	c, trg := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 2)
+	bina := addProfile(t, c, keys.Columbina, 0)
 	mustInit(t, c)
 	if c.Player.GetMoonsignLevel() != 2 {
 		t.Fatalf("moonsign %d", c.Player.GetMoonsignLevel())
@@ -620,7 +610,7 @@ func TestC2ReactBonusAndGleamA1(t *testing.T) {
 	if math.Abs(ch.ReactBonus(direct)-0.3) > 1e-9 || math.Abs(bina.ReactBonus(react)-0.3) > 1e-9 || ch.ReactBonus(normal) != 0 {
 		t.Fatalf("c2 in mode zibai %v columbina %v normal %v", ch.ReactBonus(direct), bina.ReactBonus(react), ch.ReactBonus(normal))
 	}
-	weave(t, c, ch, trg[0], 70)
+	weave(t, c, ch, trg[0])
 	if !ch.StatusIsActive(a1Key) {
 		c.Events.Emit(event.OnMoondriftHarmony, trg[0])
 	}
@@ -639,9 +629,9 @@ func TestC2ReactBonusAndGleamA1(t *testing.T) {
 }
 
 func TestC4CounterAndN4(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 4, 1)
-	addProfile(t, c, keys.Columbina, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 4)
+	addProfile(t, c, keys.Columbina, 0)
 	mustInit(t, c)
 	enterMode(t, c, ch)
 	hold(c, action.ActionAttack)
@@ -654,8 +644,8 @@ func TestC4CounterAndN4(t *testing.T) {
 		t.Fatalf("c4 reset counter to %d", ch.NormalCounter)
 	}
 
-	plain, _ := makeCore(1)
-	base := addProfile(t, plain, keys.Zibai, 0, 1)
+	plain, _ := makeCore()
+	base := addProfile(t, plain, keys.Zibai, 0)
 	mustInit(t, plain)
 	enterMode(t, plain, base)
 	base.NormalCounter = 2
@@ -665,13 +655,13 @@ func TestC4CounterAndN4(t *testing.T) {
 	}
 
 	// Gleam N4 extra. C4's status multiplies it by 2.5 after a stride hit.
-	live, trg := makeCore(1)
-	z := addProfile(t, live, keys.Zibai, 4, 1)
-	addProfile(t, live, keys.Columbina, 0, 1)
+	live, trg := makeCore()
+	z := addProfile(t, live, keys.Zibai, 4)
+	addProfile(t, live, keys.Columbina, 0)
 	mustInit(t, live)
 	hits := watch(live)
 	enterMode(t, live, z)
-	weave(t, live, z, trg[0], 70)
+	weave(t, live, z, trg[0])
 	hold(live, action.ActionSkill)
 	exec(t, live, action.ActionSkill, keys.Zibai)
 	advance(live, skillStrideHitmark[1]+2)
@@ -696,8 +686,8 @@ func TestC4CounterAndN4(t *testing.T) {
 }
 
 func TestC6GainSpendAndElevation(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 6, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 6)
 	mustInit(t, c)
 	enterMode(t, c, ch)
 	// C6 includes C1. The opening 100 is scaled by 1.5 and then capped.
@@ -742,8 +732,8 @@ func TestC6GainSpendAndElevation(t *testing.T) {
 }
 
 func TestParticlesAreGeoAndICDLimited(t *testing.T) {
-	c, _ := makeCore(1)
-	ch := addProfile(t, c, keys.Zibai, 0, 1)
+	c, _ := makeCore()
+	ch := addProfile(t, c, keys.Zibai, 0)
 	mustInit(t, c)
 	ch.Energy = 0
 	var particles []character.Particle

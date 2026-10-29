@@ -66,11 +66,9 @@ func initLunar(t *testing.T, c *core.Core) {
 	}
 }
 
-func step(c *core.Core, n int) {
-	for range n {
-		c.F++
-		c.Tick()
-	}
+func step(c *core.Core) {
+	c.F++
+	c.Tick()
 }
 
 func apply(c *core.Core, trg *enemy.Enemy, actor int, ele attributes.Element, dur float64, tag attacks.AttackTag, abil string) {
@@ -102,7 +100,7 @@ func TestHydroCrystallizeStaysOrdinaryWithoutTheFlag(t *testing.T) {
 	c.Events.Subscribe(event.OnCrystallizeHydro, func(...any) { hydro++ }, "hydro")
 	c.Events.Subscribe(event.OnLunarCrystallize, func(...any) { lunar++ }, "lunar")
 	trg.AttachOrRefill(&info.AttackEvent{Info: info.AttackInfo{Element: attributes.Hydro, Durability: 50}})
-	step(c, 1)
+	step(c)
 	apply(c, trg, zhong.Index(), attributes.Geo, 25, attacks.AttackTagElementalArt, "geo")
 	if hydro != 1 || lunar != 0 {
 		t.Fatalf("hydro %d lunar %d", hydro, lunar)
@@ -142,11 +140,11 @@ func TestLunarCrystallizeEventsAndDamageTags(t *testing.T) {
 
 	for range 3 {
 		trg.AttachOrRefill(&info.AttackEvent{Info: info.AttackInfo{Element: attributes.Hydro, Durability: 50}})
-		step(c, 1)
+		step(c)
 		apply(c, trg, zibai.Index(), attributes.Geo, 25, attacks.AttackTagElementalArt, "geo-probe")
 	}
 	for c.F < 80 && (reaction.Abil == "" || landed.Abil == "") {
-		step(c, 1)
+		step(c)
 	}
 	if hydro != 0 || lunar != 3 || harmony != 1 {
 		t.Fatalf("hydro %d lunar %d harmony %d", hydro, lunar, harmony)
@@ -206,11 +204,11 @@ func TestZibaiAndLinneaLunarBonusesStack(t *testing.T) {
 
 	for range 3 {
 		trg.AttachOrRefill(&info.AttackEvent{Info: info.AttackInfo{Element: attributes.Hydro, Durability: 50}})
-		step(c, 1)
+		step(c)
 		apply(c, trg, zibai.Index(), attributes.Geo, 25, attacks.AttackTagElementalArt, "geo-probe")
 	}
 	for c.F < 80 && !sawReaction {
-		step(c, 1)
+		step(c)
 	}
 	apply(c, trg, zibai.Index(), attributes.Geo, 0, attacks.AttackTagDirectLunarCrystallize, "direct-probe")
 	if !sawReaction || !sawDirect {
@@ -233,7 +231,7 @@ func TestLunarChargedRequiresTheEnableFlag(t *testing.T) {
 	c.Events.Subscribe(event.OnElectroCharged, func(...any) { ec++ }, "ec")
 	c.Events.Subscribe(event.OnLunarCharged, func(...any) { lc++ }, "lc")
 	trg.AttachOrRefill(&info.AttackEvent{Info: info.AttackInfo{Element: attributes.Hydro, Durability: 50, ActorIndex: xingqiu.Index()}})
-	step(c, 1)
+	step(c)
 	apply(c, trg, kaeya.Index(), attributes.Electro, 25, attacks.AttackTagElementalArt, "electro")
 	if ec != 1 || lc != 0 || c.Status.Duration(reactable.LcKey) != 0 {
 		t.Fatalf("electrocharged %d lunar %d cloud %d", ec, lc, c.Status.Duration(reactable.LcKey))
@@ -267,7 +265,7 @@ func TestIneffaLunarChargedCloudAndReactionTag(t *testing.T) {
 	}, "landed")
 
 	trg.AttachOrRefill(&info.AttackEvent{Info: info.AttackInfo{Element: attributes.Hydro, Durability: 50, ActorIndex: xingqiu.Index()}})
-	step(c, 1)
+	step(c)
 	hydroBefore := trg.GetAuraDurability(info.ReactionModKeyHydro)
 	apply(c, trg, ineffa.Index(), attributes.Electro, 25, attacks.AttackTagElementalArt, "electro")
 	electroBefore := trg.GetAuraDurability(info.ReactionModKeyElectro)
@@ -275,7 +273,7 @@ func TestIneffaLunarChargedCloudAndReactionTag(t *testing.T) {
 		t.Fatalf("electrocharged %d lunar %d cloud %d", ec, lc, c.Status.Duration(reactable.LcKey))
 	}
 	for c.F < 40 && landed.Abil == "" {
-		step(c, 1)
+		step(c)
 	}
 	if landed.AttackTag != attacks.AttackTagReactionLunarCharge || landed.Element != attributes.Electro || landed.IgnoreDefPercent != 1 {
 		t.Fatalf("landed reaction %+v", landed)

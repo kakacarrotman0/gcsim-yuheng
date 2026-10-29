@@ -10,7 +10,7 @@ import (
 )
 
 // Lightning Fang disables Charged Attacks. The Wolf Within strikes on Normal Attacks only.
-var errLightningFangCharge = errors.New("Lightning Fang disables Charged Attacks")
+var errLightningFangCharge = errors.New("lightning Fang disables Charged Attacks")
 
 func (c *char) ChargeAttack(p map[string]int) (action.Info, error) {
 	if c.StatusIsActive(burstBuffKey) {

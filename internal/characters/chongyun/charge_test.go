@@ -41,13 +41,13 @@ func makeCore(t *testing.T) (*core.Core, *enemy.Enemy) {
 	return c, e
 }
 
-func addChongyun(t *testing.T, c *core.Core, maxLevel, talent, cons int) {
+func addChongyun(t *testing.T, c *core.Core, maxLevel, cons int) {
 	t.Helper()
 	prof := testhelper.DefaultProfile(keys.Chongyun, testhelper.TestWeaponKey)
 	prof.Base.Level = maxLevel
 	prof.Base.MaxLevel = maxLevel
 	prof.Base.Cons = cons
-	prof.Talents = info.TalentProfile{Attack: talent, Skill: talent, Burst: talent}
+	prof.Talents = info.TalentProfile{Attack: 9, Skill: 9, Burst: 9}
 	if _, err := c.AddChar(prof); err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func untilQueue(t *testing.T, c *core.Core) {
 
 func TestDemonbaneCharge(t *testing.T) {
 	c, _ := makeCore(t)
-	addChongyun(t, c, 90, 9, 1)
+	addChongyun(t, c, 90, 1)
 	hits := watch(c)
 	doCharge(t, c, nil)
 	untilQueue(t, c)
@@ -113,7 +113,8 @@ func TestDemonbaneCharge(t *testing.T) {
 		}
 	}
 	var cyclic, finisher, blades int
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		switch h.info.Abil {
 		case "Charge Attack":
 			cyclic++
@@ -139,7 +140,7 @@ func TestDemonbaneCharge(t *testing.T) {
 
 func TestChongyunC1StaysOnTheFourthNormal(t *testing.T) {
 	c, _ := makeCore(t)
-	addChongyun(t, c, 90, 9, 1)
+	addChongyun(t, c, 90, 1)
 	hits := watch(c)
 	for range 4 {
 		if err := c.Player.Exec(action.ActionAttack, keys.Chongyun, nil); err != nil {
@@ -149,7 +150,8 @@ func TestChongyunC1StaysOnTheFourthNormal(t *testing.T) {
 	}
 	advance(c, 15)
 	blades := 0
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		if h.info.Abil == "Chongyun C1" {
 			blades++
 			if h.info.Element != attributes.Cryo || h.info.Mult != 0.5 {
@@ -164,7 +166,7 @@ func TestChongyunC1StaysOnTheFourthNormal(t *testing.T) {
 
 func TestChonghuaInfusesChargeAndMelts(t *testing.T) {
 	c, e := makeCore(t)
-	addChongyun(t, c, 90, 9, 0)
+	addChongyun(t, c, 90, 0)
 	hits := watch(c)
 	var reacted []info.AttackInfo
 	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
@@ -185,7 +187,8 @@ func TestChonghuaInfusesChargeAndMelts(t *testing.T) {
 	}
 	doCharge(t, c, nil)
 	untilQueue(t, c)
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		if h.info.Abil == "Charge Attack" && h.info.Element != attributes.Cryo {
 			t.Fatalf("element %+v", h.info)
 		}
@@ -229,7 +232,7 @@ func TestSteadyBreathingSpeedsChargeInsideTheField(t *testing.T) {
 func normalDashLock(t *testing.T, maxLevel int) int {
 	t.Helper()
 	c, _ := makeCore(t)
-	addChongyun(t, c, maxLevel, 9, 0)
+	addChongyun(t, c, maxLevel, 0)
 	if err := c.Player.Exec(action.ActionSkill, keys.Chongyun, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -253,7 +256,7 @@ func normalDashLock(t *testing.T, maxLevel int) int {
 func fieldChargeDelay(t *testing.T, maxLevel int) int {
 	t.Helper()
 	c, _ := makeCore(t)
-	addChongyun(t, c, maxLevel, 9, 0)
+	addChongyun(t, c, maxLevel, 0)
 	asc := c.Player.ByIndex(0).Base.Ascension
 	if maxLevel == 20 && asc != 0 {
 		t.Fatalf("ascension %d", asc)
@@ -278,7 +281,8 @@ func fieldChargeDelay(t *testing.T, maxLevel int) int {
 	start := c.F
 	doCharge(t, c, nil)
 	untilQueue(t, c)
-	for _, h := range *hits {
+	for i := range *hits {
+		h := &(*hits)[i]
 		if h.info.Abil == "Charge Attack" {
 			return h.frame - start
 		}
@@ -289,14 +293,15 @@ func fieldChargeDelay(t *testing.T, maxLevel int) int {
 
 func TestDemonbaneChargeEndsAtFiveSeconds(t *testing.T) {
 	c, _ := makeCore(t)
-	addChongyun(t, c, 90, 9, 0)
+	addChongyun(t, c, 90, 0)
 	hits := watch(c)
 	start := c.F
 	doCharge(t, c, nil)
 	var finisher int
 	for c.F < start+tmpl.ClaymoreSpinDuration+180 {
 		untilQueue(t, c)
-		for _, h := range *hits {
+		for i := range *hits {
+			h := &(*hits)[i]
 			if h.info.Abil == "Charge Attack (Finisher)" {
 				finisher = h.frame
 			}

@@ -23,7 +23,7 @@ func init() {
 	testhelper.RegisterTestWeapon()
 }
 
-func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
+func makeCore() (*core.Core, []*enemy.Enemy) {
 	c, err := core.New(core.Opt{Seed: 1, Debug: false})
 	if err != nil {
 		panic(err)
@@ -31,7 +31,7 @@ func makeCore(trgCount int) (*core.Core, []*enemy.Enemy) {
 	a := avatar.New(c, info.Point{X: 0, Y: 0}, 1)
 	c.Combat.SetPlayer(a)
 	var trgs []*enemy.Enemy
-	for range trgCount {
+	for range 1 {
 		e := enemy.New(c, info.EnemyProfile{
 			Level:  100,
 			Resist: make(map[attributes.Element]float64),
@@ -67,7 +67,7 @@ func addProfile(t *testing.T, c *core.Core, key keys.Char, cons, talent int) *ch
 }
 
 func TestIdentity(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Linnea, 0, 1)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
@@ -87,7 +87,7 @@ func TestIdentity(t *testing.T) {
 }
 
 func TestTalentCons(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Linnea, 6, 10)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
@@ -99,7 +99,7 @@ func TestTalentCons(t *testing.T) {
 }
 
 func TestBurstHeal(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Linnea, 0, 10)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
@@ -132,7 +132,7 @@ func TestBurstHeal(t *testing.T) {
 }
 
 func TestSkillParticles(t *testing.T) {
-	c, _ := makeCore(1)
+	c, _ := makeCore()
 	ch := addProfile(t, c, keys.Linnea, 0, 1)
 	if err := c.Init(); err != nil {
 		t.Fatal(err)
@@ -151,7 +151,7 @@ func TestSkillParticles(t *testing.T) {
 }
 
 func TestC2DoesNotStopAtOtherElements(t *testing.T) {
-	c, trg := makeCore(1)
+	c, trg := makeCore()
 	linnea := addProfile(t, c, keys.Linnea, 2, 1)
 	noelle := addProfile(t, c, keys.Noelle, 0, 1)
 	sucrose := addProfile(t, c, keys.Sucrose, 0, 1)
