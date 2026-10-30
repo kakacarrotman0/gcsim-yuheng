@@ -9,7 +9,8 @@ import (
 
 type char struct {
 	*tmpl.Character
-	c1Buff []float64
+	caState tmpl.SpinChargeState
+	c1Buff  []float64
 }
 
 func NewChar(s *core.Core, w *character.CharWrapper, _ info.CharacterProfile) error {
