@@ -15,6 +15,7 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Navia, NewChar)
 	paramsFor := map[action.Action][]string{
+		action.ActionCharge:     {"final", "no_limit"},
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
 		action.ActionSkill:      {"hold"},
@@ -139,6 +140,42 @@ var (
 			3.382335,
 			3.568519,
 		}},
+	}
+	// attack: BluntRefusal - Charged Attack Cyclic DMG: {4}
+	charge = []float64{
+		0.625455,
+		0.676364,
+		0.727273,
+		0.8,
+		0.850909,
+		0.909091,
+		0.989091,
+		1.069091,
+		1.149091,
+		1.236364,
+		1.323636,
+		1.410909,
+		1.498182,
+		1.585455,
+		1.672727,
+	}
+	// attack: BluntRefusal - Charged Attack Final DMG: {5}
+	chargeFinal = []float64{
+		1.1309,
+		1.22295,
+		1.315,
+		1.4465,
+		1.53855,
+		1.64375,
+		1.7884,
+		1.93305,
+		2.0777,
+		2.2355,
+		2.3933,
+		2.5511,
+		2.7089,
+		2.8667,
+		3.0245,
 	}
 	// attack: BluntRefusal - Plunge DMG: {8}
 	collision = []float64{

@@ -9,6 +9,7 @@ import (
 
 type char struct {
 	*tmpl.Character
+	caState             tmpl.SpinChargeState
 	specialPlungeRadius float64
 	manChaiWalkBack     int
 }
