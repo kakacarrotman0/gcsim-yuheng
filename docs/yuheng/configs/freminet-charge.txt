@@ -1,0 +1,11 @@
+# Execution check for Freminet's charged attack.
+# The hit spacing is the unmeasured claymore playback schedule.
+# This file is not a damage benchmark.
+# Pers Timer is not cast here. Frost and Shattering Pressure stay on Normal Attacks.
+
+options iteration=1 duration=8;
+target lvl=100 resist=0.1;
+freminet char lvl=90/90 cons=0 talent=9,1,1;
+freminet add weapon="favoniusgreatsword" refine=1 lvl=90/90;
+active freminet;
+freminet attack, charge, charge[final=1];
