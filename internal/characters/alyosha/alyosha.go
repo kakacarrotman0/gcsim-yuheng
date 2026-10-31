@@ -53,7 +53,6 @@ type char struct {
 	fieldSrc        int
 	precisionStacks int
 	precisionUntil  int
-	stellarBonus    float64
 }
 
 func NewChar(s *core.Core, w *playercharacter.CharWrapper, _ info.CharacterProfile) error {
@@ -125,12 +124,6 @@ func (c *char) grantPrecision() {
 		c.precisionStacks = 1
 	}
 	c.precisionUntil = c.Core.F + precisionDuration
-	if c.StatusIsActive(reactable.PolestarFieldKey) {
-		// Snapshotted at activation. C6's second stack doubles the 20%.
-		c.stellarBonus = stellarBonusValue * float64(c.precisionStacks)
-	} else {
-		c.stellarBonus = 0
-	}
 }
 
 func (c *char) initPrecision() {
@@ -169,7 +162,12 @@ func (c *char) stellarBonusFor(charIndex int, tag attacks.AttackTag) float64 {
 	if tag != attacks.AttackTagDirectStellarConduct {
 		return 0
 	}
-	return c.stellarBonus
+	// Radiance: Stellar-Conduct is presence in the Polestar Field. The 20% is
+	// read when the hit is calculated, and C6's second stack doubles it.
+	if !c.StatusIsActive(reactable.PolestarFieldKey) {
+		return 0
+	}
+	return stellarBonusValue * float64(c.precisionStacks)
 }
 
 func (c *char) initA4() {

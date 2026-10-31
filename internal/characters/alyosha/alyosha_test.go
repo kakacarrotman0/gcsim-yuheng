@@ -340,7 +340,7 @@ func TestStellarBonusScalesWithStacks(t *testing.T) {
 	castSkills(t, c0, ch0, 2)
 	ac0 := ch0.Character.(*char)
 	if math.Abs(ac0.stellarBonusFor(ch0.Index(), attacks.AttackTagDirectStellarConduct)-stellarBonusValue) > 1e-9 {
-		t.Fatalf("c0 stellar %v", ac0.stellarBonus)
+		t.Fatalf("c0 stellar %v", ac0.stellarBonusFor(ch0.Index(), attacks.AttackTagDirectStellarConduct))
 	}
 
 	c6, _ := makeCore()
@@ -349,12 +349,12 @@ func TestStellarBonusScalesWithStacks(t *testing.T) {
 	castSkills(t, c6, ch6, 2)
 	ac6 := ch6.Character.(*char)
 	if math.Abs(ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagDirectStellarConduct)-stellarBonusValue) > 1e-9 {
-		t.Fatalf("c6 one stack %v", ac6.stellarBonus)
+		t.Fatalf("c6 one stack %v", ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagDirectStellarConduct))
 	}
 	castSkills(t, c6, ch6, 2)
 	want := stellarBonusValue * 2
 	if math.Abs(ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagDirectStellarConduct)-want) > 1e-9 {
-		t.Fatalf("c6 two stacks %v", ac6.stellarBonus)
+		t.Fatalf("c6 two stacks %v", ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagDirectStellarConduct))
 	}
 	if ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagElementalBurst) != 0 {
 		t.Fatal("stellar bonus leaked onto a non-reaction tag")
@@ -365,7 +365,7 @@ func TestStellarBonusScalesWithStacks(t *testing.T) {
 	castSkills(t, bare, chBare, 4)
 	acBare := chBare.Character.(*char)
 	if acBare.stellarBonusFor(chBare.Index(), attacks.AttackTagDirectStellarConduct) != 0 {
-		t.Fatalf("bonus without field %v", acBare.stellarBonus)
+		t.Fatalf("bonus without field %v", acBare.stellarBonusFor(chBare.Index(), attacks.AttackTagDirectStellarConduct))
 	}
 }
 
@@ -377,6 +377,39 @@ func castSkills(t *testing.T, c *core.Core, ch *character.CharWrapper, n int) {
 			t.Fatal(err)
 		}
 		advance(c, skillTapHitmark+2)
+	}
+}
+
+func TestStellarBonusFollowsThePolestarField(t *testing.T) {
+	c, _ := makeCore()
+	ch := addAlyosha(t, c, 0)
+	ac := ch.Character.(*char)
+	castSkills(t, c, ch, 2)
+	if ac.stellarBonusFor(ch.Index(), attacks.AttackTagDirectStellarConduct) != 0 {
+		t.Fatal("bonus before the field")
+	}
+	ch.AddStatus(reactable.PolestarFieldKey, 60, true)
+	got := ac.stellarBonusFor(ch.Index(), attacks.AttackTagDirectStellarConduct)
+	if math.Abs(got-stellarBonusValue) > 1e-9 {
+		t.Fatalf("bonus after entering the field %v", got)
+	}
+	ch.DeleteStatus(reactable.PolestarFieldKey)
+	if ac.stellarBonusFor(ch.Index(), attacks.AttackTagDirectStellarConduct) != 0 {
+		t.Fatal("bonus remained after leaving the field")
+	}
+
+	c6, _ := makeCore()
+	ch6 := addAlyosha(t, c6, 6)
+	ac6 := ch6.Character.(*char)
+	castSkills(t, c6, ch6, 4)
+	ch6.AddStatus(reactable.PolestarFieldKey, 60, true)
+	want := stellarBonusValue * 2
+	got = ac6.stellarBonusFor(ch6.Index(), attacks.AttackTagDirectStellarConduct)
+	if math.Abs(got-want) > 1e-9 {
+		t.Fatalf("c6 bonus after entering the field %v", got)
+	}
+	if ac6.stellarBonusFor(1, attacks.AttackTagDirectStellarConduct) != 0 {
+		t.Fatal("off-field character received the bonus")
 	}
 }
 
