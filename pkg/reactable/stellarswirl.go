@@ -202,7 +202,8 @@ func (r *Reactable) tryStellarSwirl(a *info.AttackEvent, mod info.ReactionModKey
 
 	r.queueStellarSwirl(a.Info.ActorIndex)
 
-	rd := r.reduce(attributes.Cryo, a.Info.Durability, 0.5)
+	// Reduce the aura that reacted. Frozen is its own element, matching TrySwirlFrozen.
+	rd := r.reduce(mod.Element(), a.Info.Durability, 0.5)
 	a.Info.Durability -= rd
 
 	return true

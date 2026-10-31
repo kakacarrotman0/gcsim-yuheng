@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/genshinsim/gcsim/internal/characters/kaeya"
 	_ "github.com/genshinsim/gcsim/internal/characters/lisa"
+	_ "github.com/genshinsim/gcsim/internal/characters/sandrone"
 	_ "github.com/genshinsim/gcsim/internal/characters/sucrose"
 	_ "github.com/genshinsim/gcsim/internal/characters/xiangling"
 	"github.com/genshinsim/gcsim/pkg/avatar"
@@ -20,6 +21,51 @@ import (
 
 func init() {
 	testhelper.RegisterTestWeapon()
+}
+
+func TestRealStellarSwirlGrantsAnemoAndCryoDamage(t *testing.T) {
+	c, err := core.New(core.Opt{Seed: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := avatar.New(c, info.Point{}, 1)
+	c.Combat.SetPlayer(a)
+	e := enemy.New(c, info.EnemyProfile{
+		Level:  100,
+		Resist: make(map[attributes.Element]float64),
+		Pos:    info.Coord{X: 0, Y: 0, R: 1},
+	})
+	c.Combat.AddEnemy(e)
+	c.Combat.DefaultTarget = e.Key()
+
+	wearer := testhelper.DefaultProfile(keys.Sucrose, testhelper.TestWeaponKey)
+	wearer.Sets[keys.ScrollOfTheHeroOfCinderCity] = 4
+	if _, err := c.AddChar(wearer); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.AddChar(testhelper.DefaultProfile(keys.Sandrone, testhelper.TestWeaponKey)); err != nil {
+		t.Fatal(err)
+	}
+	c.Player.SetActive(0)
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	before := partyBonus(c)
+	e.AttachOrRefill(&info.AttackEvent{
+		Info: info.AttackInfo{Element: attributes.Cryo, Durability: 25, ActorIndex: 1},
+	})
+	e.React(&info.AttackEvent{
+		Info: info.AttackInfo{Element: attributes.Anemo, Durability: 25, ActorIndex: 0},
+	})
+	for i, name := range []string{"sucrose", "sandrone"} {
+		ch := c.Player.ByIndex(i)
+		if got := ch.Stat(attributes.AnemoP) - before[i][attributes.AnemoP]; math.Abs(got-0.12) > 1e-9 {
+			t.Fatalf("%s anemo damage bonus %v", name, got)
+		}
+		if got := ch.Stat(attributes.CryoP) - before[i][attributes.CryoP]; math.Abs(got-0.12) > 1e-9 {
+			t.Fatalf("%s cryo damage bonus %v", name, got)
+		}
+	}
 }
 
 func TestStellarSwirlGrantsAnemoAndCryoDamage(t *testing.T) {
