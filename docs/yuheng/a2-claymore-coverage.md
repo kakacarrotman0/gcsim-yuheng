@@ -8,7 +8,7 @@ Aino, Freminet, Gaming, and Navia on `cursor/yuheng-claymore-coverage-a2`. No ch
 
 ## Sourced combat
 
-KQM's charged-attack tables for all four characters are the shared spinning curve already checked in on Xinyan. Talent 9 is 114.9091% cyclic and 207.77% final. Stamina is 40/s. The cap is 5s. Both hits are blunt, Charged Attack (`AttackTagExtra`), and share normal-attack ICD. Poise is 60 and 120. Gauge is 1U. The base element is Physical. Hitlag is the claymore class value: 0.03s on the slash, 0.15s on the finisher, factor 0.01, defense halt. Radii are the shared 3 and 3.5 placeholders.
+KQM prints the cyclic hit as 114.9%, and as 114.87% in the talent-9 frame column. The finisher is 208% there and 207.77% in the frame column. The finisher series is Xinyan's 2.0777 row. The cyclic series is not. ProudSkill groups 8531, 9131, 9231, and 12131 use 1.14866 at talent 9. Aino's normal has three hits, so her cyclic and finisher params are {3} and {4}. The other three use {4} and {5}. Stamina is 40/s. The cap is 5s. Both hits are blunt, Charged Attack (`AttackTagExtra`), and share normal-attack ICD. Poise is 60 and 120. Gauge is 1U. The base element is Physical. Hitlag is the claymore class value: 0.03s on the slash, 0.15s on the finisher, factor 0.01, defense halt. Radii are the shared 3 and 3.5 placeholders.
 
 `charge` is one cyclic slash. `charge[final=1]` is the finisher. Releasing the button, running out of stamina, or reaching 5s ends the sequence on the finisher. `charge[no_limit=1]` skips only the 5s cap.
 

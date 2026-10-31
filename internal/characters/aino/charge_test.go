@@ -20,10 +20,11 @@ import (
 	"github.com/genshinsim/gcsim/pkg/testhelper"
 )
 
-// Talent 9 rows KQM prints as 114.9% and 207.77%. The extra digits are the
-// checked-in game params shared with the other medium claymore spins.
+// Talent 9. KQM rounds the cyclic hit to 114.9% and the frame column to 114.87%.
+// ProudSkill group 12131 param 3 is 1.14866. The finisher, param 4, is 2.0777.
+// Aino's normal has three hits, so these sit one index earlier than a four-hit claymore.
 const (
-	ainoChargeTalent9      = 1.149091
+	ainoChargeTalent9      = 1.14866
 	ainoChargeFinalTalent9 = 2.0777
 )
 
@@ -175,6 +176,21 @@ func TestBishBashBoshChargeEndsAtFiveSeconds(t *testing.T) {
 	}
 	if finisher < start+tmpl.ClaymoreSpinDuration || finisher > start+tmpl.ClaymoreSpinDuration+90 {
 		t.Fatalf("finisher frame %d start %d", finisher, start)
+	}
+}
+
+func TestCyclicProudSkillSeries(t *testing.T) {
+	want := []float64{
+		0.62522, 0.67611, 0.727, 0.7997, 0.85059, 0.90875, 0.98872,
+		1.06869, 1.14866, 1.2359, 1.32314, 1.41038, 1.49762, 1.58486, 1.6721,
+	}
+	if len(charge) != len(want) {
+		t.Fatalf("len %d", len(charge))
+	}
+	for i := range want {
+		if charge[i] != want[i] {
+			t.Fatalf("talent %d got %v want %v", i+1, charge[i], want[i])
+		}
 	}
 }
 

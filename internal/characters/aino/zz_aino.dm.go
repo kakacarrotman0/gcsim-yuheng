@@ -104,25 +104,25 @@ var (
 			},
 		},
 	}
-	// attack: BishBashBoshRepair - Charged Attack Cyclic DMG: {4}
+	// attack: BishBashBoshRepair - Charged Attack Cyclic DMG: {3}
 	charge = []float64{
-		0.625455,
-		0.676364,
-		0.727273,
-		0.8,
-		0.850909,
-		0.909091,
-		0.989091,
-		1.069091,
-		1.149091,
-		1.236364,
-		1.323636,
-		1.410909,
-		1.498182,
-		1.585455,
-		1.672727,
+		0.62522,
+		0.67611,
+		0.727,
+		0.7997,
+		0.85059,
+		0.90875,
+		0.98872,
+		1.06869,
+		1.14866,
+		1.2359,
+		1.32314,
+		1.41038,
+		1.49762,
+		1.58486,
+		1.6721,
 	}
-	// attack: BishBashBoshRepair - Charged Attack Final DMG: {5}
+	// attack: BishBashBoshRepair - Charged Attack Final DMG: {4}
 	chargeFinal = []float64{
 		1.1309,
 		1.22295,

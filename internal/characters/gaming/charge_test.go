@@ -18,9 +18,10 @@ import (
 	"github.com/genshinsim/gcsim/pkg/testhelper"
 )
 
-// Talent 9 rows KQM prints as 114.9% and 207.77%.
+// Talent 9. KQM rounds the cyclic hit to 114.9% and the frame column to 114.87%.
+// ProudSkill group 9231 param 4 is 1.14866. The finisher, param 5, is 2.0777.
 const (
-	gamingChargeTalent9      = 1.149091
+	gamingChargeTalent9      = 1.14866
 	gamingChargeFinalTalent9 = 2.0777
 )
 
@@ -220,5 +221,20 @@ func TestCharmedCloudstriderStaysTheSkillPlunge(t *testing.T) {
 	}
 	if !saw {
 		t.Fatal("skill plunge no longer releases Charmed Cloudstrider")
+	}
+}
+
+func TestCyclicProudSkillSeries(t *testing.T) {
+	want := []float64{
+		0.62522, 0.67611, 0.727, 0.7997, 0.85059, 0.90875, 0.98872,
+		1.06869, 1.14866, 1.2359, 1.32314, 1.41038, 1.49762, 1.58486, 1.6721,
+	}
+	if len(charge) != len(want) {
+		t.Fatalf("len %d", len(charge))
+	}
+	for i := range want {
+		if charge[i] != want[i] {
+			t.Fatalf("talent %d got %v want %v", i+1, charge[i], want[i])
+		}
 	}
 }
