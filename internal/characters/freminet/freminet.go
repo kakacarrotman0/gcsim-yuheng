@@ -10,6 +10,7 @@ import (
 
 type char struct {
 	*tmpl.Character
+	caState     tmpl.SpinChargeState
 	skillStacks int
 	c4Stacks    int
 	c6Stacks    int

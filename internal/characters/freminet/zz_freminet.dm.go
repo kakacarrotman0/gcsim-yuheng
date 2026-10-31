@@ -15,6 +15,7 @@ import (
 func init() {
 	core.RegisterCharFunc(keys.Freminet, NewChar)
 	paramsFor := map[action.Action][]string{
+		action.ActionCharge:     {"final", "no_limit"},
 		action.ActionLowPlunge:  {"collision"},
 		action.ActionHighPlunge: {"collision"},
 	}
@@ -102,6 +103,42 @@ var (
 			3.138306,
 			3.311057,
 		},
+	}
+	// attack: FlowingEddies - Charged Attack Cyclic DMG: {4}
+	charge = []float64{
+		0.62522,
+		0.67611,
+		0.727,
+		0.7997,
+		0.85059,
+		0.90875,
+		0.98872,
+		1.06869,
+		1.14866,
+		1.2359,
+		1.32314,
+		1.41038,
+		1.49762,
+		1.58486,
+		1.6721,
+	}
+	// attack: FlowingEddies - Charged Attack Final DMG: {5}
+	chargeFinal = []float64{
+		1.1309,
+		1.22295,
+		1.315,
+		1.4465,
+		1.53855,
+		1.64375,
+		1.7884,
+		1.93305,
+		2.0777,
+		2.2355,
+		2.3933,
+		2.5511,
+		2.7089,
+		2.8667,
+		3.0245,
 	}
 	// attack: FlowingEddies - Plunge DMG: {8}
 	collision = []float64{

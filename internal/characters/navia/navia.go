@@ -12,6 +12,7 @@ import (
 
 type char struct {
 	*tmpl.Character
+	caState  tmpl.SpinChargeState
 	shrapnel int
 }
 

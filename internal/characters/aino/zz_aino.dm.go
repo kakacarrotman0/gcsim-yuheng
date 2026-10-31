@@ -14,7 +14,9 @@ import (
 
 func init() {
 	core.RegisterCharFunc(keys.Aino, NewChar)
-	paramsFor := map[action.Action][]string{}
+	paramsFor := map[action.Action][]string{
+		action.ActionCharge: {"final", "no_limit"},
+	}
 	validation.RegisterCharParamValidationFunc(keys.Aino, func(a action.Action, keys []string) error {
 		valid, ok := paramsFor[a]
 		if !ok {
@@ -101,6 +103,42 @@ var (
 				1.316256,
 			},
 		},
+	}
+	// attack: BishBashBoshRepair - Charged Attack Cyclic DMG: {3}
+	charge = []float64{
+		0.62522,
+		0.67611,
+		0.727,
+		0.7997,
+		0.85059,
+		0.90875,
+		0.98872,
+		1.06869,
+		1.14866,
+		1.2359,
+		1.32314,
+		1.41038,
+		1.49762,
+		1.58486,
+		1.6721,
+	}
+	// attack: BishBashBoshRepair - Charged Attack Final DMG: {4}
+	chargeFinal = []float64{
+		1.1309,
+		1.22295,
+		1.315,
+		1.4465,
+		1.53855,
+		1.64375,
+		1.7884,
+		1.93305,
+		2.0777,
+		2.2355,
+		2.3933,
+		2.5511,
+		2.7089,
+		2.8667,
+		3.0245,
 	}
 	skill = [][]float64{
 		{ // skill: Musecatcher - Stage 1 DMG: {0}

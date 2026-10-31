@@ -201,6 +201,10 @@ func (h *Handler) useAbility(
 	}
 	info, err := f(param)
 	if err != nil {
+		// SetActionUsed is the commit, and it is what clears listeners armed by
+		// the action event above. Publish the failure when that commit does not
+		// happen. The simulation still aborts on this error.
+		h.Events.Emit(event.OnActionFailed, h.active, t, param, action.BuildFailed)
 		return err
 	}
 	h.SetActionUsed(h.active, t, &info)
