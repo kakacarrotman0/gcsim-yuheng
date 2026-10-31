@@ -2,9 +2,11 @@ package gestofthemightywolf
 
 import (
 	"math"
+	"strings"
 	"testing"
 
 	_ "github.com/genshinsim/gcsim/internal/characters/dehya"
+	_ "github.com/genshinsim/gcsim/internal/characters/kinich"
 	_ "github.com/genshinsim/gcsim/internal/characters/lisa"
 	_ "github.com/genshinsim/gcsim/internal/characters/noelle"
 	"github.com/genshinsim/gcsim/internal/frames"
@@ -145,6 +147,142 @@ func TestTulaytullahStillSamplesBeforeTheStateUpdates(t *testing.T) {
 	if tula.n2 != frames.AtkSpdAdjust(lisaN2Attack, gestAtkSpd) {
 		t.Fatalf("tulaytullah second normal %d", tula.n2)
 	}
+}
+
+// A failed build emits the action and then returns before SetActionUsed, so the
+// constructing marker is not cleared by OnStateChange. These cases continue
+// after that error and read attack speed directly.
+func TestFailedBuildDoesNotStickTheAttackSpeedMarker(t *testing.T) {
+	c := makeCore(t)
+	ch := addNoelle(t, c)
+	if err := c.Player.Exec(action.ActionLowPlunge, keys.Noelle, nil); err == nil || !strings.Contains(err.Error(), "airborne") {
+		t.Fatalf("plunge err %v", err)
+	}
+	if c.Player.CurrentState() != action.Idle {
+		t.Fatalf("state %v", c.Player.CurrentState())
+	}
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got) > 1e-9 {
+		t.Fatalf("idle after failed plunge %v", got)
+	}
+
+	c = makeCore(t)
+	ch = addNoelle(t, c)
+	if err := c.Player.Exec(action.ActionAttack, keys.Noelle, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Player.Exec(action.ActionLowPlunge, keys.Noelle, nil); err == nil {
+		t.Fatal("plunge committed")
+	}
+	if c.Player.CurrentState() != action.NormalAttackState {
+		t.Fatalf("state %v", c.Player.CurrentState())
+	}
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got-gestAtkSpd) > 1e-9 {
+		t.Fatalf("normal after failed plunge %v", got)
+	}
+	if got := ticksUntil(t, c, action.ActionCharge); got != frames.AtkSpdAdjust(41, gestAtkSpd) {
+		t.Fatalf("charge cancel after failed plunge %d", got)
+	}
+	if err := c.Player.Exec(action.ActionCharge, keys.Noelle, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got) > 1e-9 {
+		t.Fatalf("charge inherited speed %v", got)
+	}
+	if got := ticksUntil(t, c, action.ActionDash); got != neutralChargeDash {
+		t.Fatalf("charge dash after failed plunge %d", got)
+	}
+
+	c = makeCore(t)
+	c.Player.Delays.Swap = 1
+	ch = addKinichWithPartner(t, c)
+	if err := c.Player.Exec(action.ActionSkill, keys.Kinich, nil); err != nil {
+		t.Fatal(err)
+	}
+	advanceUntil(t, c, func() bool { return c.Player.CurrentState() == action.Idle })
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got) > 1e-9 {
+		t.Fatalf("idle before failed attack %v", got)
+	}
+	err := c.Player.Exec(action.ActionAttack, keys.Kinich, map[string]int{"direction": 0})
+	if err == nil || !strings.Contains(err.Error(), "Wrong value of direction") {
+		t.Fatalf("direction err %v", err)
+	}
+	if c.Player.CurrentState() == action.NormalAttackState {
+		t.Fatal("failed attack committed")
+	}
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got) > 1e-9 {
+		t.Fatalf("idle after failed attack %v", got)
+	}
+
+	if err := c.Player.Exec(action.ActionSwap, keys.Noelle, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got) > 1e-9 {
+		t.Fatalf("speed during swap %v", got)
+	}
+	advanceUntil(t, c, func() bool { return c.Player.Active() == 1 && c.Player.CurrentState() == action.Idle })
+	if err := c.Player.Exec(action.ActionSwap, keys.Kinich, nil); err != nil {
+		t.Fatal(err)
+	}
+	advanceUntil(t, c, func() bool {
+		return c.Player.Active() == 0 && !c.Player.IsAnimationLocked(action.ActionAttack)
+	})
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got) > 1e-9 {
+		t.Fatalf("idle after swap back %v", got)
+	}
+	if err := c.Player.Exec(action.ActionAttack, keys.Kinich, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := ch.Stat(attributes.AtkSpd); math.Abs(got-gestAtkSpd) > 1e-9 {
+		t.Fatalf("recovered normal %v", got)
+	}
+	recovered := ticksUntil(t, c, action.ActionAttack)
+
+	fresh := makeCore(t)
+	addCharWeapon(t, fresh, keys.Kinich, keys.GestOfTheMightyWolf)
+	if err := fresh.Player.Exec(action.ActionAttack, keys.Kinich, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := ticksUntil(t, fresh, action.ActionAttack); got != recovered {
+		t.Fatalf("recovered normal frames %d fresh %d", recovered, got)
+	}
+}
+
+func advanceUntil(t *testing.T, c *core.Core, done func() bool) {
+	t.Helper()
+	for range 800 {
+		if done() {
+			return
+		}
+		c.F++
+		if err := c.Tick(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Fatal("condition not met")
+}
+
+func addKinichWithPartner(t *testing.T, c *core.Core) *character.CharWrapper {
+	t.Helper()
+	kinich := testhelper.DefaultProfile(keys.Kinich, keys.GestOfTheMightyWolf)
+	kinich.Weapon.Refine = 1
+	kinich.Weapon.Level = 90
+	kinich.Weapon.MaxLevel = 90
+	kinich.Base.Cons = 0
+	noelle := testhelper.DefaultProfile(keys.Noelle, keys.WasterGreatsword)
+	noelle.Weapon.Refine = 1
+	noelle.Weapon.Level = 90
+	noelle.Weapon.MaxLevel = 90
+	noelle.Base.Cons = 0
+	if _, err := c.AddChar(kinich); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.AddChar(noelle); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	return c.Player.ByIndex(0)
 }
 
 func measureSwings(t *testing.T, char keys.Char, weapon keys.Weapon) swingFrames {

@@ -131,6 +131,14 @@ func (w *Weapon) watchConstruction(c *core.Core, char *character.CharWrapper) {
 		}
 		w.constructing = action.InvalidAction
 	}, fmt.Sprintf("gest-of-the-mighty-wolf-construct-clear-%v", char.Base.Key.String()))
+	// A returned error never reaches SetActionUsed, so the state-change clear
+	// above does not run. Drop the marker for the action that did not commit.
+	c.Events.Subscribe(event.OnActionFailed, func(args ...any) {
+		if c.Player.Active() != char.Index() {
+			return
+		}
+		w.constructing = action.InvalidAction
+	}, fmt.Sprintf("gest-of-the-mighty-wolf-construct-fail-%v", char.Base.Key.String()))
 }
 
 func (w *Weapon) addStacks(src string, amt int) {
