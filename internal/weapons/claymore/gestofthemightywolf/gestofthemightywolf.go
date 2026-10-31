@@ -21,6 +21,7 @@ type Weapon struct {
 	refine              int
 	stacks              int
 	mod                 []float64
+	constructing        action.Action
 	isHexereiSecretRite bool
 }
 
@@ -46,16 +47,26 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 
 	m := make([]float64, attributes.EndStatType)
 	m[attributes.AtkSpd] = 0.1
+	// Exec emits the action, builds it, then stores the new state. Attack speed
+	// is read during the build, so CurrentState still describes the previous
+	// action. The constructing flag is that in-between sample: a Normal Attack
+	// being built receives the 10%, and any other action being built does not.
 	char.AddStatMod(character.StatMod{
 		Base:         modifier.NewBase(gestAttackSpeedKey, -1),
 		AffectedStat: attributes.AtkSpd,
 		Amount: func() []float64 {
-			if c.Player.CurrentState() != action.NormalAttackState {
-				return nil
+			switch w.constructing {
+			case action.ActionAttack:
+				return m
+			case action.InvalidAction:
+				if c.Player.CurrentState() == action.NormalAttackState {
+					return m
+				}
 			}
-			return m
+			return nil
 		},
 	})
+	w.watchConstruction(c, char)
 
 	c.Events.Subscribe(event.OnEnemyDamage, func(args ...any) {
 		atk := args[1].(*info.AttackEvent)
@@ -91,6 +102,35 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 	}, fmt.Sprintf("gest-of-the-mighty-wolf-on-skill-%v", char.Base.Key.String()))
 
 	return w, nil
+}
+
+func (w *Weapon) watchConstruction(c *core.Core, char *character.CharWrapper) {
+	marks := []struct {
+		ev  event.Event
+		act action.Action
+	}{
+		{event.OnAttack, action.ActionAttack},
+		{event.OnChargeAttack, action.ActionCharge},
+		{event.OnSkill, action.ActionSkill},
+		{event.OnBurst, action.ActionBurst},
+		{event.OnDash, action.ActionDash},
+		{event.OnPlunge, action.ActionHighPlunge},
+		{event.OnAimShoot, action.ActionAim},
+	}
+	for _, mark := range marks {
+		c.Events.Subscribe(mark.ev, func(args ...any) {
+			if c.Player.Active() != char.Index() {
+				return
+			}
+			w.constructing = mark.act
+		}, fmt.Sprintf("gest-of-the-mighty-wolf-construct-%v-%v", mark.act, char.Base.Key.String()))
+	}
+	c.Events.Subscribe(event.OnStateChange, func(args ...any) {
+		if c.Player.Active() != char.Index() {
+			return
+		}
+		w.constructing = action.InvalidAction
+	}, fmt.Sprintf("gest-of-the-mighty-wolf-construct-clear-%v", char.Base.Key.String()))
 }
 
 func (w *Weapon) addStacks(src string, amt int) {
