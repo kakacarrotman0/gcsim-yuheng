@@ -48,6 +48,9 @@ const (
 
 	AttackTagDirectStellarConduct
 	AttackTagDirectStellarSwirl
+
+	AttackTagWrioSSCN5
+	AttackTagWrioSSCCA
 )
 
 // TODO: get rid of direct/reaction split

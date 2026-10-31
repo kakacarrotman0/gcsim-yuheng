@@ -26,6 +26,9 @@ talents:
 docs:
   fields:
     .wriothesley.gracious-rebuke: Whether Wriothesley currently has a Gracious Rebuke or not.
+    .wriothesley.gracious-rebuke-unveiling: Whether Luster: Vaulting Fist is ready. Witch's Revelation defaults on. revelation=0 keeps the base kit. Requires a Polestar Field and HP below 60%.
+    .wriothesley.revelation: Whether Witch's Revelation is enabled.
+    .wriothesley.prosecution-edict: Current Prosecution Edict stacks.
   frames:
     - count: https://docs.google.com/spreadsheets/d/1xQsRq1LKoU7Eu_81S4iOFY-kQNTGMWk9NJrjgSWzL6M/edit?usp=sharing
       count_credit: caramielle
@@ -124,6 +127,13 @@ abilities:
         hitlag: {time: 0.09, scale: 0.01}
 
       - name: CA-Gracious-Rebuke
+        shape: Box
+        center: Player
+        offset: [0, -0.8]
+        box: [4, 5]
+        hitlag: {time: 0.12, scale: 0.03}
+
+      - name: CA-Luster-Vaulting-Fist
         shape: Box
         center: Player
         offset: [0, -0.8]

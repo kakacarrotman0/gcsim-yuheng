@@ -52,11 +52,11 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 	case action.DashState, action.SkillState:
 		c.NormalCounter = c.savedNormalCounter
 	}
-
-	for i, mult := range attack[c.NormalCounter] {
+	n := c.NormalCounter
+	for i, mult := range attack[n] {
 		ai := info.AttackInfo{
 			ActorIndex:         c.Index(),
-			Abil:               fmt.Sprintf("Normal %v", c.NormalCounter),
+			Abil:               fmt.Sprintf("Normal %v", n+1),
 			AttackTag:          attacks.AttackTagNormal,
 			ICDTag:             attacks.ICDTagNormalAttack,
 			ICDGroup:           attacks.ICDGroupDefault,
@@ -64,14 +64,12 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 			Element:            attributes.Cryo,
 			Durability:         25,
 			Mult:               mult[c.TalentLvlAttack()],
-			HitlagFactor:       attackHitlagFactor[c.NormalCounter][i],
-			HitlagHaltFrames:   attackHitlagHaltFrame[c.NormalCounter][i] * 60,
+			HitlagFactor:       attackHitlagFactor[n][i],
+			HitlagHaltFrames:   attackHitlagHaltFrame[n][i] * 60,
 			CanBeDefenseHalted: true,
 		}
-		c1N5CB := c.makeC1N5CB() // here so that the normalcounter check is correct
-		n := c.NormalCounter
+		c1N5CB := c.makeC1N5CB(n)
 		c.QueueCharTask(func() {
-			// TODO: when should this check happen?
 			skillIndex := 0
 			var particleCB info.AttackCBFunc
 			var chillingPenalty info.AttackCBFunc
@@ -79,23 +77,40 @@ func (c *char) Attack(p map[string]int) (action.Info, error) {
 				skillIndex = 1
 				particleCB = c.particleCB
 				chillingPenalty = c.chillingPenalty
-				ai.Abil = fmt.Sprintf("Normal %v (Enhanced)", n)
+				ai.Abil = fmt.Sprintf("Normal %v (Enhanced)", n+1)
+				ai.Mult *= skill[c.TalentLvlSkill()]
+				ai.Mult *= 1 + c.c2OutsideConductNA()
 			}
-			c.Core.QueueAttack(
-				ai,
-				combat.NewBoxHitOnTarget(
-					c.Core.Combat.Player(),
-					info.Point{Y: attackOffsets[skillIndex]},
-					attackHitboxes[skillIndex][c.NormalCounter][0],
-					attackHitboxes[skillIndex][c.NormalCounter][1],
-				),
-				0,
-				0,
-				c1N5CB,
-				particleCB,
-				chillingPenalty,
+			conductStrike := false
+			if c.skillBuffActive() && c.revelationConduct() && (n == 2 || n == 4) {
+				conductStrike = true
+				ai.Abil += stellarConductText
+				ai.AttackTag = attacks.AttackTagDirectStellarConduct
+				ai.IgnoreDefPercent = 1
+				ai.Durability = 0
+				if n == 2 {
+					ai.Mult *= 0.6
+				} else {
+					ai.AdditionalTags = []attacks.AttackTag{attacks.AttackTagWrioSSCN5}
+					ai.Mult *= 0.8
+				}
+				ai.Mult *= 1 + c.c2ConductFraction()
+			}
+			ap := combat.NewBoxHitOnTarget(
+				c.Core.Combat.Player(),
+				info.Point{Y: attackOffsets[skillIndex]},
+				attackHitboxes[skillIndex][n][0],
+				attackHitboxes[skillIndex][n][1],
 			)
-		}, attackHitmarks[c.NormalCounter][i])
+			snap := c.Snapshot(&ai)
+			if c.skillBuffActive() && c.revelationConduct() {
+				c.addC6Buff(&snap)
+			}
+			c.Core.QueueAttackWithSnap(ai, snap, ap, 0, c1N5CB, particleCB, chillingPenalty)
+			if conductStrike && n == 4 {
+				c.queueConductIcicle(ai, snap, ap, "Normal 5 (Enhanced) (C6)"+stellarConductText, particleCB)
+			}
+		}, attackHitmarks[n][i])
 	}
 
 	defer func() {

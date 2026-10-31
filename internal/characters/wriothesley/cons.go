@@ -1,6 +1,9 @@
 package wriothesley
 
 import (
+	"slices"
+
+	"github.com/genshinsim/gcsim/pkg/core/attacks"
 	"github.com/genshinsim/gcsim/pkg/core/attributes"
 	"github.com/genshinsim/gcsim/pkg/core/event"
 	"github.com/genshinsim/gcsim/pkg/core/glog"
@@ -64,43 +67,72 @@ func (c *char) c1(ai *info.AttackInfo, snap *info.Snapshot) (info.AttackCBFunc, 
 		c.DeleteStatus(c1Status)
 		c.AddStatus(c1ICDKey, c1ICD, true)
 
-		// E extension
-		if !c.c1SkillExtensionProc && c.StatusIsActive(skillKey) {
-			c.ExtendStatus(skillKey, c1SkillExtension)
-			c.c1SkillExtensionProc = true
-			c.Core.Log.NewEvent("c1: skill duration is extended", glog.LogCharacterEvent, c.Index())
-		}
+		c.c1SkillExtension()
 
 		// heal
 		c.Core.Player.Heal(info.HealInfo{
 			Caller:  c.Index(),
 			Target:  c.Index(),
-			Message: "There Shall Be a Plea for Justice",
+			Message: a1HealName,
 			Src:     c.caHeal * c.MaxHP(),
 			Bonus:   c.Stat(attributes.Heal),
 		})
 	}, c.Base.Cons >= 6
 }
 
-func (c *char) makeC1N5CB() info.AttackCBFunc {
-	if c.Base.Cons < 1 || c.NormalCounter != 4 {
+func (c *char) makeC1N5CB(naCounter int) info.AttackCBFunc {
+	if c.Base.Cons < 1 || naCounter != 4 {
 		return nil
 	}
 	return func(a info.AttackCB) {
 		if a.Target.Type() != info.TargettableEnemy {
 			return
 		}
-		// check if E active
-		if !c.StatusIsActive(skillKey) {
+		if c.revelationConduct() && c.skillBuffActive() {
+			c.DeleteReactBonusMod(c1N5Bonus)
+			c.addStellarHitBonus(c1LusterBonus, attacks.AttackTagWrioSSCCA)
 			return
 		}
-		// check CD
-		if c.StatusIsActive(c1ICDKey) {
+		if !c.StatusIsActive(skillKey) || c.StatusIsActive(c1ICDKey) {
 			return
 		}
 		c.c1N5Proc = true
 		c.Core.Log.NewEvent("gained Gracious Rebuke from C1 N5", glog.LogCharacterEvent, c.Index())
 	}
+}
+
+const (
+	c1LusterBonus = c1Status + "-revelation-ca"
+	c1N5Bonus     = c1Status + "-revelation-n5"
+)
+
+func (c *char) addStellarHitBonus(key string, tag attacks.AttackTag) {
+	c.AddReactBonusMod(character.ReactBonusMod{
+		Base: modifier.NewBaseWithHitlag(key, 5*60),
+		Amount: func(ai info.AttackInfo) float64 {
+			if slices.Contains(ai.AdditionalTags, tag) {
+				return 0.5
+			}
+			return 0
+		},
+	})
+}
+
+func (c *char) c1SkillExtension() {
+	if !c.c1SkillExtensionProc && c.StatusIsActive(skillKey) {
+		c.ExtendStatus(skillKey, c1SkillExtension)
+		c.c1SkillExtensionProc = true
+		c.Core.Log.NewEvent("c1: skill duration is extended", glog.LogCharacterEvent, c.Index())
+	}
+}
+
+func (c *char) c1LusterCB(a info.AttackCB) {
+	if c.Base.Cons < 1 || a.Target.Type() != info.TargettableEnemy || !c.revelationConduct() {
+		return
+	}
+	c.DeleteReactBonusMod(c1LusterBonus)
+	c.addStellarHitBonus(c1N5Bonus, attacks.AttackTagWrioSSCN5)
+	c.c1SkillExtension()
 }
 
 func (c *char) resetC1SkillExtension() {
@@ -129,6 +161,31 @@ func (c *char) c2(snap *info.Snapshot) {
 	c.Core.Log.NewEvent("adding c2", glog.LogCharacterEvent, c.Index()).Write("dmg%", dmg)
 }
 
+func (c *char) c2ConductReady() bool {
+	return c.Base.Cons >= 2 && c.revelation && c.Base.Ascension >= 4 && c.a4Stack >= 5 && c.StatusIsActive(skillKey)
+}
+
+func (c *char) c2ConductFraction() float64 {
+	if !c.c2ConductReady() || !c.inConductRadiance() {
+		return 0
+	}
+	return 0.5
+}
+
+func (c *char) c2OutsideConductNA() float64 {
+	if !c.c2ConductReady() || c.inConductRadiance() {
+		return 0
+	}
+	return 0.25
+}
+
+func (c *char) c2OutsideConductCA() float64 {
+	if !c.c2ConductReady() || c.inConductRadiance() {
+		return 0
+	}
+	return 0.3
+}
+
 // The HP restored to Wriothesley through Rebuke: Vaulting Fist will be increased to 50%
 // of his Max HP. You must first unlock the Passive Talent "There Shall Be a Plea for Justice."
 // Additionally, when Wriothesley is healed, if the amount of healing overflows, the following
@@ -142,50 +199,68 @@ func (c *char) c4() {
 	}
 	c.caHeal = 0.5
 
+	m := make([]float64, attributes.EndStatType)
 	c.Core.Events.Subscribe(event.OnHeal, func(args ...any) {
+		if c.revelationConduct() {
+			return
+		}
 		index := args[1].(int)
 		amount := args[2].(float64)
 		overheal := args[3].(float64)
-		if index != c.Index() {
-			return
-		}
-		if amount <= 0 {
-			return
-		}
-		if overheal <= 0 {
+		if index != c.Index() || amount <= 0 || overheal <= 0 {
 			return
 		}
 
 		chars := c.Core.Player.Chars()
-		m := make([]float64, attributes.EndStatType)
-
-		// remove old buffs
 		for _, char := range chars {
 			char.DeleteStatus(c4Status)
 		}
 
 		if c.Core.Player.Active() == c.Index() {
-			m[attributes.AtkSpd] = 0.2
 			c.AddStatMod(character.StatMod{
 				Base:         modifier.NewBaseWithHitlag(c4Status, 4*60),
 				AffectedStat: attributes.AtkSpd,
 				Amount: func() []float64 {
+					m[attributes.AtkSpd] = 0.2
 					return m
 				},
 			})
 		} else {
-			m[attributes.AtkSpd] = 0.1
 			for _, char := range chars {
 				char.AddStatMod(character.StatMod{
 					Base:         modifier.NewBaseWithHitlag(c4Status, 6*60),
 					AffectedStat: attributes.AtkSpd,
 					Amount: func() []float64 {
+						m[attributes.AtkSpd] = 0.1
 						return m
 					},
 				})
 			}
 		}
 	}, "wriothesley-c4-heal")
+
+	if !c.revelation {
+		return
+	}
+	for _, ch := range c.Core.Player.Chars() {
+		amt := 0.1
+		if ch.Index() == c.Index() {
+			amt = 0.2
+		}
+		spd := make([]float64, attributes.EndStatType)
+		spd[attributes.AtkSpd] = amt
+		this := ch
+		this.AddStatMod(character.StatMod{
+			Base:         modifier.NewBase(c4Status+"-revelation", -1),
+			AffectedStat: attributes.AtkSpd,
+			Amount: func() []float64 {
+				if this.StatusIsActive(c4Status) || !c.inConductRadiance() {
+					return nil
+				}
+				return spd
+			},
+		})
+	}
 }
 
 // The CRIT Rate of Rebuke: Vaulting Fist will be increased by 10%, and its CRIT DMG by 80%.
